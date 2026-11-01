@@ -65,6 +65,7 @@ class Window(QMainWindow):
         from .diagnostics import make_logger
         self.logger=make_logger(self.settings)
         self.thread=None;self.cancel=threading.Event();self.last_spoken=None;self.history=[]
+        self.played_pauses=set();self.pause_active=False;self.api_server=None;self.api_thread=None
         self.player=QMediaPlayer(self);self.audio=QAudioOutput(self);self.player.setAudioOutput(self.audio)
         self.speech=QTextToSpeech(self);self.original_volume=self.settings.data['player_volume']/100;self.audio.setVolume(self.original_volume)
         from .playback_speech import PlaybackSpeech
@@ -75,6 +76,11 @@ class Window(QMainWindow):
         self.player.errorOccurred.connect(lambda e,msg:self.log('Playback: '+msg))
         self.speech.stateChanged.connect(self.speech_state)
         self.preview=QMediaPlayer(self);self.preview_audio=QAudioOutput(self);self.preview.setAudioOutput(self.preview_audio)
+        self.pause_player=QMediaPlayer(self);self.pause_audio=QAudioOutput(self);self.pause_player.setAudioOutput(self.pause_audio)
+        self.pause_player.mediaStatusChanged.connect(self.pause_status)
+        self.pause_player.errorOccurred.connect(lambda error,message:self.pause_failed(message))
+        self.narration=QMediaPlayer(self);self.narration_audio=QAudioOutput(self);self.narration.setAudioOutput(self.narration_audio)
+        self.narration.playbackStateChanged.connect(lambda state:self.audio.setVolume(self.original_volume*10**(self.settings.data['duck_db']/20) if state==QMediaPlayer.PlaybackState.PlayingState else self.original_volume))
         self.preview_tmp=tempfile.TemporaryDirectory(prefix='describer-preview-')
         for v in self.speech.availableVoices():
             if v.name()==self.settings.data.get('playback_voice'):self.speech.setVoice(v)
@@ -94,7 +100,7 @@ class Window(QMainWindow):
         self.volume=QSlider(Qt.Orientation.Horizontal);self.volume.setRange(0,100);self.volume.setValue(self.settings.data['player_volume']);self.volume.setMaximumWidth(110);self.volume.setAccessibleName('Player volume');self.volume.valueChanged.connect(self.set_volume);controls.addWidget(QLabel('Volume'));controls.addWidget(self.volume)
         self.speak_check=QCheckBox('Speak descriptions');self.speak_check.setChecked(True);controls.addWidget(self.speak_check)
         self.current=QLabel('');self.current.setWordWrap(True);self.current.setAccessibleName('Current description');el.addWidget(self.current)
-        self.table=QTableWidget(0,3);self.table.setHorizontalHeaderLabels(['Start','End','Description']);self.table.setColumnWidth(2,700)
+        self.table=QTableWidget(0,4);self.table.setHorizontalHeaderLabels(['Start','End','Description','Placement']);self.table.setColumnWidth(2,650)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows);self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.itemSelectionChanged.connect(self.select_cue);el.addWidget(self.table,1)
         form=QHBoxLayout();el.addLayout(form);self.start=QLineEdit('0');self.end=QLineEdit('3')
@@ -114,6 +120,8 @@ class Window(QMainWindow):
                              ('Import SRT / VTT','Ctrl+I',self.import_cues),('Settings','Ctrl+,',self.edit_settings),('Export','Ctrl+E',self.export)]:
             action=QAction(label,self);action.setShortcut(QKeySequence(key));action.triggered.connect(fn);menu.addAction(action)
         glossary=QAction('Character glossary',self);glossary.triggered.connect(self.edit_glossary);menu.addAction(glossary)
+        for label,fn in [('Install speech detector',self.install_detector),('Start developer API / MCP',self.start_api),('Stop developer API / MCP',self.stop_api)]:
+            action=QAction(label,self);action.triggered.connect(fn);menu.addAction(action)
         for label,fn in [('Manage voice presets',self.manage_voices),('Test selected export voice',self.test_voice),('Select Windows export voice',self.select_windows_voice),('Import original data',self.import_original),('Check for updates',self.check_updates)]:
             action=QAction(label,self);action.triggered.connect(fn);menu.addAction(action)
         apply_language(self,self.settings.data['ui_language'])
@@ -167,6 +175,7 @@ class Window(QMainWindow):
         return True
     def set_video(self,path):
         from .services import probe
+        self.pause_active=False;self.pause_player.stop();self.narration.stop();self.played_pauses.clear()
         duration=probe(path);self.playback_speech.stop();self.player.stop();self.project=Project(str(Path(path).resolve()),duration);self.project_path=None;self.dirty=False
         self.history=[];self.player.setSource(QUrl.fromLocalFile(self.project.video));self.file_label.setText(self.project.video);self.refresh();self.last_spoken=None
     def open_video(self):
@@ -186,19 +195,46 @@ class Window(QMainWindow):
         try:self.set_video(path)
         except Exception as e:self.error(str(e))
     def duration_changed(self,value):self.slider.setRange(0,value)
-    def seek(self,value):self.playback_speech.stop();self.last_spoken=None;self.player.setPosition(max(0,value))
+    def seek(self,value):
+        self.pause_active=False;self.pause_player.stop();self.narration.stop();self.playback_speech.stop();self.last_spoken=None
+        self.played_pauses={c.event_id for c in self.project.cues if c.event_start is not None and c.event_start<value/1000}
+        self.player.setPosition(max(0,value))
     def toggle(self):
-        if self.player.playbackState()==QMediaPlayer.PlaybackState.PlayingState:self.player.pause();self.playback_speech.stop()
+        if self.pause_active:
+            self.pause_active=False;self.pause_player.stop();return
+        if self.player.playbackState()==QMediaPlayer.PlaybackState.PlayingState:self.player.pause();self.narration.stop();self.playback_speech.stop()
         else:self.last_spoken=None;self.player.play()
     def position_changed(self,value):
         self.slider.blockSignals(True);self.slider.setValue(value);self.slider.blockSignals(False);self.clock.setText(stamp(value/1000)[:-4])
         found=next(((i,c) for i,c in enumerate(self.project.cues) if c.start<=value/1000<c.end),None)
         self.current.setText(found[1].text if found else '')
-        if found and found[0]!=self.last_spoken and self.player.playbackState()==QMediaPlayer.PlaybackState.PlayingState:
+        if self.speak_check.isChecked() and not self.pause_active and self.player.playbackState()==QMediaPlayer.PlaybackState.PlayingState:
+            pause=next((c for c in self.project.cues if c.disposition=='pause' and c.event_id not in self.played_pauses and c.event_start<=value/1000<c.event_end),None)
+            if pause:
+                self.start_pause(pause);return
+        if found and found[1].disposition not in ('pause','unresolved') and found[0]!=self.last_spoken and self.player.playbackState()==QMediaPlayer.PlaybackState.PlayingState:
             self.last_spoken=found[0]
             if self.speak_check.isChecked():
-                self.playback_speech.say(found[1].text,self.settings.data['interrupt'])
+                cue=found[1]
+                if cue.disposition=='in-gap':
+                    if not Path(cue.audio).is_file():self.log('Verified narration is missing; re-plan this project.');self.player.pause();return
+                    # Media position callbacks and audio startup are not sample-accurate.
+                    # If playback arrived late, pause rather than speaking past a safe slot.
+                    if cue.speech_seconds/cue.speed+.2>cue.end-value/1000:
+                        self.start_pause(cue);return
+                    self.narration.setPlaybackRate(cue.speed);self.narration.setSource(QUrl.fromLocalFile(cue.audio));self.narration.play()
+                else:self.playback_speech.say(cue.text,self.settings.data['interrupt'])
         if not found:self.last_spoken=None
+    def start_pause(self,cue):
+        if not Path(cue.audio).is_file():self.log('Pause narration is missing; re-plan/export this project.');self.player.pause();return
+        self.played_pauses.add(cue.event_id);self.pause_active=True;self.player.pause();self.narration.stop();self.playback_speech.stop()
+        self.current.setText('Pause description: '+cue.text);self.pause_player.setSource(QUrl.fromLocalFile(cue.audio));self.pause_player.play()
+    def pause_status(self,status):
+        if status==QMediaPlayer.MediaStatus.EndOfMedia and self.pause_active:
+            # Resume after the media-status callback unwinds, avoiding backend reentry.
+            self.pause_active=False;QTimer.singleShot(0,self.player.play)
+    def pause_failed(self,message):
+        if self.pause_active:self.pause_active=False;self.log('Pause narration failed: '+message)
     def set_volume(self,value):
         self.settings.data['player_volume']=value;self.original_volume=value/100;self.speech_state(self.speech.state())
         try:self.settings.save()
@@ -208,7 +244,7 @@ class Window(QMainWindow):
     def refresh(self):
         self.table.blockSignals(True);self.table.setRowCount(len(self.project.cues))
         for i,c in enumerate(self.project.cues):
-            for k,v in enumerate([stamp(c.start),stamp(c.end),c.text]):self.table.setItem(i,k,QTableWidgetItem(v))
+            for k,v in enumerate([stamp(c.start),stamp(c.end),c.text,c.disposition+(': '+c.uncertainty if c.uncertainty else '')]):self.table.setItem(i,k,QTableWidgetItem(v))
         self.table.blockSignals(False)
     def select_cue(self):
         i=self.table.currentRow()
@@ -224,7 +260,12 @@ class Window(QMainWindow):
         except ValueError:pass
     def editor_cue(self):
         if not self.project.video:raise ValueError('Open a video first.')
-        return Cue(seconds(self.start.text()),seconds(self.end.text()),self.text.toPlainText()).validate(self.project.duration)
+        candidate=Cue(seconds(self.start.text()),seconds(self.end.text()),self.text.toPlainText()).validate(self.project.duration)
+        i=self.table.currentRow()
+        if 0<=i<len(self.project.cues):
+            old=self.project.cues[i]
+            if (old.start,old.end,old.text)==(candidate.start,candidate.end,candidate.text):return copy.deepcopy(old)
+        return candidate
     def add_cue(self):
         if self.busy():return
         try:self.project.cues.append(self.editor_cue());self.changed()
@@ -266,6 +307,7 @@ class Window(QMainWindow):
                 actual=probe(project.video)
                 for c in project.cues:c.validate(actual)
                 project.duration=actual;self.project=project;self.project_path=p;self.dirty=False;self.history=[]
+                self.pause_active=False;self.pause_player.stop();self.narration.stop();self.played_pauses.clear()
                 self.playback_speech.stop();self.player.stop();self.last_spoken=None;self.player.setSource(QUrl.fromLocalFile(project.video));self.file_label.setText(project.video);self.refresh()
             except Exception as e:self.error(str(e))
     def import_cues(self):
@@ -295,25 +337,30 @@ class Window(QMainWindow):
         if self.busy() or not self.project.video:return
         if self.project.cues and QMessageBox.question(self,'Replace descriptions','Replace existing descriptions with newly generated results?')!=QMessageBox.StandardButton.Yes:return
         if not self.cloud_confirm():return
-        snapshot=copy.deepcopy(self.project);settings=copy.deepcopy(self.settings.data);prompt=self.prompt.text()
+        snapshot=copy.deepcopy(self.project);settings=copy.deepcopy(self.settings.data);settings['allow_cloud']=True;prompt=self.prompt.text()
         scope=self.model_picker.scope.currentIndex()
         start_at=self.player.position()/1000 if scope else 0
         duration={1:20,2:60}.get(scope)
         def task(c,l):
-            cues=generate(snapshot,settings,prompt,c,l,start_at,duration);return cues,snapshot.glossary
+            cues=generate(snapshot,settings,prompt,c,l,start_at,duration);return cues,snapshot.glossary,snapshot.coverage,snapshot.analysis
         self.job(task,self.generated)
     def generated(self,result):
-        cues,glossary=result;self.project.glossary=glossary;self.project.cues=cues;self.changed();self.log(f'Generated {len(cues)} descriptions. Review timing and accuracy before use.')
+        cues,glossary,*metadata=result;self.project.glossary=glossary;self.project.cues=cues
+        if metadata:self.project.coverage,self.project.analysis=metadata
+        self.played_pauses.clear();self.changed();self.log(f'Generated {len(cues)} descriptions; placement/uncertainty shown in the table. Review visual facts before use.')
         # Refresh the editor even if row zero was already selected before regeneration.
         # Save commits the selected editor, which must not still contain the old cue.
         if cues:self.table.setCurrentCell(0,0);self.select_cue()
     def scene_request(self,instruction,done,length=10):
         if self.busy() or not self.project.video or not self.cloud_confirm():return
-        self.player.pause();pos=self.player.position()/1000;source=self.project.video;duration=self.project.duration;settings=copy.deepcopy(self.settings.data)
+        self.player.pause();pos=self.player.position()/1000;source=self.project.video;duration=self.project.duration;settings=copy.deepcopy(self.settings.data);settings['allow_cloud']=True
         def task(cancel,log):
-            with tempfile.TemporaryDirectory(prefix='describer-scene-') as tmp:
-                clip=Path(tmp)/'scene.mp4';start=max(0,pos-length/2);segment(source,clip,start,max(.1,min(length,duration-start)),settings['fps'],cancel,settings.get('silent_upload',False))
-                return video_request(clip,instruction,settings,cancel,log)
+            from .engine import get_service
+            service=get_service();start=max(0,pos-length/2)
+            operation='explore' if '"objects"' in instruction else 'ask'
+            job=service.submit(source=source,settings=settings,prompt=instruction,start=start,duration=max(.1,min(length,duration-start)),operation=operation)
+            service.wait(job['id'],cancel,log)
+            return json.dumps(service.scene_result(job['id']))
         self.job(task,done)
     def ask(self):
         question,ok=QInputDialog.getText(self,'Ask about scene','Your question')
@@ -346,14 +393,21 @@ class Window(QMainWindow):
         if ok:self.project.glossary=text;self.dirty=True
     def export(self):
         if self.busy() or not self.project.cues:return
-        p,_=QFileDialog.getSaveFileName(self,'Export descriptions','','Subtitles (*.srt);;Plain text (*.txt);;Mixed narrated audio (*.mp3)')
+        i=self.table.currentRow()
+        if i>=0:
+            try:self.project.cues[i]=self.editor_cue()
+            except Exception as exc:self.error(str(exc));return
+        p,_=QFileDialog.getSaveFileName(self,'Export descriptions','','Complete described video (*.mp4);;Subtitles (*.srt);;WebVTT (*.vtt);;Plain text (*.txt);;Complete narrated audio (*.mp3);;Wave audio (*.wav);;Project JSON (*.json)')
         if not p:return
-        if Path(p).suffix.lower()=='.mp3':
+        if Path(p).suffix.lower() in ('.mp3','.wav','.mp4'):
             if self.settings.data['voice_engine']=='OpenAI' and QMessageBox.question(self,'OpenAI speech','Send description text to OpenAI for paid speech synthesis?')!=QMessageBox.StandardButton.Yes:return
-            project=copy.deepcopy(self.project);settings=copy.deepcopy(self.settings.data)
-            self.job(lambda c,l:export_audio(project,p,settings,c,l),lambda _:self.log('Audio exported: '+p))
+            project=copy.deepcopy(self.project);settings=copy.deepcopy(self.settings.data);settings['allow_cloud']=True
+            self.job(lambda c,l:export_audio(project,p,settings,c,l),lambda _:self.log('Complete narration exported: '+p))
         else:
-            try:self.project.export(p);self.log('Exported: '+p)
+            try:
+                from .engine.exporting import export
+                export(self.project,p,self.settings.data,self.cancel,self.log)
+                self.log('Exported: '+p)
             except Exception as e:self.error(str(e))
     def reload_presets(self):
         self.preset.clear();self.preset.addItems(list(self.settings.data['presets'].get(self.settings.data['language'],self.settings.data['presets'].get('English',{'Standard':''}))))
@@ -419,8 +473,8 @@ class Window(QMainWindow):
         from PySide6.QtMultimedia import QSoundEffect
         if not hasattr(self,'notification'):
             self.notification=QSoundEffect(self);self.notification.statusChanged.connect(self.notification_ready)
-        root=Path(getattr(sys,'_MEIPASS',Path(__file__).resolve().parents[1]))
-        source=QUrl.fromLocalFile(str(root/'assets'/(name+'.wav')))
+        from .services import asset_path
+        source=QUrl.fromLocalFile(str(asset_path(name+'.wav')))
         if self.notification.source()==source:self.notification.play()
         else:self.notification.setSource(source);self.notification.setVolume(.25)
     def notification_ready(self):
@@ -543,13 +597,42 @@ class Window(QMainWindow):
         QMessageBox.information(self,'Describer Workbench',
             'Open a video, then Analyze video or import SRT/VTT. Edit descriptions below the video; select a row to seek. '
             'Start/end accept seconds or HH:MM:SS. Changing start preserves duration. Save projects with Ctrl+S. '
-            'Export SRT, plain text, or MP3 with speech and ducking. Windows speech works offline. '
+            'Export MP4, MP3/WAV, SRT/VTT, text or JSON. The shared engine protects measured speech, '
+            'caps narration speed at 1.15x, and retains no-fit descriptions as pauses. '
+            'Install the local speech detector from File before analysis. Unresolved facts block complete media exports. '
+            'File can also start the authenticated developer API/MCP server. Windows speech works offline. '
             'Cloud operations use your own keys and require confirmation. Cancel stops local jobs; an in-flight cloud request may take up to its timeout. '
             'This is an independent reconstruction. Read README.md and PARITY.md for verification limits.')
+    def install_detector(self):
+        if self.busy():return
+        if QMessageBox.question(self,'Install local speech detector','Download the pinned Google YAMNet speech detector from Hugging Face? Analysis stays local and the checksum is verified.')!=QMessageBox.StandardButton.Yes:return
+        from .engine.assets import provision
+        self.job(lambda c,l:str(provision()),lambda path:self.log('Speech detector installed: '+path))
+    def start_api(self):
+        if self.api_thread and self.api_thread.is_alive():self.log('Developer API is already running.');return
+        try:
+            import secrets,os,uvicorn
+            from .engine import get_service
+            from .adapters.http import create_app
+            service=get_service();token=secrets.token_urlsafe(32)
+            path=service.root/'api-token.txt'
+            descriptor=os.open(str(path),os.O_WRONLY|os.O_CREAT|os.O_TRUNC,0o600)
+            with os.fdopen(descriptor,'w',encoding='utf-8') as out:out.write(token)
+            self.api_server=uvicorn.Server(uvicorn.Config(create_app(service,token),host='127.0.0.1',port=8796,log_level='warning'))
+            self.api_thread=threading.Thread(target=self.api_server.run,name='describer-api',daemon=True);self.api_thread.start()
+            self.log('Developer API: http://127.0.0.1:8796 ; MCP: /mcp/ ; private bearer token: '+str(path))
+        except Exception as exc:self.error(str(exc))
+    def stop_api(self):
+        if self.api_server:self.api_server.should_exit=True
+        if self.api_thread:self.api_thread.join(timeout=5)
+        if self.api_thread and self.api_thread.is_alive():self.log('Developer API is still stopping; active requests may need to finish.');return False
+        self.api_server=None;self.api_thread=None;return True
     def closeEvent(self,event):
         if self.thread is not None:
             self.cancel.set();self.log('Cancelling; wait for the current operation to finish before closing.');event.ignore();return
         if not self.guard_changes():event.ignore();return
+        if not self.stop_api():event.ignore();return
+        self.pause_active=False;self.pause_player.stop();self.narration.stop()
         self.player.stop();self.player.setSource(QUrl());self.playback_speech.stop();self.preview.stop();self.preview.setSource(QUrl());self.preview_tmp.cleanup()
         for handler in self.logger.handlers:handler.close()
         event.accept()
@@ -560,7 +643,13 @@ def main():
     try:window=Window()
     except Exception as e:
         QMessageBox.critical(None,'Startup failed',f'Could not open Describer Workbench: {e}');return
-    window.show();sys.exit(app.exec())
+    window.show()
+    try:code=app.exec()
+    finally:
+        from .engine.service import _services
+        for service in list(_services.values()):
+            if not service._closed:service.close()
+    sys.exit(code)
 
 
 if __name__=='__main__':main()

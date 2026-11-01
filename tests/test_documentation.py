@@ -25,7 +25,7 @@ class DocumentationTests(unittest.TestCase):
         from tools import build_site
         with tempfile.TemporaryDirectory() as tmp:
             with patch('sys.argv', ['build_site.py','--output',tmp]):build_site.main()
-            for name in ('manual.md','architecture.md'):
+            for name in ('manual.md','architecture.md','developer.md'):
                 text=(Path(tmp)/name).read_text(encoding='utf-8')
                 links=Navigation(markdown.markdown(text,extensions=['fenced_code','tables'])).targets
                 self.assertTrue(links)
@@ -39,7 +39,7 @@ class DocumentationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             with patch('sys.argv', ['build_site.py','--output',tmp]):build_site.main()
             pages={p.name:Navigation(p.read_text(encoding='utf-8')) for p in Path(tmp).glob('*.html')}
-            for name in ('manual','architecture'):
+            for name in ('manual','architecture','developer'):
                 self.assertIn(f'rel="canonical" href="{build_site.ORIGIN}/{name}"', (Path(tmp)/(name+'.html')).read_text(encoding='utf-8'))
             sitemap=(Path(tmp)/'sitemap.xml').read_text(encoding='utf-8')
             self.assertNotIn('.html',sitemap)

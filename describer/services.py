@@ -17,6 +17,11 @@ from .catalogue import PROMPTS,VOICE_PRESETS
 CREATE_NO_WINDOW = 0x08000000 if os.name == 'nt' else 0
 
 
+def asset_path(name):
+    root = Path(getattr(sys, '_MEIPASS', Path(__file__).resolve().parents[1])) / 'assets'
+    return (root if root.is_dir() else Path(__file__).resolve().parent / 'resources') / name
+
+
 def tool(name):
     bundled = Path(getattr(sys, '_MEIPASS', Path(__file__).resolve().parents[1])) / 'bin' / (name + '.exe')
     found = str(bundled) if bundled.exists() else shutil.which(name)
@@ -71,6 +76,7 @@ def dpapi(data, decrypt=False):
 
 
 DEFAULTS = {'model': 'gemini-2.5-flash', 'language': 'English', 'chunk': 300, 'fps': 2,
+            'sound_model':'', 'max_speech_speed':1.15, 'allow_cloud':False, 'captions':'',
             'analysis_provider':'Gemini','ollama_url':'http://127.0.0.1:11434','ollama_model':'',
             'ollama_key':'','ollama_timeout':600,'ollama_frame_interval':2,
             'voice_engine': 'Windows', 'voice': 'alloy', 'tts_model': 'gpt-4o-mini-tts',
@@ -173,12 +179,12 @@ def video_request(video,prompt,settings,cancel,log,as_json=True):
     return google_request(video,prompt,settings,cancel,log,as_json)
 
 
-def generate(project, settings, prompt, cancel, log, start_at=0, duration=None):
+def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, checkpoint=None):
     cues=[];glossary=project.glossary
     chunk=max(15,int(settings['chunk'])) if settings.get('chunking',True) else max(1,__import__('math').ceil(project.duration))
     if settings.get('analysis_provider','Gemini')=='Ollama':
         chunk=min(chunk,8*int(settings.get('ollama_frame_interval',2)))
-        log('Ollama uses sampled images without audio. Review all timing; dialogue gaps are not detected.')
+        log('Vision receives sampled images; the engine independently measures protected audio.')
     stop=min(project.duration,start_at+duration) if duration is not None else project.duration
     with tempfile.TemporaryDirectory(prefix='describer-') as tmp:
         start=start_at
@@ -190,25 +196,37 @@ def generate(project, settings, prompt, cancel, log, start_at=0, duration=None):
             clip=Path(tmp)/'segment.mp4';segment(project.video, clip, start, length, settings['fps'], cancel, settings.get('silent_upload',False))
             ollama=settings.get('analysis_provider','Gemini')=='Ollama'
             instruction=(f'Create concise audio descriptions in {settings["language"]}. Describe visible action, people and settings. '
-                +('Use visible evidence only. No audio is supplied; do not infer speech, sounds or dialogue gaps. Do not invent facts. ' if ollama else 'Place descriptions in dialogue gaps; do not repeat dialogue or invent facts. ')+
-                'Return JSON {"descriptions":[{"start":0.0,"end":2.0,"text":"description"}]}. '
+                +('Use visible evidence only. No audio is supplied; do not infer speech, sounds or dialogue gaps. Do not invent facts. ' if ollama else 'Use visible evidence and supplied audio; do not repeat dialogue or invent facts. ')+
+                'Return JSON {"descriptions":[{"start":0.0,"end":2.0,"text":"description","kind":"action","evidence":"visible evidence","uncertainty":""}]}. '
+                'Times describe the VISUAL EVENT, not a proposed speech slot. Cover meaningful unspoken printed text, actions, identities and scene changes. '
+                'Use objective visible facts. Quote printed text exactly; state uncertainty instead of inventing unreadable words or actions. '
                 f'Times are numeric seconds relative to this {length:.2f}-second clip and must fit within it. '
                 f'Prior character glossary: {glossary}\nEditorial guidance: {prompt}')
             if settings.get("auto_glossary",False):
                 instruction += ' Also return "character_glossary": [{"id":"stable_visual_label","name":null,"description":"visual identity"}]. '+('Keep name=null because no audio is supplied. ' if ollama else 'Use a personal name only if clearly spoken and unambiguously linked; otherwise name=null. ')+'Reuse prior identities; include only visible characters.'
             verbosity={'Short':'Use 1-3 words for each description.','Standard':'Aim for 3-6 words per description.','Detailed':'Aim for 6-12 words per description.'}.get(settings.get('verbosity','Standard'),'')
-            instruction += '\n'+verbosity+' Use no more than two words per second of allotted description time.'+(' Describe visual changes concisely.' if ollama else ' Avoid describing sounds already audible.')
-            text=video_request(clip,instruction,settings,cancel,log)
-            data=response_json(text)
+            instruction += '\n'+verbosity+' Do not omit essential information to meet a timing or verbosity target. The engine schedules narration separately.'+(' Describe visual changes concisely.' if ollama else ' Avoid describing sounds already audible.')
+            def request():return response_json(video_request(clip,instruction,settings,cancel,log))
+            data=checkpoint(f'observe-{start:.6f}',request) if checkpoint else request()
             if settings.get("auto_glossary",False) and isinstance(data,dict) and "character_glossary" in data:
                 from .compatibility import merge_glossary
                 glossary=merge_glossary(glossary,data["character_glossary"])
-            for cue in normalize_generated(data,length,log): cues.append(Cue(cue.start+start,cue.end+start,cue.text))
+            for cue in normalize_generated(data,length,log):
+                cue.start+=start;cue.end+=start;cue.event_start+=start;cue.event_end+=start
+                cue.event_id=f'{start:.6f}:{cue.event_start:.6f}:{cue.event_end:.6f}:{len(cues)}'
+                cues.append(cue)
             start+=length
-    cues=normalize_generated([{'start':c.start,'end':c.end,'text':c.text} for c in cues],project.duration,log)
+    from dataclasses import asdict
+    cues=normalize_generated([asdict(c) for c in cues],project.duration,log)
     if not cues: raise ValueError('No descriptions were returned.')
     project.glossary=glossary
     return cues
+
+
+def generate(project, settings, prompt, cancel, log, start_at=0, duration=None):
+    """Desktop compatibility entry point; uses the same durable service as adapters."""
+    from .engine import get_service
+    return get_service().describe(project, settings, prompt, cancel, log, start_at, duration)
 
 
 def download(url, destination, cancel, log, quality="Best"):
@@ -244,18 +262,21 @@ def synthesize(text, output, settings, cancel=None):
         windows_speech(settings['voice_engine'],text,output,settings.get('windows_voice',''),settings.get('speech_rate',0),cancel,volume=settings.get('speech_volume',100))
 
 
-def export_audio(project, output, settings, cancel, log):
+def _mix_planned_audio(project, output, settings, cancel, log):
     if not project.cues: raise ValueError('Add descriptions first.')
     with tempfile.TemporaryDirectory(prefix='describer-mix-') as tmp:
         tmp=Path(tmp);sources=[];windows=[]
         for i,c in enumerate(project.cues):
+            if c.disposition != 'in-gap':continue
             log(f'Synthesizing description {i+1}/{len(project.cues)}…')
             if cancel.is_set(): raise InterruptedError('Cancelled.')
-            wav=tmp/f'{i}.wav';synthesize(c.text,wav,settings,cancel)
+            wav=Path(c.audio)
+            if not wav.is_file():raise ValueError('Narration file is missing; re-plan this export.')
             # Bound speech to its allotted window. Faster speech is used when needed.
             j=json.loads(run([tool('ffprobe'),'-v','error','-show_format','-of','json',str(wav)],cancel))
-            rate=max(1,float(j['format']['duration'])/(c.end-c.start));factors=[]
-            while rate>2: factors.append('atempo=2');rate/=2
+            rate=c.speed;factors=[]
+            if float(j['format']['duration']) / rate > c.end-c.start+.025:
+                raise ValueError('Narration no longer fits its verified slot; re-plan export.')
             factors.append(f'atempo={rate:.6f}')
             timed=tmp/f'timed{i}.wav';run([tool('ffmpeg'),'-v','error','-y','-i',str(wav),'-af',','.join(factors),'-t',str(c.end-c.start),str(timed)],cancel)
             sources.append(timed);windows.append((c.start,c.end))
@@ -304,3 +325,8 @@ def export_audio(project, output, settings, cancel, log):
             run([tool('ffmpeg'),'-v','error','-y','-i',str(bed),'-c:a','libmp3lame','-q:a','2',str(partial)],cancel);partial.replace(target)
         finally:
             if partial.exists(): partial.unlink()
+
+
+def export_audio(project, output, settings, cancel, log):
+    from .engine import get_service
+    return get_service().export(project, output, settings, cancel, log)

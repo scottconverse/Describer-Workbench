@@ -2,7 +2,7 @@ import base64,copy,hashlib,json,tempfile,threading,unittest,zipfile
 from pathlib import Path
 from unittest.mock import patch
 from describer.project import Project,import_subtitles
-from describer.services import DEFAULTS,generate,synthesize
+from describer.services import DEFAULTS,observe as generate,synthesize
 from describer.compatibility import read_original_settings,import_original_output,read_voice_presets
 from describer.updates import read_feed,stage_update,prepare_apply
 from describer.i18n import LANGUAGES,TRANSLATIONS,KEYS

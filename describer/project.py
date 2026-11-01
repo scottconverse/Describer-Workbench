@@ -1,7 +1,7 @@
 import json
 import math
 import re
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 
 
@@ -29,14 +29,37 @@ class Cue:
     start: float
     end: float
     text: str
+    event_id: str = ''
+    event_start: float | None = None
+    event_end: float | None = None
+    kind: str = 'action'
+    evidence: str = ''
+    uncertainty: str = ''
+    disposition: str = 'unplanned'
+    audio: str = ''
+    speech_seconds: float = 0
+    speed: float = 1
 
     def validate(self, duration=0):
         self.start, self.end = seconds(self.start), seconds(self.end)
+        for name in ('text', 'event_id', 'kind', 'evidence', 'uncertainty', 'audio'):
+            if not isinstance(getattr(self, name), str):
+                raise ValueError('Description metadata must contain text values.')
+        self.speech_seconds = seconds(self.speech_seconds)
+        self.speed = float(self.speed)
         self.text = self.text.strip()
         if self.end <= self.start or not self.text:
             raise ValueError('Description needs text and an end after its start.')
         if duration and self.end > duration + 0.05:
             raise ValueError('Description extends past the video.')
+        self.event_start = self.start if self.event_start is None else seconds(self.event_start)
+        self.event_end = self.end if self.event_end is None else seconds(self.event_end)
+        if self.event_end <= self.event_start or (duration and self.event_end > duration + .05):
+            raise ValueError('Invalid visual event interval.')
+        if self.disposition not in ('unplanned', 'in-gap', 'pause', 'unresolved'):
+            raise ValueError('Invalid description disposition.')
+        if not math.isfinite(self.speed) or not 1 <= self.speed <= 1.15:
+            raise ValueError('Narration speed must be between 1 and 1.15.')
         return self
 
 
@@ -51,12 +74,18 @@ def parse_cues(data, duration=0):
         data = data.get('descriptions', data.get('cues', data.get('audio_descriptions', [])))
     if not isinstance(data, list):
         raise ValueError('Expected a JSON list of descriptions.')
-    return sorted([Cue(seconds(x.get('start',x.get('start_time_mmss'))), seconds(x.get('end',x.get('end_time_mmss'))), str(x.get('text',x.get('description_text','')))).validate(duration)
+    names = {f.name for f in fields(Cue)} - {'start', 'end', 'text'}
+    return sorted([Cue(seconds(x.get('start',x.get('start_time_mmss'))), seconds(x.get('end',x.get('end_time_mmss'))), str(x.get('text',x.get('description_text',''))),
+                       **{k: v for k, v in x.items() if k in names}).validate(duration)
                    for x in data], key=lambda c: c.start)
 
 
 def normalize_generated(data,duration,log=lambda _:None):
-    """Original generation cleanup: skip bad rows, repair overlaps, remove repetitions."""
+    """Validate observations without deleting real recurrence or shifting events.
+
+    Only identical rows of the same event are duplicates. Overlap is input to
+    the shared placement engine, never a reason to invent a new event time.
+    """
     data=response_json(data)
     rows=data.get('descriptions',data.get('audio_descriptions',data.get('cues',[]))) if isinstance(data,dict) else data
     if not isinstance(rows,list):raise ValueError('Expected a description list.')
@@ -66,16 +95,18 @@ def normalize_generated(data,duration,log=lambda _:None):
             start=seconds(row.get('start',row.get('start_time_mmss')));end=seconds(row.get('end',row.get('end_time_mmss')))
             text=str(row.get('text',row.get('description_text',''))).strip()
             if not text:raise ValueError('Empty description.')
-            parsed.append((start,end,text))
+            if end <= start or start >= duration:raise ValueError('Invalid event interval.')
+            end = min(duration,end)
+            allowed = {f.name for f in fields(Cue)} - {'start','end','text'}
+            cue = Cue(start,end,text,**{k:v for k,v in row.items() if k in allowed}).validate(duration)
+            parsed.append(cue)
         except (ValueError,TypeError,AttributeError):log('Skipped a malformed generated description.')
     cues=[]
-    for start,end,text in sorted(parsed):
-        if cues and cues[-1].text==text:log('Removed a repeated generated description.');continue
-        original_duration=max(.1,end-start)
-        if cues and start<cues[-1].end:start=cues[-1].end+.001
-        end=min(duration,end if end>start else start+original_duration)
-        if start>=duration or end<=start:log('Skipped a generated description beyond the video.');continue
-        cues.append(Cue(start,end,text).validate(duration))
+    seen=set()
+    for cue in sorted(parsed,key=lambda c:c.start):
+        key=(cue.event_id,cue.event_start,cue.event_end,cue.text)
+        if key in seen:log('Removed a duplicate observation of the same event.');continue
+        seen.add(key);cues.append(cue)
     return cues
 
 
@@ -122,6 +153,8 @@ class Project:
     duration: float = 0
     cues: list[Cue] = field(default_factory=list)
     glossary: str = ''
+    coverage: list[dict] = field(default_factory=list)
+    analysis: dict = field(default_factory=dict)
 
     def save(self, path):
         target = Path(path)
@@ -134,7 +167,7 @@ class Project:
         j = json.loads(Path(path).read_text(encoding='utf-8-sig'))
         if j.get('version') != 1:
             raise ValueError('Unsupported project version.')
-        return cls(j['video'], seconds(j['duration']), parse_cues(j['cues'], j['duration']), j.get('glossary', ''))
+        return cls(j['video'], seconds(j['duration']), parse_cues(j['cues'], j['duration']), j.get('glossary', ''), j.get('coverage', []), j.get('analysis', {}))
 
     def export(self, path):
         if Path(path).suffix.lower() == '.srt':
