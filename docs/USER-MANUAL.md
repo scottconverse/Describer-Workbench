@@ -33,7 +33,7 @@ OpenAI is optional for speech synthesis. It is not an analysis provider in this 
 
 1. Choose **Open video** (Ctrl+O). Select a local video such as an MP4 of Big Buck Bunny. Use the video file itself, not an SRT subtitle, soundtrack or folder. The default selector lists MP4, MKV, MOV, AVI and WebM. **All files** exposes other files, but decoding is still required.
 2. Press **Play / Pause** to confirm playback and sound. The position slider and **−10 s / +10 s** buttons move through the video.
-3. For a manual first cue, type `0` in Start, `3` in End and a short description of the opening image. Choose **Add**. This inserts a cue; **Apply edit** changes a selected existing cue.
+3. For a manual first cue, type `0` in Start and press Tab to leave that field. Then enter `3` in End and a short description of the opening image. Choose **Add**, then select the new cue's row. This inserts a cue; **Apply edit** changes a selected existing cue.
 4. Save with Ctrl+S and choose a name ending in `.adproject`. The project points to your video; it does not copy it. Keep the video available.
 5. Select the cue in the table. It seeks to the cue's start. Enable **Speak descriptions**, then play. Adjust player volume with the main slider and speech volume in Settings.
 6. Correct the words or timings and choose **Apply edit**. Save again. Use **Export → Subtitles (*.srt)** for a simple first output, or choose MP3 for spoken narration mixed with the soundtrack.
@@ -78,7 +78,7 @@ Enter **Gemini API key** and **Gemini model** in Settings. Choose Gemini in the 
 
 Choose **Whole video**, **Next 20 seconds** or **Next 60 seconds**. Next ranges start at the current playhead and stop at the end of the video if necessary. Pick a prompt preset or edit the editorial guidance, then choose **Analyze video**.
 
-**Analysis replaces the project's cue list after confirmation, including when only a short range is selected.** It does not append or merge a range into existing cues. Returned times remain absolute video times. Save a copy before comparing models or running a new range.
+**Analysis replaces the project's cue list after confirmation, including when only a short range is selected.** It does not append or merge a range into existing cues. Returned times remain absolute video times. Save before comparing models, copy the `.adproject` file in Windows File Explorer, and use **Open project** on the copy. This version has no Save As command; Ctrl+S continues saving the currently opened project.
 
 The log reports prepared ranges, response progress and available token metadata. Long jobs run sequentially. At the default Ollama frame interval, a 60-second range normally means four requests. Do not assume a single short response represents the whole requested range; inspect the final cue coverage.
 
@@ -100,9 +100,9 @@ For a clean model comparison, use identical media/range/prompts and clear the gl
 
 ## 6. Edit and review descriptions
 
-Select a cue in the table. Edit **Start**, **End** and description text below it, then choose **Apply edit**. The table itself is read-only. **Add** inserts the values as a new cue. **Delete** removes the selected cue after confirmation.
+Select a cue in the table. Edit **Start**, **End** and description text below it, then choose **Apply edit**. The table itself is read-only. **Add** inserts the values as a new cue, but does not move the selection to it. **Select the newly added row before Ctrl+S**: saving applies the editor to the selected row, so leaving the old row selected can overwrite that old cue with the new values. **Delete** removes the selected cue after confirmation.
 
-Times accept numeric seconds (`62.5`), minutes/seconds (`1:02.5`) or hours/minutes/seconds (`00:01:02.5`). The cue must have nonempty text and an end after the start, within the video duration. When you leave the start field, the editor moves the end to preserve the old duration; check both values before applying. Ctrl+S applies the current selected cue editor before saving. Apply edits explicitly before export or another operation.
+Times accept numeric seconds (`62.5`), minutes/seconds (`1:02.5`) or hours/minutes/seconds (`00:01:02.5`). The cue must have nonempty text and an end after the start, within the video duration. **Set Start and leave the field before setting End**: leaving Start shifts End by the start-time change, with a minimum 0.1-second duration. Check both values before applying. Ctrl+S applies the current selected cue editor before saving. Apply edits explicitly before export or another operation.
 
 Use this review sequence:
 
@@ -170,14 +170,14 @@ Open video first, then **Import SRT / VTT** (Ctrl+I). Import replaces current cu
 | Provider fields | Gemini key/model; Ollama root URL, optional key; OpenAI key, speech model and base voice. Analysis provider/exact Ollama tag are in the main picker. |
 | Description language / verbosity | Requested output language and Short/Standard/Detailed guidance. Model compliance is not guaranteed. |
 | Chunk duration / enable chunking | Gemini segment length (15–1800 seconds). Ollama additionally caps chunks at eight frame intervals even if chunking is disabled. |
-| Gemini frames per second | FFmpeg segment preparation, 1–30 fps. This is not Ollama's sampling interval. |
+| Gemini frames per second | FFmpeg segment preparation, 1–30 fps. Despite the UI label, it also affects the prepared video from which Ollama samples frames; Ollama's sampling interval is separate. |
 | Ollama frame interval | 1–10 seconds, maximum eight frames per request. Wider intervals reduce temporal coverage. |
 | Ollama timeout | 30–1800 seconds; default 600. An idle network read can take up to 120 seconds or the shorter configured timeout to return. |
 | Gemini temperature | Generation sampling parameter. Tested Gemma/Qwen profiles omit it and preserve native sampling. |
 | Recognize characters | Requests and carries a visual glossary. |
 | Remove audio | Strips audio from prepared video. Gemini then loses dialogue evidence; Ollama already receives no audio. |
 | Background ducking | −40 to 0 dB, default −15 dB. More negative reduces the original bed more. |
-| Speech rate / volume | Native export voice rate −10 to 10; speech volume 0–100. |
+| Speech rate / volume | Native export voice rate −10 to 10; speech volume 0–100 for Qt/native Windows speech. The app does not apply this volume setting to OpenAI exports or a screen reader's own output. |
 | Playback voice / output | Qt Windows voice or active screen reader; separate from export engine/voice. |
 | Interruption | Allow new cue speech to interrupt, or queue it. |
 | Interface language | English, Arabic, Spanish, French, Italian, Portuguese, Russian, Turkish, Ukrainian or Vietnamese. Arabic uses RTL. Unmatched strings/help/logs fall back to English; no native-speaker acceptance is claimed. |
