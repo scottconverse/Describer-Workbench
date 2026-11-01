@@ -1,12 +1,14 @@
 # Describer Workbench
 
-**Create, review and voice audio descriptions in a Windows desktop workspace.**
+**One audio-description engine for a Windows workbench, Python, CLI, REST/OpenAPI and MCP.**
+
+Version **0.5.0** combines the Windows workbench and developer interfaces in one shared engine. Download the portable Windows package or build the tagged source.
 
 Open a video, draft timed descriptions with a local Ollama vision model or Google Gemini, edit every cue, listen alongside the video, and export subtitles or a narrated audio mix. Manual editing, subtitle import and Windows speech work without an AI API key.
 
-[Download Windows 0.4.2](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.4.2) · [Website](https://describer-workbench.sconverse.chatgpt.site) · [User manual](docs/USER-MANUAL.md) · [Architecture](docs/ARCHITECTURE.md) · [Issues](https://github.com/scottconverse/Describer-Workbench/issues)
+[Windows 0.5.0](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.5.0) · [Website](https://describer-workbench.sconverse.chatgpt.site) · [User manual](docs/USER-MANUAL.md) · [Architecture](docs/ARCHITECTURE.md) · [Developer guide](docs/DEVELOPER-GUIDE.md) · [Issues](https://github.com/scottconverse/Describer-Workbench/issues)
 
-> AI output is a draft. Review visual facts, character identities, timing and overlap with dialogue. Ollama receives sampled images **without audio**, so it cannot determine dialogue gaps or audible names.
+> AI output is a draft. Review visual facts, character identities, timing and overlap with dialogue. Ollama receives sampled images **without audio**, so it cannot determine dialogue gaps or audible names. The shared engine measures speech/vocal protection independently with a pinned local YAMNet classifier. This reduces timing conflicts; it does not establish visual accuracy or legal compliance.
 
 ## Capabilities
 
@@ -18,12 +20,14 @@ Open a video, draft timed descriptions with a local Ollama vision model or Googl
 | Edit and save | Start/end/text cue editor, glossary, `.adproject` persistence, SRT/VTT import. |
 | Explore scenes | Ask about scene, add answers as cues, keyboard exploration of an AI-generated spatial layout. |
 | Hear descriptions | Windows speech during playback, audio ducking, player/speech volume, interruption or queue behavior; optional active screen-reader output. |
-| Export | UTF-8 SRT, plain text, stereo MP3 with original audio plus narration. Windows SAPI, 32-bit SAPI, OneCore or optional OpenAI speech. |
+| Export | MP4 with pause extensions, narrated MP3/WAV, SRT, VTT, TXT and project JSON. Coverage sidecars explain in-gap, pause and unresolved events. Windows SAPI, 32-bit SAPI, OneCore or optional OpenAI speech. |
+| Developer integration | Same serial, durable engine through Python, CLI, authenticated loopback REST/OpenAPI and MCP stdio/Streamable HTTP. Submit, batch, poll, cancel/resume, page/time-filter results, edit, ask/explore, preview voices and export. |
+| Timing | Independently measured speech/vocal protection; event-bounded slots; acceleration capped at 1.15x. Descriptions that cannot fit become explicit pause narration, without deleting genuine repeated events. |
 | Customize | Language-specific prompt presets, voice personalities, verbosity, interface language, sounds and diagnostic level. |
 
 ## Install and start
 
-1. Download `DescriberWorkbench-0.4.2-windows-x64.zip` from the [release](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.4.2).
+1. Download `DescriberWorkbench-0.5.0-windows-x64.zip` from the [release](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.5.0).
 2. Extract the complete ZIP to a writable folder. Open `DescriberWorkbench/DescriberWorkbench.exe`; keep `_internal` beside it. Python, Qt, FFmpeg and FFprobe are bundled.
 3. Select **Open video** and choose your video. Open it before importing subtitle cues. Standalone audio is not a documented input workflow.
 4. Choose an analysis provider/model and a short range, or add cues manually. Follow the [first-project walkthrough](docs/USER-MANUAL.md#3-your-first-project).
@@ -34,7 +38,7 @@ The binary targets 64-bit Windows and is **unsigned**. Windows 11 was used for l
 Compare your download with the release's `SHA256SUMS.txt`:
 
 ```powershell
-Get-FileHash .\DescriberWorkbench-0.4.2-windows-x64.zip -Algorithm SHA256
+Get-FileHash .\DescriberWorkbench-0.5.0-windows-x64.zip -Algorithm SHA256
 ```
 
 ## Does it need an API key?
@@ -73,18 +77,22 @@ Open media → draft or import cues → correct the glossary → edit facts and 
 
 Select a cue to seek to its start. Times accept seconds, `MM:SS` or `HH:MM:SS`. Leaving the start field shifts the end by the same amount: set Start, leave that field, then enter the intended End. Use **Apply edit** before export; **Ctrl+S** also applies the selected cue editor and saves. After Add, select the newly added row before saving so the old selected row is not overwritten by the editor values. Analysis and subtitle import replace existing descriptions after confirmation. Range analysis replaces the cue list; it does not append to a full-film project. To preserve a comparison copy, save, copy the `.adproject` file in File Explorer and open the copy; this version has no Save As command.
 
-MP3 export synthesizes each cue, speeds up speech that exceeds its window, ducks the original audio once and mixes narration with 50 ms ducking transitions. It downmixes to stereo; source surround layout is not retained. Silent video gets a silent audio bed. MP3 export creates audio, not a new described video file.
+The engine measures synthesized speech and fits it only within the visual event and independently protected soundtrack. Speed is capped at 1.15x; no-fit descriptions pause the source instead of being discarded or moved to an unrelated scene. Complete MP4 exports freeze the video during those descriptions; MP3/WAV exports insert matching audio pauses. Uncertain events remain unresolved and block a complete narrated export. Explicit `in-gap-only` exports are marked incomplete. Script exports retain all events and a coverage sidecar; a subtitle file alone cannot express pause playback. Audio mixes downmix to stereo.
+
+Before analysis or narrated export of media with audio, use **File → Install local speech detector** once. This explicitly downloads and verifies the pinned Google YAMNet asset. Missing or corrupt assets fail safely; no model guesses dialogue slots.
 
 ## Architecture
 
 ![Architecture: Qt desktop editor routes projects through media tools, Ollama or Gemini, and speech/export services.](docs/diagrams/system.svg)
 
-Python/PySide6 provides the editor and GUI-owned worker threads. FFmpeg prepares segments and mixes audio. Adapters return validated cues; projects store paths, descriptions and glossary, separate from settings/keys. See the [architecture guide](docs/ARCHITECTURE.md) for module responsibilities, request sequences and trust boundaries.
+Python/PySide6 provides the editor; every consumer uses `DescriptionService` and one serial queue. The headless engine owns jobs, checkpoints, independent sound protection, observation, synthesis, placement and export. FFmpeg prepares media and mixes audio. Existing version-1 projects still load; new fields preserve event intervals, coverage and placement. Keys remain outside job/project files. See the [architecture guide](docs/ARCHITECTURE.md) for module responsibilities, request sequences and trust boundaries.
 
 ## Privacy, storage and updates
 
 - Settings: `%LOCALAPPDATA%/DescriberWorkbench/settings.json`. Keys use Windows DPAPI for the current account; settings are not a portable key vault.
-- Projects: `.adproject` JSON contains an absolute media path, duration, cues and glossary, without video bytes or saved API keys. Keep media separately and inspect paths/text before sharing.
+- Projects: `.adproject` JSON contains an absolute media path, duration, cues, glossary, event/placement metadata, coverage and analysis. It does not embed video or API keys. Keep media separately.
+- Durable workspace: `%LOCALAPPDATA%/DescriberWorkbench/engine` (or `DESCRIBER_HOME/engine`) retains job snapshots, checkpoints and narration WAVs for explicit resume. Keep this directory with projects that refer to its audio. No automatic retention/deletion policy is applied. One process owns a workspace; attach other consumers over HTTP.
+- Telemetry: no application analytics; Hugging Face/OTEL telemetry defaults and ONNX Runtime telemetry are disabled. HTTP explicitly disables FastAPI tracing, metrics, telemetry logs and auto-export setup. Explicit provider/download requests are separate, documented transmissions.
 - Diagnostics: rotated logs beside settings. Configured keys are redacted; paths, text and provider errors can remain. Inspect before sharing.
 - Gemini: upload deletion is attempted in `finally`; provider retention applies if cleanup fails. Cancellation cannot undo an upload or charge.
 - Ollama: loopback requests go to the configured local server. Cloud/remote use prompts before sending frames and text; Ollama controls further routing.
@@ -100,18 +108,20 @@ Tested with Windows and Python 3.13. Install FFmpeg/FFprobe on PATH or place the
 git clone https://github.com/scottconverse/Describer-Workbench.git
 cd Describer-Workbench
 py -3.13 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install -e ".[desktop,http,mcp,dev]"
 .\.venv\Scripts\python.exe run.py
 # Build the portable folder:
 .\build.ps1
 ```
 
-The build script installs pinned app dependencies and PyInstaller 6.22.3, copies missing media tools from PATH (including Scoop shim targets), and builds `dist/DescriberWorkbench/`. It uses `py -3` when creating a missing environment: explicitly create `.venv` with Python 3.13 for the tested interpreter. Your source build is a new artifact and does not inherit the published executable's hash or acceptance evidence.
+The build script installs the desktop, local-model and developer transport extras plus PyInstaller 6.22.3, copies missing media tools from PATH (including Scoop shim targets), and builds `dist/DescriberWorkbench/`. The folder includes `DescriberCLI.exe` for the same CLI, HTTP owner and MCP tools without a separate Python install. It uses `py -3` when creating a missing environment: explicitly create `.venv` with Python 3.13 for the tested interpreter. Your source build is a new artifact and does not inherit the published executable's hash or acceptance evidence.
 
 ## Verification
 
+For 0.5.0, see the release acceptance record in `docs/V050-ACCEPTANCE.md` for exact commands, results and remaining limits. Historical 0.4.2 evidence below applies only to that release. The new protocol tests initialize real MCP clients over stdio and HTTP; media tests check actual FFmpeg output. No percentage visual-accuracy claim is made.
+
 ```powershell
-.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe -m pytest -q
 # Optional media acceptance: opens a window, synthesizes speech and writes receipts:
 .\.venv\Scripts\python.exe -m tests.local_acceptance "C:\media\sample.mp4" "C:\receipts\workbench"
 ```
@@ -124,12 +134,13 @@ The build script installs pinned app dependencies and PyInstaller 6.22.3, copies
 | Artifact | All 13 frozen app modules matched source; installed launch/playback accepted. Published ZIP and downloaded copies verified by SHA256. |
 | Earlier media samples | Nine sampled video exports, 40 subtitle files and three audio layouts passed; not full-film coverage. |
 
-The [release](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.4.2) has sanitized verification JSON/checksums. Raw receipts stay local because they contain frames/machine paths. Live Gemini, OpenAI and cloud acceptance remain unverified without keys. NVDA/JAWS end-to-end use, native-speaker translation review, public YouTube extractor compatibility and full-film AD quality remain unverified. GitHub CI was not configured for the binary release. [AUDIT.md](AUDIT.md) records original parity work and historical results; read them in their version context.
+The [v0.5.0 release](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.5.0) includes sanitized verification JSON and checksums. The table above is historical 0.4.2 evidence; the current [acceptance record](docs/V050-ACCEPTANCE.md) covers 0.5.0. Raw receipts stay local because they contain frames/machine paths. Live Gemini, OpenAI and cloud acceptance remain unverified without keys. NVDA/JAWS end-to-end use, native-speaker translation review, public YouTube extractor compatibility and full-film AD quality remain unverified. Windows GitHub CI runs the suite, lint, documentation rendering and Python package build. Its media tests use generated fixtures; the separate native acceptance record covers the actual vision/speech pipeline and portable executables. [AUDIT.md](AUDIT.md) records original parity work and historical results; read them in their version context.
 
 ## Documentation and development
 
 - [User manual](docs/USER-MANUAL.md): nontechnical walkthrough, reference, troubleshooting and technical user section.
 - [Architecture](docs/ARCHITECTURE.md): components, sequences and data boundaries.
+- [Developer guide](docs/DEVELOPER-GUIDE.md): install extras, Python/CLI/REST/MCP contracts, authentication, jobs and export modes.
 - [Public documentation audit](docs/PUBLIC-AUDIT.md): corrections, code tracing, download checks and verification limits.
 - [Parity](PARITY.md), [audit](AUDIT.md) and [third-party notices](THIRD-PARTY-NOTICES.md).
 
@@ -142,10 +153,10 @@ The landing page is in `website/`. Render the manual/site with a documentation-o
 .\.venv\Scripts\python.exe tools/build_site.py --output "C:\work\workbench-site"
 ```
 
-The output includes the landing page, HTML guides, architecture drawings and downloadable Markdown. Downloaded Markdown uses absolute web links so navigation survives saving it outside the repository. Hosting is separate from the desktop app; docs publication does not rebuild the executable. The immutable 0.4.2 ZIPs contain the documentation as it stood when packaged; use this README and the website for corrected current guidance.
+The output includes the landing page, HTML guides, architecture drawings and downloadable Markdown. Downloaded Markdown uses absolute web links so navigation survives saving it outside the repository. Hosting is separate from the desktop app; docs publication does not rebuild the executable. The immutable 0.4.2 ZIPs retain their historical documentation. The 0.5.0 portable package includes the current guides; this README and the website carry current release guidance.
 
 ## Provenance and licensing
 
 Independently written Python source reconstructs a documented Omni Describer workflow through supplied documentation and static analysis. This is **not recovered original source** and implies no original-author endorsement. Original executables, recovered bytecode and branding are not distributed. Attributed translations retain their original terms in `third-party-licenses/Omni-Describer.txt`.
 
-The repository is publicly viewable; no blanket open-source license has been assigned to newly written Workbench code. Public visibility alone is not an open-source license. Third-party components retain their own terms, including Qt/PySide, FFmpeg and original translation restrictions. Consult [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) and retained texts before redistribution; the original app's terms do not license all Workbench code.
+New Workbench code is licensed under **Apache-2.0**, with the no-warranty terms in [LICENSE](LICENSE). See [NOTICE](NOTICE) for attribution. Third-party components retain their own terms, including Qt/PySide, FFmpeg and original translation restrictions. Consult [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) and retained texts before redistribution; the original app's terms do not license all Workbench code.

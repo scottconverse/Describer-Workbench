@@ -22,3 +22,16 @@ Original executable and bytecode are not distributed. Attributed Omni Describer 
 - libloader 1.4.3: see retained license.
 - platform-utils 1.6.3: see retained license.
 - pywin32 312: see retained license.
+
+## Shared engine additions (0.5.0)
+
+- portalocker 3.2.0: retained distribution license/notice text in `third-party-licenses/portalocker.txt`.
+- onnxruntime 1.31.1: retained distribution license/notice text in `third-party-licenses/onnxruntime.txt`.
+- numpy 2.5.4: retained distribution license/notice text in `third-party-licenses/numpy.txt`.
+- mcp 1.30.0: retained distribution license/notice text in `third-party-licenses/mcp.txt`.
+- fastapi 0.162.0: retained distribution license/notice text in `third-party-licenses/fastapi.txt`.
+- uvicorn 0.54.0: retained distribution license/notice text in `third-party-licenses/uvicorn.txt`.
+- starlette 1.10.0: retained distribution license/notice text in `third-party-licenses/starlette.txt`.
+- anyio 4.16.0: retained distribution license/notice text in `third-party-licenses/anyio.txt`.
+
+The independent sound classifier adapts Apache-2.0 CivicCast code. The explicitly downloaded Google YAMNet model is hash-pinned and retains upstream Apache-2.0 terms; its weights are not embedded in the Python package. See NOTICE and `describer/engine/sound.py` for upstream attribution, model revision and SHA256. New Workbench code is Apache-2.0; this does not change the original translation restrictions or dependency terms.

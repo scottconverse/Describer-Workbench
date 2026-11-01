@@ -5,7 +5,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 from describer.project import Project
-from describer.services import google_request, generate
+from describer.services import google_request, observe as generate
 
 
 class CloudAdapterTests(unittest.TestCase):
@@ -28,7 +28,7 @@ class CloudAdapterTests(unittest.TestCase):
         self.assertEqual([c.start for c in cues],[1,21]);self.assertEqual(clip.call_count,2)
         with patch('describer.services.segment'),patch('describer.services.google_request',return_value='{"descriptions":[{"start":1,"end":3,"text":"A door."}]}'):
             cues=generate(project,settings,'',threading.Event(),lambda _:None)
-        self.assertEqual(len(cues),1) # Original consecutive-duplicate cleanup across chunk boundaries.
+        self.assertEqual(len(cues),2) # Separate events in distinct chunks must survive.
 
 
 if __name__=='__main__':unittest.main()

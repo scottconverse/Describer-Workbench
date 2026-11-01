@@ -1,0 +1,11 @@
+Describer Workbench
+Copyright 2026 Scott Converse and contributors
+
+Newly written Describer Workbench code is licensed under Apache License 2.0.
+Original third-party translations and dependencies retain their separate terms;
+see THIRD-PARTY-NOTICES.md and third-party-licenses/.
+
+Speech protection and event-placement design adapted from CivicCast audio-description
+work, Copyright The CivicCast Authors, Apache-2.0. The YAMNet speech classifier
+is by Google, Apache-2.0; the pinned ONNX conversion is credited in the asset receipt.
+No original Omni Describer executable or recovered code is included.

@@ -1,8 +1,8 @@
 # Describer Workbench user manual
 
-For desktop version **0.4.2** · Documentation updated November 1, 2026
+For desktop/engine **0.5.0** · Documentation updated November 1, 2026
 
-[Download](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.4.2) · [Project](https://github.com/scottconverse/Describer-Workbench) · [Architecture guide](ARCHITECTURE.md)
+[Windows 0.5.0 download](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.5.0) · [Project](https://github.com/scottconverse/Describer-Workbench) · [Architecture guide](ARCHITECTURE.md)
 
 ## Part I — Everyday use, no programming required
 
@@ -10,9 +10,11 @@ For desktop version **0.4.2** · Documentation updated November 1, 2026
 
 Describer Workbench helps you write short spoken descriptions of a video's visual information. Each description is a **cue**: a start time, an end time and text. You can write cues yourself, import subtitles as a starting point, or ask an AI model to draft them. You then correct and listen to the result.
 
-The outputs are an editable project, an SRT subtitle file, plain text or a narrated MP3 containing the original soundtrack mixed with descriptions. Workbench does not create a new video file or an embedded selectable audio-description track.
+The outputs are an editable project; SRT, VTT, plain text or project JSON; narrated MP3/WAV; or a described MP4. Complete media exports include no-fit descriptions by pausing the source. MP4 freezes the picture at the original event while narration plays, then resumes. This extends the timeline; it does not create an embedded selectable alternate track.
 
-AI descriptions need editorial review. In particular, the Ollama path sees still images sampled from the video and receives no audio. It cannot know when someone is speaking or confirm a spoken name. You decide what is accurate, useful and safe to say over the soundtrack.
+The 0.5.0 Windows portable package contains both the desktop app and `DescriberCLI.exe`, including REST and MCP access. Older 0.4.2 downloads do not contain the shared engine or transports.
+
+AI descriptions need editorial review. In particular, the Ollama path sees still images sampled from the video and receives no audio. It cannot know when someone is speaking or confirm a spoken name. The new engine measures speech/vocal protection separately with local YAMNet; it never asks vision to invent safe dialogue gaps. Review still matters for missed speech and visual facts.
 
 ## 2. Install and choose a working mode
 
@@ -66,6 +68,8 @@ There is no documented global Space shortcut for playback. Use the Play / Pause 
 
 Start your separately installed Ollama server. In Workbench choose **Ollama** and **Refresh models**. Entries show their exact tag, local/cloud status, reported vision capability and whether they are loaded. A text-only model cannot analyze video, even if it answers ordinary chat prompts.
 
+Before your first analysis of a video with audio, choose **File → Install local speech detector**. This explicitly downloads the pinned Google YAMNet ONNX file and verifies its SHA256. If it is unavailable or changed, analysis and narrated export stop before inference. An already verified file can be reused offline.
+
 Choose an installed vision entry. To type a custom tag, enter its exact ID and leave the field with Tab. **Test connection** first checks capability and then sends a short text prompt; a successful reply does not prove visual understanding. Refresh itself makes metadata requests, not inference requests or downloads.
 
 If the server is elsewhere, set its root address and optional key in Settings. Local default: `http://127.0.0.1:11434`. Remote addresses require HTTPS. For cloud tags, sign in using Ollama itself. Workbench has no OAuth flow. Remote/cloud inference asks permission before sending sampled frames/prompts and may use paid allowance. Local server selection alone does not guarantee private inference if Ollama routes the chosen tag to its cloud.
@@ -108,11 +112,13 @@ Use this review sequence:
 
 1. Watch the source scene and verify visible actions, objects, identities and chronology.
 2. Remove guesses, redundant dialogue and descriptions of sounds already audible.
-3. Listen for a suitable opening in the soundtrack. Ollama cannot do this for you.
+3. Listen to confirm the independently measured speech protection. The classifier is separate from Ollama and is not infallible.
 4. Fit the words comfortably in the cue window; shortening text is often better than fast speech.
 5. Check adjacent cues, continuity and overall coverage. A valid timestamp is not proof of useful timing.
 
-Automatic generated-cue normalization skips malformed rows, repairs overlaps, removes consecutive repetitions and bounds timings. This is structural cleanup, not editorial accuracy checking. Manual/imported cues still need review for overlap and readability.
+Automatic normalization skips malformed rows, bounds valid intervals and removes only duplicates of the same event/time/text. It preserves genuine repetitions and overlapping event intervals. The planner then selects an independently protected gap within the original event; it never moves an event to a different scene to conceal overlap.
+
+The fourth table column shows **in-gap**, **pause**, **unresolved** or **unplanned**. Pause means the narration could not fit at intelligible speed within its event. Unresolved means an uncertain observation needs correction; it cannot silently count as described. Editing a cue clears its old plan; narrated export replans and checks it.
 
 ## 7. Ask and explore a scene
 
@@ -132,7 +138,7 @@ Both tools use the selected analysis provider and applicable transmission confir
 
 ## 8. Listen, choose voices and export
 
-**Speak descriptions** enables speech when the playhead enters a cue. Playback uses the selected Qt Windows voice, or optional active screen-reader output. Player volume and speech volume are separate. **Allow new descriptions to interrupt speech** chooses interruption rather than queued speech. Seeking stops the current speech.
+**Speak descriptions** enables speech when the playhead enters a cue. Planned cues play their measured narration WAV: in-gap cues use the bounded speed and duck the soundtrack; pause cues stop the source, speak, then resume. Unresolved cues are not narrated. Seeking stops narration and resets pending pauses. If a video position callback reaches a safe slot too late to play the entire WAV, desktop playback pauses rather than overrunning that slot. Older unplanned cues use the selected Qt Windows voice or optional active screen-reader output until replanned. Player volume and speech volume are separate. **Allow new descriptions to interrupt speech** chooses interruption rather than queued speech. Seeking stops the current speech.
 
 The **Audio export speech engine** is separate from playback voice:
 
@@ -151,9 +157,13 @@ Export choices:
 
 - **SRT:** timed UTF-8 descriptions. This is not a speech transcript unless your cues are transcripts.
 - **Plain text:** one description per line; timing is omitted.
-- **MP3:** original soundtrack mixed with synthesized cues, stereo output. Silent video gets a silent bed. Long utterances are sped up to fit; source surround channels are downmixed. Background ducking is applied once with 50 ms fades around narration windows. Listen to the finished mix for clipping, intelligibility and dialogue conflicts.
+- **VTT / JSON:** WebVTT script or full project JSON with event and coverage metadata.
+- **MP3 / WAV:** original soundtrack mixed with measured narration, stereo output; pause descriptions extend the audio timeline.
+- **MP4:** described video with frozen picture and paused original audio while each pause description plays.
 
-MP3 does not embed itself back into a video. Save the `.adproject` as well so you can revise it later.
+Speech acceleration is limited to 1.15x. If a cue cannot fit its event, it becomes pause narration. Complete media exports reject unresolved events; the API offers an explicitly incomplete `in-gap-only` mode. Script files and all exported media have a `.coverage.json` sidecar. SRT/VTT retain event times, so a plain subtitle player cannot reproduce pause narration. Background ducking is applied once with 50 ms transitions. Listen for classifier mistakes and intelligibility.
+
+MP3 is audio only; choose MP4 for a described video. Save the `.adproject` and its engine workspace as well so you can revise it later.
 
 ## 9. Import and download
 
@@ -195,11 +205,13 @@ NVDA/JAWS end-to-end acceptance was not performed. The presence of controller mo
 
 ## 12. Privacy, storage and recovery
 
-Projects are user-selected `.adproject` JSON files with `version`, `video`, `duration`, `cues` and `glossary`. Video is an absolute path, not embedded media. Moving a project to another computer requires moving the media separately; **Open project** prompts you to locate a missing video and revalidates cue durations. Projects contain description text and paths; inspect before sharing. Save is written to a sibling temporary file then replaced.
+Projects are user-selected `.adproject` JSON files with `version`, `video`, `duration`, `cues` and `glossary`, plus optional coverage/analysis and event/placement fields. Existing version-1 projects remain readable. Video is an absolute path, not embedded media. Moving a project to another computer requires moving the media separately; **Open project** prompts you to locate a missing video and revalidates cue durations. Projects contain description text and paths; inspect before sharing. Save is written to a sibling temporary file then replaced.
 
 Settings live at `%LOCALAPPDATA%/DescriberWorkbench/settings.json`. API keys are DPAPI-protected for the current Windows user. Moving this file to a different account does not move working keys. If a key cannot be unlocked, re-enter it. Damaged/incompatible settings load defaults with a warning and are preserved in a `.recovery-*` copy before saving. Other settings are not encrypted.
 
-Logs live beside settings, rotate at 1 MiB with one backup and redact configured key strings. They may still include paths, descriptions and error text. Temporary clips/frames/audio are created for jobs and normally removed when their temporary directories close. Downloaded videos and exported files remain where you chose to save them.
+Logs live beside settings, rotate at 1 MiB with one backup and redact configured key strings. They may still include paths, descriptions and error text. Temporary clips/frames/audio are created for jobs and normally removed when their temporary directories close. Downloaded videos and exported files remain where you chose to save them. Engine jobs, snapshots, checkpoints and narration persist under `%LOCALAPPDATA%/DescriberWorkbench/engine` (or `DESCRIBER_HOME/engine`); they are needed for resume and planned playback. Keep them with projects. There is no automatic deletion. API keys are omitted from saved jobs.
+
+No analytics or application telemetry is configured. The engine disables ONNX telemetry and sets telemetry-off defaults for Hugging Face/OTEL. HTTP tracing, metrics and auto exporters are explicitly disabled. External provider and explicit asset-download calls still make the documented network requests.
 
 **Cancel operation** stops owned FFmpeg work and prevents subsequent chunks. It is cooperative around network streaming; an idle read may delay completion. It cannot retract already transmitted media or cancel a provider charge. Closing during a job requests cancellation and keeps the app open until the job ends. Save before long operations.
 
@@ -216,10 +228,11 @@ For manual updates, close Workbench and extract the new portable build separatel
 | Connection test works, analysis fails | Text connectivity is narrower than image/JSON compatibility. Check capability, model limits, exact tag, shorter range and log. |
 | Output cut off / no descriptions | Truncated output is rejected and existing cues are preserved. Check exact-tag profile, concise guidance, clean/correct glossary and a shorter range. Other model tags use smaller adapter defaults. |
 | Character/action wrong | Rewatch, correct the glossary/text and timing. Never interpret a completed request as accuracy acceptance. |
-| Narration talks over dialogue | Manually move/shorten cues. Ollama receives no audio and does not detect dialogue gaps. |
+| Narration talks over dialogue | Inspect the actual sound-classifier spans; supply captions through developer settings if available and correct false negatives. Vision does not determine gaps. Do not treat the plan as a compliance certificate. |
+| Missing speech detector | Use File → Install local speech detector, or provide a verified `sound_model` path through developer settings. |
 | Nothing happens when analyzing | Open video first, finish/cancel any current job, confirm replacement/transmission prompts and inspect the log. |
 | No voice / native export fails | Select an installed voice from the correct engine/bitness. Test export voice; playback and export use separate settings. |
-| MP3 speech too fast | Shorten the cue text or widen its window while respecting the soundtrack; export fits overlong speech by speeding it up. |
+| Many pause descriptions | The narration does not fit within its visual event at up to 1.15x. Edit the wording or accept the extended timeline; descriptions are retained. |
 | Cloud authentication/quota error | Check provider access, key, model ID and billing/limits. Workbench does not silently switch providers. Never paste keys into an issue. |
 | Project video missing | Relocate the original video when prompted. The project contains no copy. |
 | Cancel seems slow | Wait for the pending network read/timeout. Closing waits for the worker; completed uploads cannot be undone. |
@@ -244,7 +257,7 @@ Place `ffmpeg.exe` and `ffprobe.exe` on PATH or in `bin/`. Run `build.ps1` for t
 
 ![System architecture and external service boundary.](diagrams/system.svg)
 
-`app.py` owns Qt UI, state, confirmations, worker lifecycle and project operations. `model_picker.py` manages discovery and selection. `services.py` coordinates segmentation, provider dispatch, generation, settings and export. `models.py` implements Ollama HTTP/discovery/streaming and frame extraction. `project.py` validates JSON/cues, imports subtitles and persists projects. Dedicated modules handle Windows speech, playback queues, compatibility, translations, diagnostics and updates.
+`app.py` owns Qt UI, state, confirmations, worker lifecycle and project operations. `model_picker.py` manages discovery and selection. `engine/` owns the headless serial service, independent audio protection, event planning, checkpoints and complete exports. `services.py` supplies segmentation, provider/speech adapters and settings. `adapters/` plus `cli.py` expose REST/MCP/CLI over that same core. `models.py` implements Ollama HTTP/discovery/streaming and frame extraction. `project.py` validates JSON/cues, imports subtitles and persists projects. Dedicated modules handle Windows speech, playback queues, compatibility, translations, diagnostics and updates.
 
 ![Analysis sequence: snapshot, segment, select provider, validate and replace on success.](diagrams/analysis.svg)
 
@@ -263,6 +276,8 @@ Matched Gemma/Qwen tags override request options to `num_predict:32768`, `num_ct
 Gemini uses google-genai file upload, processing polling and generation with the selected model/key, JSON response request and optional supported safety thresholds. Retryable 429/5xx errors receive bounded backoff. File deletion is attempted on exit. Provider restrictions/retention remain external. OpenAI speech uses `/v1/audio/speech` with description text; it is independent of the analysis picker.
 
 ## 17. Project format and integrations
+
+The [developer guide](DEVELOPER-GUIDE.md) covers the shared Python service, scriptable CLI, REST/OpenAPI and MCP over stdio or Streamable HTTP. Submit returns a durable job handle; inspect status, cancel/resume, page/time-filter descriptions, read coverage, edit with a revision, ask/explore and export. One process owns each workspace and runs one job at a time. GUI users can choose **File → Start developer API** to share their engine at `127.0.0.1:8796`; the private token path is logged. Other clients connect to that owner. Do not expose this local service directly on the Internet.
 
 Example `.adproject` (illustrative; update the media path):
 
@@ -285,7 +300,7 @@ Optional update-feed shape (example only; no service is supplied):
 ```json
 {
   "application": "DescriberWorkbench",
-  "version": "0.4.3",
+  "version": "0.5.1",
   "url": "https://example.org/DescriberWorkbench.zip",
   "sha256": "REPLACE_WITH_THE_ACTUAL_64_HEXADECIMAL_CHARACTER_DIGEST"
 }
@@ -298,15 +313,17 @@ The example digest is deliberately invalid and must be replaced. Remote feed/pac
 Run the standard suite on Windows:
 
 ```powershell
-.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe -m pytest -q
 .\.venv\Scripts\python.exe -m tests.local_acceptance "C:\media\sample.mp4" "C:\receipts\workbench"
 ```
 
 The optional second command opens an owned window, makes a short clip, tests editing/seeking/playback, DPAPI, native speech and MP3. It writes local artifacts and is not a cloud test. Additional acceptance scripts in `tests/` exercise library formats, audio mixing and update staging/rollback; read their inputs before running. `verify_payload.py` compares frozen source code fingerprints to the executable and checks reader dependencies. It does not prove human usability or visual accuracy.
 
-The accepted 0.4.2 suite passed 28 tests. Actual GUI Bunny seconds 62–122 with Gemma 26B and Qwen Q6 completed four requests per model with a clean initial glossary. The eight requests carried the requested off/32K/64K settings, runner contexts were 64K and no thinking output or truncation occurred. Projects matched responses; cue counts (29/25) are not quality scores. The release verification asset pins the executable and source identity. Raw local receipts are excluded from Git/public downloads because they include images and paths.
+The 0.5.0 suite passed 43 tests and 3 subtests. Real native vision/classifier/speech checks covered three 120-second samples, and packaged GUI/CLI/HTTP/MCP startup passed. See the [release acceptance record](V050-ACCEPTANCE.md) for scope and limits. These results are functional evidence, not a visual-accuracy percentage.
 
-Still unverified: live Gemini/OpenAI/keyed-cloud operation, full-film analysis/AD quality, NVDA/JAWS user acceptance, native-speaker translations, third-party legacy voices, live public YouTube extraction and a real production update cycle. Fixtures validate adapter/format behavior without proving live provider acceptance. Docs/site-only publication leaves the accepted binary/tag unchanged.
+Historical 0.4.2 evidence: its suite passed 28 tests. Actual GUI Bunny seconds 62–122 with Gemma 26B and Qwen Q6 completed four requests per model with a clean initial glossary. The eight requests carried the requested off/32K/64K settings, runner contexts were 64K and no thinking output or truncation occurred. Projects matched responses; cue counts (29/25) are not quality scores. The release verification asset pins the executable and source identity. Raw local receipts are excluded from Git/public downloads because they include images and paths.
+
+Still unverified: live Gemini/OpenAI/keyed-cloud operation, full-film analysis/AD quality, NVDA/JAWS user acceptance, native-speaker translations, third-party legacy voices, live public YouTube extraction and a real production update cycle. Fixtures validate adapter/format behavior without proving live provider acceptance. Documentation-only publication does not rebuild or change an accepted executable.
 
 When extending a provider, trace selection → saved exact tag → capability/preflight → confirmation → request → normalized response → GUI/project. Preserve cancellation and existing cue data on failure. Add focused affected tests and document real transmission/compatibility limits. Do not claim another provider is supported solely because it is named by a discovery endpoint.
 
@@ -314,4 +331,4 @@ When extending a provider, trace selection → saved exact tag → capability/pr
 
 Report issues at the [GitHub issue tracker](https://github.com/scottconverse/Describer-Workbench/issues). Include app/Windows version, exact tag/provider, range, reproducible steps and redacted logs. Share a public sample only if you have the rights. Omit keys and private paths/media.
 
-This is newly written reconstruction source, not recovered original source or an original-author-endorsed release. No blanket license has been assigned to new Workbench code. Third-party dependencies/translations retain their terms; public source visibility does not grant a new open-source license. See [third-party notices](../THIRD-PARTY-NOTICES.md).
+This is newly written reconstruction source, not recovered original source or an original-author-endorsed release. New Workbench code is licensed under Apache-2.0 with no warranty. Third-party dependencies/translations retain their own terms; Apache-2.0 does not relicense those assets. See [third-party notices](../THIRD-PARTY-NOTICES.md).

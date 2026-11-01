@@ -1,7 +1,7 @@
 import copy,json,tempfile,threading,unittest
 from pathlib import Path
 from unittest.mock import Mock,patch
-from describer.services import Settings,DEFAULTS,generate
+from describer.services import Settings,DEFAULTS,observe as generate
 from describer.project import normalize_generated,scene_data
 from describer.playback_speech import PlaybackSpeech
 from describer.compatibility import read_original_settings,read_prompt_presets
@@ -19,7 +19,7 @@ class AuditFixTests(unittest.TestCase):
   reader.speak.side_effect=RuntimeError('reader gone');speech.say('Fallback',False);qt.enqueue.assert_called_once_with('Fallback')
  def test_generated_cleanup_keeps_valid_rows(self):
   logs=[];cues=normalize_generated([{'start':1,'end':3,'text':'Door.'},{'start':'bad','end':5,'text':'Bad'},{'start':2,'end':4,'text':'Person.'},{'start':5,'end':6,'text':'Person.'},{'start':7,'end':6,'text':'Leaves.'}],10,logs.append)
-  self.assertEqual([c.text for c in cues],['Door.','Person.','Leaves.']);self.assertGreater(cues[1].start,cues[0].end);self.assertGreater(cues[2].end,cues[2].start);self.assertEqual(len(logs),2)
+  self.assertEqual([c.text for c in cues],['Door.','Person.','Person.']);self.assertEqual(cues[1].start,2);self.assertEqual(cues[2].start,5);self.assertEqual(len(logs),2)
  def test_scene_validation_and_unique_grid(self):
   data=scene_data({'layout':'A room.','objects':[{'name':'Door','description':'Red','x':5,'y':5},{'name':'Chair','description':'Blue','x':5,'y':5},{'name':'Invalid','description':'','x':float('nan'),'y':1}]})
   self.assertEqual(len(data['objects']),2);self.assertEqual(len({(o['x'],o['y']) for o in data['objects']}),2)

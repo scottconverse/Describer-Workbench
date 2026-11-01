@@ -22,7 +22,8 @@ from pathlib import Path
 from PySide6.QtCore import QEvent
 from PySide6.QtWidgets import QApplication
 CODES=dict(zip(LANGUAGES,['en','es','fr','it','pt','ru','tr','uk','vi','ar']))
-try:ORIGINAL=json.loads((Path(getattr(sys,'_MEIPASS',Path(__file__).resolve().parents[1]))/'assets/original-translations.json').read_text(encoding='utf8'))
+from .services import asset_path
+try:ORIGINAL=json.loads(asset_path('original-translations.json').read_text(encoding='utf8'))
 except OSError:ORIGINAL={}
 
 def translate(text,language):return TRANSLATIONS.get(language,{}).get(text,ORIGINAL.get(CODES.get(language),{}).get(text,text))

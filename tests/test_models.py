@@ -1,7 +1,7 @@
 import copy,io,json,tempfile,threading,unittest
 from pathlib import Path
 from unittest.mock import patch
-from describer.services import DEFAULTS,Settings,generate,video_request
+from describer.services import DEFAULTS,Settings,observe as generate,video_request
 from describer import models
 
 

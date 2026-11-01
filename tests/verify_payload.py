@@ -14,15 +14,17 @@ def fingerprint(value):
 
 def main():
  exe=Path(sys.argv[1]);output=Path(sys.argv[2]);reader=CArchiveReader(str(exe));pyz=reader.open_embedded_archive('PYZ.pyz');modules={}
- for path in sorted(Path('describer').glob('*.py')):
-  module='describer' if path.stem=='__init__' else 'describer.'+path.stem
+ for path in sorted(Path('describer').rglob('*.py')):
+  parts=list(path.with_suffix('').parts)
+  if parts[-1]=='__init__':parts.pop()
+  module='.'.join(parts)
   modules[module]=fingerprint(pyz.extract(module))==fingerprint(compile(path.read_bytes(),str(path),'exec',optimize=0))
  assert all(modules.values()),modules
  for module in ['accessible_output2.outputs.nvda','accessible_output2.outputs.jaws','libloader.com','win32com.client']:
   assert module in pyz.toc,module
  assert (exe.parent/'_internal/accessible_output2/lib/nvdaControllerClient64.dll').is_file()
  identity={str(p).replace('\\','/'):digest(p) for folder in ['describer','assets'] for p in sorted(Path(folder).rglob('*')) if p.is_file() and '__pycache__' not in p.parts}
- for name in ['DescriberWorkbench.spec','requirements.txt','run.py','build.ps1']:identity[name]=digest(name)
+ for name in ['DescriberWorkbench.spec','requirements.txt','run.py','run_cli.py','build.ps1','pyproject.toml']:identity[name]=digest(name)
  result={'passed':True,'exe_sha256':digest(exe),'modules':modules,'reader_modules_present':True,'nvda_dll_present':True,'source_identity':identity,'comparison':'Bytecode, recursive constants, names, signatures, flags, stack sizes and exception tables. Filename/line metadata excluded.'}
  output.write_text(json.dumps(result,indent=2));print(json.dumps({k:v for k,v in result.items() if k!='source_identity'},indent=2))
 
