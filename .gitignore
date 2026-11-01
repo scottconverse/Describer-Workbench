@@ -1,0 +1,25 @@
+# Local runtimes, recovery and build products
+/dist/
+/dist-next/
+/rollback/
+/build/
+/.venv/
+/bin/*.exe
+__pycache__/
+*.py[cod]
+*.zip
+
+# Machine-specific acceptance evidence and working state remain local.
+/evidence/
+/STATE.md
+
+# Credentials, user preferences and diagnostics
+.env
+.env.*
+!.env.example
+settings.json
+settings.dat
+settings.dat2
+key.salt
+*.log
+*.recovery-*
