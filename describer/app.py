@@ -15,7 +15,7 @@ from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 from PySide6.QtMultimediaWidgets import QVideoWidget
 from PySide6.QtTextToSpeech import QTextToSpeech
 from .project import Project, Cue, seconds, stamp, import_subtitles,response_json
-from .services import Settings, generate, google_request, segment, download, export_audio, synthesize
+from .services import Settings, generate, video_request, segment, download, export_audio, synthesize
 from .i18n import LANGUAGES,apply_language
 
 
@@ -83,6 +83,8 @@ class Window(QMainWindow):
         for name,fn in [('Open video',self.open_video),('Open URL',self.open_url),('Analyze video',self.analyze),('Settings',self.edit_settings)]: self.button(row,name,fn)
         self.cancel_button=self.button(row,'Cancel operation',lambda:self.cancel.set());self.cancel_button.setEnabled(False)
         self.file_label=QLabel('Open a video to begin.');layout.addWidget(self.file_label)
+        from .model_picker import ModelPicker
+        self.model_picker=ModelPicker(self);layout.addWidget(self.model_picker)
         split=QSplitter(Qt.Orientation.Vertical);layout.addWidget(split,1);split.addWidget(self.video)
         editor=QWidget();el=QVBoxLayout(editor);split.addWidget(editor)
         controls=QHBoxLayout();el.addLayout(controls)
@@ -124,7 +126,7 @@ class Window(QMainWindow):
     def button(self,row,text,fn):
         b=QPushButton(text);b.clicked.connect(fn);row.addWidget(b);return b
     def log(self,text,level=logging.INFO):
-        for key in ['gemini_key','openai_key']:
+        for key in ['gemini_key','openai_key','ollama_key']:
             if self.settings.data[key]:text=text.replace(self.settings.data[key],'[redacted]')
         if level>=logging.INFO:self.log_view.appendPlainText(text)
         self.logger.setLevel(getattr(logging,self.settings.data.get('logging_level','INFO'),logging.INFO));self.logger.log(level,text)
@@ -137,6 +139,7 @@ class Window(QMainWindow):
         self.log('Starting background operation.',logging.DEBUG)
         self.sound('start');self.cancel=threading.Event();thread=QThread(self);worker=Worker(fn,self.cancel);worker.moveToThread(thread)
         self.thread=thread;self.worker=worker;self.done_callback=done;self.cancel_button.setEnabled(True)
+        self.model_picker.setEnabled(False)
         thread.started.connect(worker.run);worker.log.connect(self.log);worker.failed.connect(self.error);worker.done.connect(self.on_job_done,Qt.ConnectionType.QueuedConnection)
         worker.finished.connect(thread.quit);worker.finished.connect(worker.deleteLater);thread.finished.connect(self.job_finished);thread.finished.connect(thread.deleteLater)
         thread.start()
@@ -149,6 +152,11 @@ class Window(QMainWindow):
     def job_finished(self):
         self.log('Background operation finished.',logging.DEBUG)
         self.thread=None;self.worker=None;self.cancel_button.setEnabled(False)
+        self.model_picker.setEnabled(True)
+        if getattr(self,'pending_model_test',None):
+            settings=self.pending_model_test;self.pending_model_test=None
+            from .models import test_connection
+            QTimer.singleShot(0,lambda:self.job(lambda c,l:test_connection(settings,c,l),self.log))
         if getattr(self,'pending_update',None):
             data,folder=self.pending_update;self.pending_update=None;self.stage_update_job(data,folder)
     def guard_changes(self):
@@ -272,25 +280,40 @@ class Window(QMainWindow):
                 self.project.cues=cues;self.changed()
             except Exception as e:self.error(str(e))
     def cloud_confirm(self):
+        if self.settings.data.get('analysis_provider','Gemini')=='Ollama':
+            from .models import model_info
+            try:return self.confirm_ollama(model_info(self.settings.data))
+            except Exception as exc:self.error(str(exc));return False
         if not self.settings.data['gemini_key']:self.error('Enter a Gemini API key in Settings before using analysis or scene tools.');return False
         return QMessageBox.question(self,'Send video to Google Gemini','This operation uploads video segments to Google Gemini using your API key and may incur charges. Continue?')==QMessageBox.StandardButton.Yes
+    def confirm_ollama(self,info):
+        from .models import is_cloud
+        if not is_cloud(self.settings.data,info):return True
+        return QMessageBox.question(self,'Use Ollama cloud or remote server',
+            'This sends prompts and sampled video frames to the selected remote model and may use paid allowance. Continue?')==QMessageBox.StandardButton.Yes
     def analyze(self):
         if self.busy() or not self.project.video:return
         if self.project.cues and QMessageBox.question(self,'Replace descriptions','Replace existing descriptions with newly generated results?')!=QMessageBox.StandardButton.Yes:return
         if not self.cloud_confirm():return
         snapshot=copy.deepcopy(self.project);settings=copy.deepcopy(self.settings.data);prompt=self.prompt.text()
+        scope=self.model_picker.scope.currentIndex()
+        start_at=self.player.position()/1000 if scope else 0
+        duration={1:20,2:60}.get(scope)
         def task(c,l):
-            cues=generate(snapshot,settings,prompt,c,l);return cues,snapshot.glossary
+            cues=generate(snapshot,settings,prompt,c,l,start_at,duration);return cues,snapshot.glossary
         self.job(task,self.generated)
     def generated(self,result):
         cues,glossary=result;self.project.glossary=glossary;self.project.cues=cues;self.changed();self.log(f'Generated {len(cues)} descriptions. Review timing and accuracy before use.')
+        # Refresh the editor even if row zero was already selected before regeneration.
+        # Save commits the selected editor, which must not still contain the old cue.
+        if cues:self.table.setCurrentCell(0,0);self.select_cue()
     def scene_request(self,instruction,done,length=10):
         if self.busy() or not self.project.video or not self.cloud_confirm():return
         self.player.pause();pos=self.player.position()/1000;source=self.project.video;duration=self.project.duration;settings=copy.deepcopy(self.settings.data)
         def task(cancel,log):
             with tempfile.TemporaryDirectory(prefix='describer-scene-') as tmp:
                 clip=Path(tmp)/'scene.mp4';start=max(0,pos-length/2);segment(source,clip,start,max(.1,min(length,duration-start)),settings['fps'],cancel,settings.get('silent_upload',False))
-                return google_request(clip,instruction,settings,cancel,log)
+                return video_request(clip,instruction,settings,cancel,log)
         self.job(task,done)
     def ask(self):
         question,ok=QInputDialog.getText(self,'Ask about scene','Your question')
@@ -358,11 +381,11 @@ class Window(QMainWindow):
     def edit_settings(self):
         if self.busy():return
         d=QDialog(self);d.setWindowTitle('Settings');d.resize(780,720);outer=QVBoxLayout(d);scroll=QScrollArea();scroll.setWidgetResizable(True);content=QWidget();form=QFormLayout(content);scroll.setWidget(content);outer.addWidget(scroll);fields={}
-        for key,label in [('gemini_key','Gemini API key'),('model','Gemini model'),('openai_key','OpenAI API key'),('tts_model','OpenAI speech model'),('voice','OpenAI base voice'),('language','Description language'),('update_feed','Update feed (HTTPS URL or local JSON)')]:
+        for key,label in [('gemini_key','Gemini API key'),('model','Gemini model'),('ollama_url','Ollama server address'),('ollama_key','Ollama server API key (optional)'),('openai_key','OpenAI API key'),('tts_model','OpenAI speech model'),('voice','OpenAI base voice'),('language','Description language'),('update_feed','Update feed (HTTPS URL or local JSON)')]:
             field=QLineEdit(str(self.settings.data[key]));field.setAccessibleName(label)
             if key.endswith('_key'):field.setEchoMode(QLineEdit.EchoMode.Password)
             form.addRow(label,field);fields[key]=field
-        for key,label,lo,hi in [('chunk','Seconds per analysis chunk',15,1800),('fps','Frames per second',1,30),('duck_db','Background ducking (dB)',-40,0),('speech_rate','Windows voice rate',-10,10),('speech_volume','Speech volume',0,100)]:
+        for key,label,lo,hi in [('chunk','Seconds per analysis chunk',15,1800),('fps','Frames per second (Gemini)',1,30),('ollama_frame_interval','Ollama seconds between frames (max 8 per request)',1,10),('ollama_timeout','Ollama request timeout (seconds)',30,1800),('duck_db','Background ducking (dB)',-40,0),('speech_rate','Windows voice rate',-10,10),('speech_volume','Speech volume',0,100)]:
             field=QSpinBox();field.setRange(lo,hi);field.setValue(self.settings.data[key]);form.addRow(label,field);fields[key]=field
         engine=QComboBox();engine.addItems(['Windows','Windows 32-bit','Windows OneCore','OpenAI']);engine.setCurrentText(self.settings.data['voice_engine']);form.addRow('Audio export speech engine',engine)
         ui_language=QComboBox();ui_language.addItems(LANGUAGES);ui_language.setCurrentText(self.settings.data['ui_language']);form.addRow('Interface language',ui_language)
@@ -389,6 +412,7 @@ class Window(QMainWindow):
                 self.settings.save();self.playback_speech.settings=self.settings.data;self.speech.setVolume(self.settings.data['speech_volume']/100);apply_language(self,self.settings.data['ui_language'])
                 if voices.currentIndex()>=0:self.speech.setVoice(available[voices.currentIndex()])
                 self.reload_presets()
+                self.model_picker.rows=[];self.model_picker.reload()
             except Exception as e:self.settings.data=old;self.error(str(e))
     def sound(self,name):
         if not self.settings.data.get('sounds',True):return
