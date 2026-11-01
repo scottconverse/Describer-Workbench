@@ -71,7 +71,7 @@ Ollama receives up to eight timestamped frames per request, 640 pixels wide. At 
 
 Open media → draft or import cues → correct the glossary → edit facts and timing → listen with the soundtrack → save → export.
 
-Select a cue to seek to its start. Times accept seconds, `MM:SS` or `HH:MM:SS`. Leaving the start field preserves the old duration. Use **Apply edit** before export; **Ctrl+S** also applies the selected cue editor and saves. Analysis and subtitle import replace existing descriptions after confirmation. Range analysis replaces the cue list; it does not append to a full-film project. Save a separate project before experiments.
+Select a cue to seek to its start. Times accept seconds, `MM:SS` or `HH:MM:SS`. Leaving the start field shifts the end by the same amount: set Start, leave that field, then enter the intended End. Use **Apply edit** before export; **Ctrl+S** also applies the selected cue editor and saves. After Add, select the newly added row before saving so the old selected row is not overwritten by the editor values. Analysis and subtitle import replace existing descriptions after confirmation. Range analysis replaces the cue list; it does not append to a full-film project. To preserve a comparison copy, save, copy the `.adproject` file in File Explorer and open the copy; this version has no Save As command.
 
 MP3 export synthesizes each cue, speeds up speech that exceeds its window, ducks the original audio once and mixes narration with 50 ms ducking transitions. It downmixes to stereo; source surround layout is not retained. Silent video gets a silent audio bed. MP3 export creates audio, not a new described video file.
 
@@ -130,6 +130,7 @@ The [release](https://github.com/scottconverse/Describer-Workbench/releases/tag/
 
 - [User manual](docs/USER-MANUAL.md): nontechnical walkthrough, reference, troubleshooting and technical user section.
 - [Architecture](docs/ARCHITECTURE.md): components, sequences and data boundaries.
+- [Public documentation audit](docs/PUBLIC-AUDIT.md): corrections, code tracing, download checks and verification limits.
 - [Parity](PARITY.md), [audit](AUDIT.md) and [third-party notices](THIRD-PARTY-NOTICES.md).
 
 For an issue include the app/Windows version, exact provider/model, reproduction steps, expected result and redacted logs. Never post keys, private video, complete settings or unsanitized projects. Describe the scope actually tested.
@@ -141,7 +142,7 @@ The landing page is in `website/`. Render the manual/site with a documentation-o
 .\.venv\Scripts\python.exe tools/build_site.py --output "C:\work\workbench-site"
 ```
 
-The output includes the landing page, HTML guides, architecture drawings and downloadable Markdown. Hosting is separate from the desktop app; docs publication does not rebuild the executable.
+The output includes the landing page, HTML guides, architecture drawings and downloadable Markdown. Downloaded Markdown uses absolute web links so navigation survives saving it outside the repository. Hosting is separate from the desktop app; docs publication does not rebuild the executable. The immutable 0.4.2 ZIPs contain the documentation as it stood when packaged; use this README and the website for corrected current guidance.
 
 ## Provenance and licensing
 

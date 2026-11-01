@@ -15,7 +15,7 @@ This project uses the components below. Original license texts are retained unde
 - pydantic 2.14.2: MIT
 - pyinstaller 6.22.3: GPLv2-or-later with a special exception which allows to use PyInstaller to build and distribute non-free programs (including commercial ones)
 
-Qt upstream and source: https://www.qt.io/ and https://code.qt.io/ . PySide6 source: https://code.qt.io/pyside/pyside-setup.git .
+Qt upstream and source: https://www.qt.io/ and https://code.qt.io/ . PySide6 source browser: https://code.qt.io/cgit/pyside/pyside-setup.git/ .
 FFmpeg: GPL build; see bin/FFmpeg-LICENSE.txt. Installed binary source/build provider: https://github.com/GyanD/codexffmpeg ; FFmpeg source: https://ffmpeg.org/download.html .
 Original executable and bytecode are not distributed. Attributed Omni Describer translation catalogues from the supplied ZIP are included in assets/original-translations.json; original license retained in third-party-licenses/Omni-Describer.txt. Original author/contact: audioses.com, info@audioses.com. These are original contributors' translations, not newly claimed Workbench translations.
 - accessible-output2 0.17: MIT; includes screen-reader controller DLLs supplied by that distribution. Upstream: https://github.com/accessibleapps/accessible_output2
