@@ -1,4 +1,4 @@
-# Original feature parity, Workbench 0.3.0
+# Original feature parity, Workbench 0.4.2
 
 The current requirement-by-requirement comparison, dispositions, receipt audit and verification boundaries are in [AUDIT.md](AUDIT.md). The previous 0.2 report is retained as evidence/PARITY-0.2.md.
 

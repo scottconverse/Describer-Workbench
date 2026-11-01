@@ -71,6 +71,8 @@ def dpapi(data, decrypt=False):
 
 
 DEFAULTS = {'model': 'gemini-2.5-flash', 'language': 'English', 'chunk': 300, 'fps': 2,
+            'analysis_provider':'Gemini','ollama_url':'http://127.0.0.1:11434','ollama_model':'',
+            'ollama_key':'','ollama_timeout':600,'ollama_frame_interval':2,
             'voice_engine': 'Windows', 'voice': 'alloy', 'tts_model': 'gpt-4o-mini-tts',
             'voice_presets': VOICE_PRESETS, 'settings_version': 3,
             'voice_preset': '', 'voice_speed': 1.0, 'voice_instructions': '', 'windows_voice': '', 'speech_rate': 0,
@@ -89,7 +91,7 @@ class Settings:
             try:
                 j=json.loads(self.path.read_text(encoding='utf-8-sig'))
                 if not isinstance(j,dict):raise ValueError('Expected a settings object.')
-                for k in ['gemini_key','openai_key']:
+                for k in ['gemini_key','openai_key','ollama_key']:
                     if j.get(k):
                         try:j[k]=dpapi(base64.b64decode(j[k]),True).decode()
                         except Exception:
@@ -106,8 +108,9 @@ class Settings:
                 if not all(isinstance(v,dict) and all(isinstance(k,str) and isinstance(t,str) for k,t in v.items()) for v in self.data['presets'].values()):raise ValueError('Invalid prompt presets.')
                 for preset in self.data['voice_presets'].values():
                     if not isinstance(preset,dict) or not isinstance(preset.get('base_voice'),str) or not .25<=float(preset.get('speed',1))<=4:raise ValueError('Invalid voice preset.')
-                ranges={'chunk':(15,1800),'fps':(1,30),'duck_db':(-40,0),'speech_rate':(-10,10),'player_volume':(0,100),'speech_volume':(0,100),'temperature':(0,2)}
+                ranges={'chunk':(15,1800),'fps':(1,30),'duck_db':(-40,0),'speech_rate':(-10,10),'player_volume':(0,100),'speech_volume':(0,100),'temperature':(0,2),'ollama_timeout':(30,1800),'ollama_frame_interval':(1,10)}
                 for key,(low,high) in ranges.items():self.data[key]=max(low,min(high,self.data[key]))
+                if self.data['analysis_provider'] not in ('Gemini','Ollama'):raise ValueError('Unknown analysis provider.')
                 if j.get('settings_version',0)<3:
                     for name,prompt in PROMPTS.items():self.data['presets'].setdefault('English',{}).setdefault(name,prompt)
                     for name,preset in VOICE_PRESETS.items():self.data['voice_presets'].setdefault(name,dict(preset))
@@ -120,7 +123,7 @@ class Settings:
             shutil.copy2(self.path,self.path.with_name(self.path.name+'.recovery-'+str(time.time_ns())))
             self.needs_recovery=False
         j = dict(self.data)
-        for k in ['gemini_key', 'openai_key']:
+        for k in ['gemini_key', 'openai_key', 'ollama_key']:
             if j[k]: j[k] = base64.b64encode(dpapi(j[k].encode())).decode()
         self.path.parent.mkdir(parents=True, exist_ok=True)
         temp = self.path.with_suffix('.tmp');temp.write_text(json.dumps(j, indent=2), encoding='utf-8');temp.replace(self.path)
@@ -163,30 +166,45 @@ def google_request(video, prompt, settings, cancel, log, as_json=True):
         client.close()
 
 
-def generate(project, settings, prompt, cancel, log):
+def video_request(video,prompt,settings,cancel,log,as_json=True):
+    if settings.get('analysis_provider','Gemini')=='Ollama':
+        from .models import video_request as ollama_request
+        return ollama_request(video,prompt,settings,cancel,log,as_json)
+    return google_request(video,prompt,settings,cancel,log,as_json)
+
+
+def generate(project, settings, prompt, cancel, log, start_at=0, duration=None):
     cues=[];glossary=project.glossary
     chunk=max(15,int(settings['chunk'])) if settings.get('chunking',True) else max(1,__import__('math').ceil(project.duration))
+    if settings.get('analysis_provider','Gemini')=='Ollama':
+        chunk=min(chunk,8*int(settings.get('ollama_frame_interval',2)))
+        log('Ollama uses sampled images without audio. Review all timing; dialogue gaps are not detected.')
+    stop=min(project.duration,start_at+duration) if duration is not None else project.duration
     with tempfile.TemporaryDirectory(prefix='describer-') as tmp:
-        for start in range(0, int(project.duration) + 1, chunk):
-            length=min(chunk, project.duration-start)
+        start=start_at
+        while start<stop:
+            if cancel.is_set():raise InterruptedError('Cancelled.')
+            length=min(chunk, stop-start)
             if length < .1: break
             log(f'Preparing {start:.0f}–{start+length:.0f} seconds…')
             clip=Path(tmp)/'segment.mp4';segment(project.video, clip, start, length, settings['fps'], cancel, settings.get('silent_upload',False))
+            ollama=settings.get('analysis_provider','Gemini')=='Ollama'
             instruction=(f'Create concise audio descriptions in {settings["language"]}. Describe visible action, people and settings. '
-                'Place descriptions in dialogue gaps; do not repeat dialogue or invent facts. '
+                +('Use visible evidence only. No audio is supplied; do not infer speech, sounds or dialogue gaps. Do not invent facts. ' if ollama else 'Place descriptions in dialogue gaps; do not repeat dialogue or invent facts. ')+
                 'Return JSON {"descriptions":[{"start":0.0,"end":2.0,"text":"description"}]}. '
                 f'Times are numeric seconds relative to this {length:.2f}-second clip and must fit within it. '
                 f'Prior character glossary: {glossary}\nEditorial guidance: {prompt}')
             if settings.get("auto_glossary",False):
-                instruction += ' Also return "character_glossary": [{"id":"stable_visual_label","name":null,"description":"visual identity"}]. Use a personal name only if clearly spoken and unambiguously linked; otherwise name=null. Reuse prior identities; include only visible characters.'
+                instruction += ' Also return "character_glossary": [{"id":"stable_visual_label","name":null,"description":"visual identity"}]. '+('Keep name=null because no audio is supplied. ' if ollama else 'Use a personal name only if clearly spoken and unambiguously linked; otherwise name=null. ')+'Reuse prior identities; include only visible characters.'
             verbosity={'Short':'Use 1-3 words for each description.','Standard':'Aim for 3-6 words per description.','Detailed':'Aim for 6-12 words per description.'}.get(settings.get('verbosity','Standard'),'')
-            instruction += '\n'+verbosity+' Use no more than two words per second of allotted description time. Avoid describing sounds already audible.'
-            text=google_request(clip,instruction,settings,cancel,log)
+            instruction += '\n'+verbosity+' Use no more than two words per second of allotted description time.'+(' Describe visual changes concisely.' if ollama else ' Avoid describing sounds already audible.')
+            text=video_request(clip,instruction,settings,cancel,log)
             data=response_json(text)
             if settings.get("auto_glossary",False) and isinstance(data,dict) and "character_glossary" in data:
                 from .compatibility import merge_glossary
                 glossary=merge_glossary(glossary,data["character_glossary"])
             for cue in normalize_generated(data,length,log): cues.append(Cue(cue.start+start,cue.end+start,cue.text))
+            start+=length
     cues=normalize_generated([{'start':c.start,'end':c.end,'text':c.text} for c in cues],project.duration,log)
     if not cues: raise ValueError('No descriptions were returned.')
     project.glossary=glossary
