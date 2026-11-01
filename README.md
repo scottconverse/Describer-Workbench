@@ -2,11 +2,11 @@
 
 **One audio-description engine for a Windows workbench, Python, CLI, REST/OpenAPI and MCP.**
 
-Version **0.5.0 is a local development candidate**, not a published release. The download below is the previous stable 0.4.2. New features require this candidate source/build until publication is authorized.
+Version **0.5.0** combines the Windows workbench and developer interfaces in one shared engine. Download the portable Windows package or build the tagged source.
 
 Open a video, draft timed descriptions with a local Ollama vision model or Google Gemini, edit every cue, listen alongside the video, and export subtitles or a narrated audio mix. Manual editing, subtitle import and Windows speech work without an AI API key.
 
-[Previous stable Windows 0.4.2](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.4.2) · [Website](https://describer-workbench.sconverse.chatgpt.site) · [User manual](docs/USER-MANUAL.md) · [Architecture](docs/ARCHITECTURE.md) · [Developer guide](docs/DEVELOPER-GUIDE.md) · [Issues](https://github.com/scottconverse/Describer-Workbench/issues)
+[Windows 0.5.0](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.5.0) · [Website](https://describer-workbench.sconverse.chatgpt.site) · [User manual](docs/USER-MANUAL.md) · [Architecture](docs/ARCHITECTURE.md) · [Developer guide](docs/DEVELOPER-GUIDE.md) · [Issues](https://github.com/scottconverse/Describer-Workbench/issues)
 
 > AI output is a draft. Review visual facts, character identities, timing and overlap with dialogue. Ollama receives sampled images **without audio**, so it cannot determine dialogue gaps or audible names. The shared engine measures speech/vocal protection independently with a pinned local YAMNet classifier. This reduces timing conflicts; it does not establish visual accuracy or legal compliance.
 
@@ -27,7 +27,7 @@ Open a video, draft timed descriptions with a local Ollama vision model or Googl
 
 ## Install and start
 
-1. Download `DescriberWorkbench-0.4.2-windows-x64.zip` from the [release](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.4.2).
+1. Download `DescriberWorkbench-0.5.0-windows-x64.zip` from the [release](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.5.0).
 2. Extract the complete ZIP to a writable folder. Open `DescriberWorkbench/DescriberWorkbench.exe`; keep `_internal` beside it. Python, Qt, FFmpeg and FFprobe are bundled.
 3. Select **Open video** and choose your video. Open it before importing subtitle cues. Standalone audio is not a documented input workflow.
 4. Choose an analysis provider/model and a short range, or add cues manually. Follow the [first-project walkthrough](docs/USER-MANUAL.md#3-your-first-project).
@@ -38,7 +38,7 @@ The binary targets 64-bit Windows and is **unsigned**. Windows 11 was used for l
 Compare your download with the release's `SHA256SUMS.txt`:
 
 ```powershell
-Get-FileHash .\DescriberWorkbench-0.4.2-windows-x64.zip -Algorithm SHA256
+Get-FileHash .\DescriberWorkbench-0.5.0-windows-x64.zip -Algorithm SHA256
 ```
 
 ## Does it need an API key?
@@ -118,7 +118,7 @@ The build script installs the desktop, local-model and developer transport extra
 
 ## Verification
 
-For 0.5.0, see the local candidate acceptance record in `docs/V050-ACCEPTANCE.md` for exact commands, results and remaining limits. Historical 0.4.2 evidence below applies only to that release. The new protocol tests initialize real MCP clients over stdio and HTTP; media tests check actual FFmpeg output. No percentage visual-accuracy claim is made.
+For 0.5.0, see the release acceptance record in `docs/V050-ACCEPTANCE.md` for exact commands, results and remaining limits. Historical 0.4.2 evidence below applies only to that release. The new protocol tests initialize real MCP clients over stdio and HTTP; media tests check actual FFmpeg output. No percentage visual-accuracy claim is made.
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -q
@@ -134,7 +134,7 @@ For 0.5.0, see the local candidate acceptance record in `docs/V050-ACCEPTANCE.md
 | Artifact | All 13 frozen app modules matched source; installed launch/playback accepted. Published ZIP and downloaded copies verified by SHA256. |
 | Earlier media samples | Nine sampled video exports, 40 subtitle files and three audio layouts passed; not full-film coverage. |
 
-The [release](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.4.2) has sanitized verification JSON/checksums. Raw receipts stay local because they contain frames/machine paths. Live Gemini, OpenAI and cloud acceptance remain unverified without keys. NVDA/JAWS end-to-end use, native-speaker translation review, public YouTube extractor compatibility and full-film AD quality remain unverified. GitHub CI was not configured for the binary release. [AUDIT.md](AUDIT.md) records original parity work and historical results; read them in their version context.
+The [v0.5.0 release](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.5.0) includes sanitized verification JSON and checksums. The table above is historical 0.4.2 evidence; the current [acceptance record](docs/V050-ACCEPTANCE.md) covers 0.5.0. Raw receipts stay local because they contain frames/machine paths. Live Gemini, OpenAI and cloud acceptance remain unverified without keys. NVDA/JAWS end-to-end use, native-speaker translation review, public YouTube extractor compatibility and full-film AD quality remain unverified. Windows GitHub CI runs the suite, lint, documentation rendering and Python package build. Its media tests use generated fixtures; the separate native acceptance record covers the actual vision/speech pipeline and portable executables. [AUDIT.md](AUDIT.md) records original parity work and historical results; read them in their version context.
 
 ## Documentation and development
 
@@ -153,7 +153,7 @@ The landing page is in `website/`. Render the manual/site with a documentation-o
 .\.venv\Scripts\python.exe tools/build_site.py --output "C:\work\workbench-site"
 ```
 
-The output includes the landing page, HTML guides, architecture drawings and downloadable Markdown. Downloaded Markdown uses absolute web links so navigation survives saving it outside the repository. Hosting is separate from the desktop app; docs publication does not rebuild the executable. The immutable 0.4.2 ZIPs contain the documentation as it stood when packaged; use this README and the website for corrected current guidance.
+The output includes the landing page, HTML guides, architecture drawings and downloadable Markdown. Downloaded Markdown uses absolute web links so navigation survives saving it outside the repository. Hosting is separate from the desktop app; docs publication does not rebuild the executable. The immutable 0.4.2 ZIPs retain their historical documentation. The 0.5.0 portable package includes the current guides; this README and the website carry current release guidance.
 
 ## Provenance and licensing
 

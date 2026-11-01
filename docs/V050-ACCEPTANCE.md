@@ -1,6 +1,6 @@
-# v0.5.0 local candidate acceptance
+# v0.5.0 release acceptance
 
-Status: **implemented and locally verified; not pushed or published**. Branch `feat/shared-engine-v050`, based on `92afa7c24c6a0840b05a2d02d41c83a5f4bd988b`. November1,2026. Apache-2.0 applies to new Workbench code; original translations and dependency terms are retained separately.
+Status: **implemented and locally verified for the v0.5.0 release**. Hosted CI results and artifact identities are recorded with the GitHub release. Branch `feat/shared-engine-v050`, based on `92afa7c24c6a0840b05a2d02d41c83a5f4bd988b`. November1,2026. Apache-2.0 applies to new Workbench code; original translations and dependency terms are retained separately.
 
 ## Agreed outcomes
 
@@ -15,7 +15,7 @@ Status: **implemented and locally verified; not pushed or published**. Branch `f
 | Existing projects preserved | Version-1 roundtrip/read-only original tests passed. Real GUI acceptance loaded the native project, paused/resumed correctly and stopped old narration on source change; project hash was unchanged. All three source-video hashes were unchanged. |
 | Packaging | Headless wheel and sdist build. Fresh core install has resources and no Qt dependency. Portable `DescriberWorkbench.exe` and `DescriberCLI.exe` build. Actual packaged GUI main-window startup, packaged CLI, HTTP/OpenAPI and MCP stdio checks passed. All25 frozen application modules match source. |
 | Privacy | No application analytics. ONNX telemetry disabled; process telemetry-off defaults set; FastAPI tracing/metrics/log exporters/automatic setup explicitly disabled. Provider/cloud use remains explicit and separately authorized. |
-| Documentation | README, user manual, developer guide, architecture/drawings, landing source and rendered local site updated. Previous stable0.4.2 downloads remain explicitly historical. |
+| Documentation | README, user manual, developer guide, architecture/drawings, landing source and rendered local site updated. Current download links target v0.5.0; 0.4.2 results remain explicitly historical. |
 
 ## Automated checks
 
@@ -41,7 +41,7 @@ These counts account for returned observations. They are **not accuracy scores**
 
 The local verification directory contains `native/run.json`, three exported videos, original/result projects, checkpoints, `gui/receipt.json`, `portable/receipt.json`, `frozen-gui.json`, `frozen-source.json`, test/build logs and package checksums. Raw machine-specific evidence is deliberately kept out of the source repository. The private state record supplies its absolute path.
 
-The GUI executable SHA256 is `db057f4aaf688e640bd196e301a68eec61a90fa81ac0458cedbefad3f23c77df`. Portable executables are unsigned. No existing installation was replaced; no GitHub release, package upload, hosted-site deployment or CivicCast RC/live-data edit was performed. GitHub CI was not configured or run for this unpublished branch, so local green checks are not represented as hosted CI.
+The GUI executable SHA256 is `db057f4aaf688e640bd196e301a68eec61a90fa81ac0458cedbefad3f23c77df`. Portable executables are unsigned. The Windows executables were built and verified from implementation commit `84b385a84d01565a7a85cdcc0c7a538acb7f9fa4`. Release-only CI/documentation/package metadata changes do not rebuild those executables. Release verification records the tagged source identity, preserved executable hashes and refreshed package hashes. No existing installation is replaced by publication; CivicCast RC/live data remain untouched. Windows CI runs the tests, documentation checks and Python package build; it does not run keyed cloud inference or replace the native media receipts.
 
 Live keyed Gemini/OpenAI/cloud acceptance, Linux/macOS native speech, NVDA/JAWS user acceptance and full-film semantic accuracy remain unverified. The server is a trusted loopback developer service, not a public multi-tenant deployment. Hosted model aliases may change without locally verifiable weight identity. Source, projects and the durable workspace should be backed up together because planned cues refer to narration files there.
 

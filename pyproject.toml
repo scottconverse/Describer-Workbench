@@ -29,6 +29,7 @@ describer-mcp = "describer.adapters.mcp:main"
 describer-workbench = "describer.app:main"
 
 [project.urls]
+Homepage = "https://describer-workbench.sconverse.chatgpt.site"
 Source = "https://github.com/scottconverse/Describer-Workbench"
 Documentation = "https://github.com/scottconverse/Describer-Workbench/blob/main/docs/USER-MANUAL.md"
 Issues = "https://github.com/scottconverse/Describer-Workbench/issues"
@@ -40,7 +41,7 @@ packages = ["describer"]
 "assets" = "describer/resources"
 
 [tool.hatch.build.targets.sdist]
-include = ["describer", "assets", "bin/FFmpeg-LICENSE.txt", "tests", "docs", "website", "tools", "run.py", "run_cli.py", "build.ps1", "DescriberWorkbench.spec", "requirements.txt", "README.md", "LICENSE", "NOTICE", "THIRD-PARTY-NOTICES.md", "third-party-licenses", "pyproject.toml"]
+include = [".github", "describer", "assets", "bin/FFmpeg-LICENSE.txt", "tests", "docs", "website", "tools", "run.py", "run_cli.py", "build.ps1", "DescriberWorkbench.spec", "requirements.txt", "README.md", "LICENSE", "NOTICE", "THIRD-PARTY-NOTICES.md", "third-party-licenses", "pyproject.toml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -1,6 +1,6 @@
 # Architecture and implementation guide
 
-Describer Workbench **0.5.0 candidate**. Source/build only until separately published.
+Describer Workbench **0.5.0**. Shared engine and native Windows portable release.
 
 [User manual](USER-MANUAL.md) · [Developer guide](DEVELOPER-GUIDE.md) · [Repository](https://github.com/scottconverse/Describer-Workbench)
 
@@ -93,7 +93,7 @@ Exact tags `gemma4:12b`, `gemma4:26b` and `qwen3.8:27b-q6_K-vision` keep the exi
 
 Hatch builds a small headless wheel with optional desktop, local-classifier, HTTP, MCP, Gemini and download extras. The Windows PyInstaller folder includes the Qt desktop, `DescriberCLI.exe` and developer transports, sharing one module archive. FFmpeg/FFprobe are separate binaries under retained third-party terms. The pinned YAMNet detector is explicitly provisioned; large vision weights, credentials and user videos are not bundled.
 
-0.5.0 is a local candidate until separately released. The previous0.4.2 tag and accepted binary remain historical evidence and are not relabeled. The static website renderer produces manual, architecture and developer pages with downloadable Markdown; it does not process videos or host model credentials. See [candidate acceptance](V050-ACCEPTANCE.md) for observed results and limits.
+The v0.5.0 tag identifies the release source. The previously verified Windows executables are retained unchanged while release documentation is refreshed; checksums and release verification record both identities. The previous0.4.2 tag and accepted binary remain historical evidence and are not relabeled. The static website renderer produces manual, architecture and developer pages with downloadable Markdown; it does not process videos or host model credentials. See [release acceptance](V050-ACCEPTANCE.md) for observed results and limits.
 
 ## Evidence limits
 
