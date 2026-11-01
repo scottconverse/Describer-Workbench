@@ -1,0 +1,2 @@
+# Documentation renderer only; not needed by the desktop application.
+Markdown==3.9
