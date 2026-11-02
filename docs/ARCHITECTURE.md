@@ -1,6 +1,6 @@
 # Architecture and implementation guide
 
-Describer Workbench local candidate **0.5.2**. Shared engine and native Windows portable candidate; public release remains 0.5.1.
+Describer Workbench **0.5.2**. Shared engine and native Windows portable release. See [release acceptance](V052-ACCEPTANCE.md) for verification scope and limits.
 
 [User manual](USER-MANUAL.md) · [Developer guide](DEVELOPER-GUIDE.md) · [Repository](https://github.com/scottconverse/Describer-Workbench)
 

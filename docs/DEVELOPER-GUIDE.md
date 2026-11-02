@@ -1,6 +1,6 @@
-# Developer guide — local candidate 0.5.2
+# Developer guide — 0.5.2
 
-Public release remains v0.5.1; the candidate changes below are not a published upgrade.
+See [0.5.2 release acceptance](V052-ACCEPTANCE.md) for verification scope and limits.
 
 Describer Workbench has one headless engine. The Qt desktop, Python API, CLI,
 REST API and MCP tools call the same `DescriptionService`. No WSL, Docker,

@@ -2,13 +2,13 @@
 
 **One audio-description engine for a Windows workbench, Python, CLI, REST/OpenAPI and MCP.**
 
-This source checkout is local remediation candidate **0.5.2**, not a new public release. Candidate workflow changes are described in [the manual](docs/USER-MANUAL.md). Public download links below still refer to immutable v0.5.1.
+Version **0.5.2** fixes first-use setup, review preservation, export safety, narration repair and interrupted-job recovery. See [release acceptance](docs/V052-ACCEPTANCE.md) for the verified scope and limitations.
 
-Version **0.5.1** combines the Windows workbench and developer interfaces in one shared engine. Download the portable Windows package or build the tagged source.
+Version **0.5.2** combines the Windows workbench and developer interfaces in one shared engine. Download the portable Windows package or build the tagged source.
 
 Open a video, draft timed descriptions with a local Ollama vision model or Google Gemini, edit every cue, listen alongside the video, and export subtitles or a narrated audio mix. Manual editing, subtitle import and Windows speech work without an AI API key.
 
-[Windows 0.5.1](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.5.1) · [Website](https://describer-workbench.sconverse.chatgpt.site) · [User manual](docs/USER-MANUAL.md) · [Architecture](docs/ARCHITECTURE.md) · [Developer guide](docs/DEVELOPER-GUIDE.md) · [Issues](https://github.com/scottconverse/Describer-Workbench/issues)
+[Windows 0.5.2](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.5.2) · [Website](https://describer-workbench.sconverse.chatgpt.site) · [User manual](docs/USER-MANUAL.md) · [Architecture](docs/ARCHITECTURE.md) · [Developer guide](docs/DEVELOPER-GUIDE.md) · [Issues](https://github.com/scottconverse/Describer-Workbench/issues)
 
 > AI output is a draft. Review visual facts, character identities, timing and overlap with dialogue. Ollama receives sampled images **without audio**, so it cannot determine dialogue gaps or audible names. The shared engine measures speech/vocal protection independently with a pinned local YAMNet classifier. This reduces timing conflicts; it does not establish visual accuracy or legal compliance.
 
@@ -29,7 +29,7 @@ Open a video, draft timed descriptions with a local Ollama vision model or Googl
 
 ## Install and start
 
-1. Download `DescriberWorkbench-0.5.1-windows-x64.zip` from the [release](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.5.1).
+1. Download `DescriberWorkbench-0.5.2-windows-x64.zip` from the [release](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.5.2).
 2. Extract the complete ZIP to a writable folder. Open `DescriberWorkbench/DescriberWorkbench.exe`; keep `_internal` beside it. Python, Qt, FFmpeg and FFprobe are bundled.
 3. Select **Open video** and choose your video. Open it before importing subtitle cues. Standalone audio is not a documented input workflow.
 4. Choose an analysis provider/model and a short range, or add cues manually. Follow the [first-project walkthrough](docs/USER-MANUAL.md#3-your-first-project).
@@ -40,7 +40,7 @@ The binary targets 64-bit Windows and is **unsigned**. Windows 11 was used for l
 Compare your download with the release's `SHA256SUMS.txt`:
 
 ```powershell
-Get-FileHash .\DescriberWorkbench-0.5.1-windows-x64.zip -Algorithm SHA256
+Get-FileHash .\DescriberWorkbench-0.5.2-windows-x64.zip -Algorithm SHA256
 ```
 
 ## Does it need an API key?
@@ -83,7 +83,7 @@ Version 0.5.1 includes the redesigned native PySide6 interface in source and the
 
 The engine measures synthesized speech and fits it only within the visual event and independently protected soundtrack. Speed is capped at 1.15x; no-fit descriptions pause the source instead of being discarded or moved to an unrelated scene. Complete MP4 exports freeze the video during those descriptions; MP3/WAV exports insert matching audio pauses. Uncertain events remain unresolved and block a complete narrated export. Explicit `in-gap-only` exports are marked incomplete. Script exports retain all events and a coverage sidecar; a subtitle file alone cannot express pause playback. Audio mixes downmix to stereo.
 
-In this candidate, Draft checks the selected detector and offers explicit install/repair before inference. You can also use **File → Install speech detector**. This explicitly downloads and verifies the pinned Google YAMNet asset. Missing or corrupt assets fail safely; no model guesses dialogue slots.
+Draft checks the selected detector and offers explicit install/repair before inference. You can also use **File → Install speech detector**. This explicitly downloads and verifies the pinned Google YAMNet asset. Missing or corrupt assets fail safely; no model guesses dialogue slots.
 
 ## Architecture
 
@@ -138,7 +138,7 @@ For 0.5.1, see the release acceptance record in `docs/V051-ACCEPTANCE.md` for ex
 | Artifact | All 13 frozen app modules matched source; installed launch/playback accepted. Published ZIP and downloaded copies verified by SHA256. |
 | Earlier media samples | Nine sampled video exports, 40 subtitle files and three audio layouts passed; not full-film coverage. |
 
-The [v0.5.1 release](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.5.1) includes sanitized verification JSON and checksums. The table above is historical 0.4.2 evidence; the current [acceptance record](docs/V051-ACCEPTANCE.md) covers 0.5.1. Raw receipts stay local because they contain frames/machine paths. Live Gemini, OpenAI and cloud acceptance remain unverified without keys. NVDA/JAWS end-to-end use, native-speaker translation review, public YouTube extractor compatibility and full-film AD quality remain unverified. Windows GitHub CI runs the suite, lint, documentation rendering and Python package build. Its media tests use generated fixtures; the separate native acceptance record covers the actual vision/speech pipeline and portable executables. [AUDIT.md](AUDIT.md) records original parity work and historical results; read them in their version context.
+The [v0.5.2 release](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.5.2) includes sanitized verification JSON and checksums. The table above is historical 0.4.2 evidence; the current [acceptance record](docs/V052-ACCEPTANCE.md) covers 0.5.2. Raw receipts stay local because they contain frames/machine paths. Live Gemini, OpenAI and cloud acceptance remain unverified without keys. NVDA/JAWS end-to-end use, native-speaker translation review, public YouTube extractor compatibility and full-film AD quality remain unverified. Windows GitHub CI runs the suite, lint, documentation rendering and Python package build. Its media tests use generated fixtures; the separate native acceptance record covers the actual vision/speech pipeline and portable executables. [AUDIT.md](AUDIT.md) records original parity work and historical results; read them in their version context.
 
 ## Documentation and development
 

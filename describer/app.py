@@ -779,7 +779,7 @@ class Window(DesktopInterface, QMainWindow):
     def help(self):
         from . import __version__
         QMessageBox.information(self,'Describer Workbench '+__version__,
-            'Local remediation candidate '+__version__+'. '
+            'Version '+__version__+'. '
             'Open a video, then choose Draft with AI or import SRT/VTT. Select a description to seek and edit it inline. '
             'Start/end accept seconds or HH:MM:SS and change independently. Click the timeline to seek; Ctrl+wheel zooms. Space toggles playback outside text editors when the window receives it. Save with Ctrl+S. '
             'Export MP4, MP3/WAV, SRT/VTT, text or JSON. The shared engine protects measured speech, '
