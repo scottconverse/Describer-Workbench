@@ -422,18 +422,17 @@ def test_export_inline_error_keeps_configuration(tmp_path):
 
 def test_api_bind_failure_can_retry_without_stopping_port_owner(tmp_path):
     import socket,time
-    from PySide6.QtTest import QTest
     app,w=make_window(tmp_path);errors=[];w.error=errors.append
     service=DescriptionService(tmp_path/'api-engine')
     occupied=socket.socket();occupied.bind(('127.0.0.1',8796));occupied.listen()
     try:
-        with patch('describer.engine.get_service',return_value=service):
+        with patch('describer.engine.get_service',return_value=service),patch('sys.stdout',None),patch('sys.stderr',None):
             w.start_api();deadline=time.monotonic()+5
-            while w.api_thread is not None and time.monotonic()<deadline:app.processEvents();QTest.qWait(20)
+            while w.api_thread is not None and time.monotonic()<deadline:app.processEvents();time.sleep(.01)
             assert errors and w.api_thread is None and not w.api_ready
             assert occupied.getsockname()[1]==8796
             occupied.close();w.start_api();deadline=time.monotonic()+5
-            while not w.api_ready and time.monotonic()<deadline:app.processEvents();QTest.qWait(20)
+            while not w.api_ready and time.monotonic()<deadline:app.processEvents();time.sleep(.01)
             assert w.api_ready and w.api_thread.is_alive()
             assert w.stop_api() and not w.api_ready
     finally:occupied.close();w.stop_api();service.close();w.dirty=False;w.close();app.processEvents()

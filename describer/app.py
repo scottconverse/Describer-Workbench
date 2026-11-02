@@ -804,7 +804,8 @@ class Window(DesktopInterface, QMainWindow):
             path=service.root/'api-token.txt'
             descriptor=os.open(str(path),os.O_WRONLY|os.O_CREAT|os.O_TRUNC,0o600)
             with os.fdopen(descriptor,'w',encoding='utf-8') as out:out.write(token)
-            self.api_server=uvicorn.Server(uvicorn.Config(create_app(service,token),host='127.0.0.1',port=8796,log_level='warning'))
+            # The windowed executable has no stdout/stderr for console formatters.
+            self.api_server=uvicorn.Server(uvicorn.Config(create_app(service,token),host='127.0.0.1',port=8796,log_level='warning',log_config=None))
             server=self.api_server;self.api_start_error=None;self.api_ready=False
             def run_server():
                 try:server.run()
