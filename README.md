@@ -55,7 +55,7 @@ The analysis picker has **Gemini and Ollama**. OpenAI is a speech/export engine,
 
 ## Ollama quick start
 
-Install and start [Ollama](https://ollama.com/), and separately install a vision model suitable for your hardware. In Workbench choose **Ollama → Refresh models**, then select an installed entry marked **vision**. You may type an exact tag; press Tab to commit it. **Test connection** checks capability and makes a small text request, not a visual accuracy test. Seek to a scene, choose **Next 20 seconds** or **Next 60 seconds**, then **Start draft** in **Draft with AI**.
+Install and start [Ollama](https://ollama.com/), and separately install a vision model suitable for your hardware. In **Draft with AI**, choose **Ollama → Refresh models**, then select an installed entry marked **vision**. Double-click a model row or press F2 to edit its exact tag, then commit the edit. **Test connection** checks capability and makes a small text request, not a visual accuracy test. Seek to a scene, choose **Next 20 seconds** or **Next 60 seconds**, then **Start draft** in **Draft with AI**.
 
 Default server root: `http://127.0.0.1:11434`. Settings can change it. Remote servers require HTTPS; do not append `/api` or `/v1`. Configure cloud sign-in in Ollama itself.
 
@@ -81,7 +81,7 @@ Version 0.5.1 includes the redesigned native PySide6 interface in source and the
 
 The engine measures synthesized speech and fits it only within the visual event and independently protected soundtrack. Speed is capped at 1.15x; no-fit descriptions pause the source instead of being discarded or moved to an unrelated scene. Complete MP4 exports freeze the video during those descriptions; MP3/WAV exports insert matching audio pauses. Uncertain events remain unresolved and block a complete narrated export. Explicit `in-gap-only` exports are marked incomplete. Script exports retain all events and a coverage sidecar; a subtitle file alone cannot express pause playback. Audio mixes downmix to stereo.
 
-Before analysis or narrated export of media with audio, use **File → Install local speech detector** once. This explicitly downloads and verifies the pinned Google YAMNet asset. Missing or corrupt assets fail safely; no model guesses dialogue slots.
+Before analysis or narrated export of media with audio, use **File → Install speech detector** once. This explicitly downloads and verifies the pinned Google YAMNet asset. Missing or corrupt assets fail safely; no model guesses dialogue slots.
 
 ## Architecture
 
@@ -125,7 +125,7 @@ For 0.5.1, see the release acceptance record in `docs/V051-ACCEPTANCE.md` for ex
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -q
 # Optional media acceptance: opens a window, synthesizes speech and writes receipts:
-.\.venv\Scripts\python.exe -m tests.local_acceptance "C:\media\sample.mp4" "C:\receipts\workbench"
+.\.venv\Scripts\python.exe tests/local_acceptance.py "C:\media\sample.mp4" "C:\receipts\workbench"
 ```
 
 | Evidence | Established scope |
@@ -157,7 +157,7 @@ Render the manual/site with a documentation-only dependency:
 .\.venv\Scripts\python.exe tools/build_site.py --output "C:\work\workbench-site"
 ```
 
-The output includes the landing page, HTML guides, architecture drawings and downloadable Markdown. Downloaded Markdown uses absolute web links so navigation survives saving it outside the repository. Hosting is separate from the desktop app; docs publication does not rebuild the executable. The immutable 0.4.2 ZIPs retain their historical documentation. The 0.5.1 portable package includes the current guides; this README and the website carry current release guidance.
+The output includes the landing page, HTML guides, architecture drawings and downloadable Markdown. Downloaded Markdown uses absolute web links so navigation survives saving it outside the repository. Hosting is separate from the desktop app; docs publication does not rebuild the executable. The immutable 0.4.2 ZIPs retain their historical documentation. The immutable 0.5.1 portable contains the guides as packaged at release time; subsequent corrections are maintained in this README and the online/downloadable manuals. Updating documentation does not replace released executables or ZIPs.
 
 ## Provenance and licensing
 

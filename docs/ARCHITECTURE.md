@@ -36,7 +36,7 @@ flowchart TD
 | `engine/planning.py` | Safe-gap intersection with original event interval, collision checks, acceleration ceiling and no-fit dispositions. |
 | `engine/exporting.py` | Complete MP4/MP3/WAV, pause insertions, script formats and coverage receipts. |
 | `adapters/http.py`, `mcp.py`, `remote.py`, `cli.py` | REST/OpenAPI, 17 MCP tools, HTTP proxy and scriptable CLI. |
-| `app.py`, `model_picker.py` | Qt editing/player, durable-engine consumers, explicit cloud consent and model selection. |
+| `app.py`, `desktop.py`, `model_picker.py` | Qt editing/player, durable-engine consumers, explicit cloud consent and model selection. |
 | `services.py`, `models.py` | Media preparation, provider requests, native/cloud speech, DPAPI settings and audio mixing. Low-level adapters do not own an alternate planner. |
 | `project.py` | Version-1 project compatibility, cue validation, event metadata and structural normalization. |
 | `windows_speech.py`, `playback_speech.py` | Windows voice hosts, legacy unplanned playback and optional reader routing. |

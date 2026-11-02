@@ -89,7 +89,7 @@ describer --workspace C:\work\jobs resume JOB_ID
 Other commands: `capabilities`, `models`, `batch`, `status`, `cancel`, `edit`,
 `ask`, `explore`, `scene`, `voice`, `serve` and `mcp`. Batch JSON is a list of
 submission objects; up to20 items are admitted, with per-item results/errors.
-Local commands wait before exiting. `--no-wait` submission requires
+Local describe/ask/explore/voice, batch, resume and export commands wait for their jobs before exiting. Remote describe/ask/explore/voice also wait by default; remote batch, resume and export return job handles, so poll status before reading results. `--no-wait` submission requires
 `--server-url`, so exiting a short-lived CLI cannot abandon its owning worker.
 
 ## HTTP API
@@ -123,7 +123,7 @@ OpenAPI schema: authenticated `GET /openapi.json`. The API defines:
 | GET | `/jobs/{id}/artifact` | Download completed export/voice artifact |
 
 Submission fields are `source` or `project`, `settings`, `prompt`, `start`,
-`duration`, `operation`, `export_format`, `mode`. Read pagination uses `offset`,
+`duration`, `operation`, `export_format`, `mode`. Read pagination filters by the original event interval, not a shifted narration slot. `total` is the filtered count. Pagination uses `offset`,
 `limit` (1..500), optional `start`/`end`. Poll terminal states `done`, `error`,
 `cancelled`, `interrupted`; do not keep polling an error. Media is not embedded
 in job status or MCP tool responses.
@@ -136,7 +136,7 @@ disabled; ONNX Runtime telemetry is disabled before inference.
 
 The desktop's **File → Start developer API / MCP** uses the same in-process
 engine and writes its bearer token to the private workspace's `api-token.txt`.
-Stop it using the adjacent menu action. Closing the desktop stops that server.
+Stop it using **File → Stop developer API / MCP**; the same controls are in Settings → Developer API. Closing the desktop stops that server.
 
 ## MCP
 

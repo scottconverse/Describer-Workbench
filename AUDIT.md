@@ -1,5 +1,7 @@
 # Audit of original Omni Describer and Describer Workbench
 
+This historical original-parity audit predates the shared engine and redesigned desktop. It is retained as evidence, not current usage guidance. See [the user manual](docs/USER-MANUAL.md) and [developer guide](docs/DEVELOPER-GUIDE.md) for current behavior.
+
 ## Scope and method
 
 Target is the supplied original ZIP, SHA-256 83456c4160d2020a9cfa7f49e006299b83c734b21a0ac6710862d7819c077a97. Its executable was not launched. REA retained artifact inventory (evidence/rea-artifact.json), static Python 3.11 bytecode inspection using xdis, the 39-module / 381-code-object inventory, and supplied help/change log establish the original behavior. This is an independent implementation, not the original source tree. No API keys were inspected or used and no media was uploaded.
