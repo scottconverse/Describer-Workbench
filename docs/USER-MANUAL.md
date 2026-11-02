@@ -1,8 +1,8 @@
 # Describer Workbench user manual
 
-For desktop/engine **0.5.0** · Documentation updated November 1, 2026
+For desktop/engine **0.5.1** · Documentation updated November 2, 2026
 
-[Windows 0.5.0 download](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.5.0) · [Project](https://github.com/scottconverse/Describer-Workbench) · [Architecture guide](ARCHITECTURE.md)
+[Windows 0.5.1 download](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.5.1) · [Project](https://github.com/scottconverse/Describer-Workbench) · [Architecture guide](ARCHITECTURE.md)
 
 ## Part I — Everyday use, no programming required
 
@@ -12,7 +12,7 @@ Describer Workbench helps you write short spoken descriptions of a video's visua
 
 The outputs are an editable project; SRT, VTT, plain text or project JSON; narrated MP3/WAV; or a described MP4. Complete media exports include no-fit descriptions by pausing the source. MP4 freezes the picture at the original event while narration plays, then resumes. This extends the timeline; it does not create an embedded selectable alternate track.
 
-The 0.5.0 Windows portable package contains both the desktop app and `DescriberCLI.exe`, including REST and MCP access. Older 0.4.2 downloads do not contain the shared engine or transports.
+The 0.5.1 Windows portable package contains both the desktop app and `DescriberCLI.exe`, including REST and MCP access. Older 0.4.2 downloads do not contain the shared engine or transports.
 
 AI descriptions need editorial review. In particular, the Ollama path sees still images sampled from the video and receives no audio. It cannot know when someone is speaking or confirm a spoken name. The new engine measures speech/vocal protection separately with local YAMNet; it never asks vision to invent safe dialogue gaps. Review still matters for missed speech and visual facts.
 
@@ -319,7 +319,7 @@ Run the standard suite on Windows:
 
 The optional second command opens an owned window, makes a short clip, tests editing/seeking/playback, DPAPI, native speech and MP3. It writes local artifacts and is not a cloud test. Additional acceptance scripts in `tests/` exercise library formats, audio mixing and update staging/rollback; read their inputs before running. `verify_payload.py` compares frozen source code fingerprints to the executable and checks reader dependencies. It does not prove human usability or visual accuracy.
 
-The 0.5.0 suite passed 43 tests and 3 subtests. Real native vision/classifier/speech checks covered three 120-second samples, and packaged GUI/CLI/HTTP/MCP startup passed. See the [release acceptance record](V050-ACCEPTANCE.md) for scope and limits. These results are functional evidence, not a visual-accuracy percentage.
+The v0.5.1 suite passes 51 tests and 3 subtests. The earlier v0.5.0 suite passed 43 tests and 3 subtests. Real native vision/classifier/speech checks covered three 120-second samples, and packaged GUI/CLI/HTTP/MCP startup passed. See the [current release acceptance record](V051-ACCEPTANCE.md) and [historical engine acceptance](V050-ACCEPTANCE.md) for scope and limits. These results are functional evidence, not a visual-accuracy percentage.
 
 Historical 0.4.2 evidence: its suite passed 28 tests. Actual GUI Bunny seconds 62–122 with Gemma 26B and Qwen Q6 completed four requests per model with a clean initial glossary. The eight requests carried the requested off/32K/64K settings, runner contexts were 64K and no thinking output or truncation occurred. Projects matched responses; cue counts (29/25) are not quality scores. The release verification asset pins the executable and source identity. Raw local receipts are excluded from Git/public downloads because they include images and paths.
 
@@ -335,7 +335,7 @@ This is newly written reconstruction source, not recovered original source or an
 
 ## Redesigned desktop interface
 
-The main source tree includes the Industry PySide6 interface; these instructions describe the source interface. The public v0.5.0 portable remains unchanged until a separately authorized release. New scene answers are marked for review. **Mark as checked** appears only on Needs review descriptions. Use it only after verifying visual facts; editing invalidates measured narration and the engine replans it at media export. Saved projects and engine protocols remain compatible.
+The main source tree includes the Industry PySide6 interface; these instructions describe the source interface. The v0.5.1 Windows portable includes this interface. New scene answers are marked for review. **Mark as checked** appears only on Needs review descriptions. Use it only after verifying visual facts; editing invalidates measured narration and the engine replans it at media export. Saved projects and engine protocols remain compatible.
 
 ### Timeline navigation and desktop visual controls
 

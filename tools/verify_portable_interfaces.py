@@ -15,7 +15,7 @@ def main():
     p=argparse.ArgumentParser();p.add_argument('--cli',required=True,type=Path);p.add_argument('--output',required=True,type=Path)
     args=p.parse_args();exe=args.cli.resolve();out=args.output.resolve();out.mkdir(parents=True,exist_ok=True)
     version=subprocess.run([str(exe),'--version'],capture_output=True,text=True,timeout=20)
-    assert version.returncode==0 and version.stdout.strip()=='0.5.0',(version.stdout,version.stderr)
+    assert version.returncode==0 and version.stdout.strip()=='0.5.1',(version.stdout,version.stderr)
     caps=subprocess.run([str(exe),'--workspace',str(out/'cli'),'capabilities'],capture_output=True,text=True,timeout=20)
     assert caps.returncode==0,caps.stderr
     assert json.loads(caps.stdout)['max_concurrent_jobs']==1
@@ -30,7 +30,7 @@ def main():
                 try:
                     req=urllib.request.Request(f'http://127.0.0.1:{port}/capabilities',headers={'Authorization':'Bearer '+token})
                     with urllib.request.urlopen(req,timeout=2) as response:data=json.load(response)
-                    assert data['version']=='0.5.0' and not data['telemetry'];break
+                    assert data['version']=='0.5.1' and not data['telemetry'];break
                 except OSError:
                     if time.monotonic()-started>30:raise
                     time.sleep(.1)
@@ -50,10 +50,10 @@ def main():
                 await client.initialize();tools=await client.list_tools()
                 assert len(tools.tools)==17
                 value=await client.call_tool('capabilities',{})
-                assert not value.isError and '0.5.0' in str(value)
+                assert not value.isError and '0.5.1' in str(value)
                 return len(tools.tools)
     count=asyncio.run(asyncio.wait_for(check_mcp(),40))
-    result={'version':'0.5.0','portable_cli':True,'portable_http_openapi':True,'portable_mcp_stdio':True,'tools':count,'owned_http_stopped':proc.poll() is not None}
+    result={'version':'0.5.1','portable_cli':True,'portable_http_openapi':True,'portable_mcp_stdio':True,'tools':count,'owned_http_stopped':proc.poll() is not None}
     (out/'receipt.json').write_text(json.dumps(result,indent=2),encoding='utf-8');print(json.dumps(result))
 
 if __name__=='__main__':main()
