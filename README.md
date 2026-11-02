@@ -146,7 +146,9 @@ The [v0.5.0 release](https://github.com/scottconverse/Describer-Workbench/releas
 
 For an issue include the app/Windows version, exact provider/model, reproduction steps, expected result and redacted logs. Never post keys, private video, complete settings or unsanitized projects. Describe the scope actually tested.
 
-The landing page is in `website/`. Render the manual/site with a documentation-only dependency:
+The landing page is in `website/`. The [GitHub Pages site](https://scottconverse.github.io/Describer-Workbench/) mirrors the landing page, manuals and diagrams through `.github/workflows/pages.yml` on documentation changes to `main`. The existing [website](https://describer-workbench.sconverse.chatgpt.site) remains available and is the canonical address in generated metadata. Both use the same renderer and relative HTML navigation; no analytics are added.
+
+Render the manual/site with a documentation-only dependency:
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -r docs/requirements.txt
