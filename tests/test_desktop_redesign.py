@@ -131,7 +131,6 @@ def test_review_action_start_counts_and_multiline_prompt():
 def test_export_voice_picker_selects_ids_for_the_correct_engine():
     import time
     from unittest.mock import patch
-    from PySide6.QtTest import QTest
     from describer.desktop import ExportVoices
     with tempfile.TemporaryDirectory() as tmp:
         app,w=make_window(tmp)
@@ -139,7 +138,7 @@ def test_export_voice_picker_selects_ids_for_the_correct_engine():
             d=QDialog(w);picker=ExportVoices(w,d)
             def finish():
                 deadline=time.monotonic()+3
-                while picker.loading and time.monotonic()<deadline:app.processEvents();QTest.qWait(10)
+                while picker.loading and time.monotonic()<deadline:app.processEvents();time.sleep(.01)
                 assert not picker.loading
             try:
                 finish();picker.voice.setCurrentIndex(1);assert picker.selection()['windows_voice']=='Windows-id'
@@ -148,7 +147,11 @@ def test_export_voice_picker_selects_ids_for_the_correct_engine():
                 picker.engine.setCurrentText('OpenAI');assert picker.voice.count()>0
                 assert picker.selection()['voice_engine']=='OpenAI'
                 assert w.settings.data['voice_engine']=='Windows'  # Cancel never mutates settings.
-            finally:picker.shutdown();d.close();w.dirty=False;w.close();app.processEvents()
+            finally:
+                # Keep the owner alive even if an assertion fails during discovery.
+                stopped=picker.shutdown(wait_ms=5000);app.processEvents()
+                assert stopped,'Voice discovery did not stop during test teardown'
+                d.close();w.dirty=False;w.close();app.processEvents()
 
 
 def test_edit_preserves_review_evidence_through_undo_save_and_check(tmp_path):
