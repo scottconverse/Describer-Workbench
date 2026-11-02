@@ -1,6 +1,6 @@
 # Developer guide — 0.5.2
 
-See [0.5.2 release acceptance](V052-ACCEPTANCE.md) for verification scope and limits.
+See [0.5.2 release acceptance](V052-ACCEPTANCE.md) for verification scope and limits. The distributed Windows GUI and CLI are signed as Scott Converse using Azure Trusted Signing with Microsoft timestamps. Source builds require the [release signing procedure](CODE-SIGNING.md) before publication.
 
 Describer Workbench has one headless engine. The Qt desktop, Python API, CLI,
 REST API and MCP tools call the same `DescriptionService`. No WSL, Docker,
@@ -204,7 +204,7 @@ See the [architecture guide](ARCHITECTURE.md) for ownership, timing and data bou
 Remote hosted model aliases can change upstream without a locally verifiable weight digest. Local Ollama model identity uses the digest reported by `/api/tags`.
 
 
-## Candidate recovery and export semantics
+## Recovery and export semantics (0.5.2)
 
 The common service now accepts `operation="prepare"` to repair narration/placement without vision, using the same durable queue and `core.plan_export` path. It requires speech consent for OpenAI. Both submit and resume check actual-operation cloud permissions; text-only export does not require unrelated speech consent. No GUI dialogs are introduced into developer operations.
 
