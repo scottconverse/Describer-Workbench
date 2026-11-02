@@ -35,3 +35,5 @@ Original executable and bytecode are not distributed. Attributed Omni Describer 
 - anyio 4.16.0: retained distribution license/notice text in `third-party-licenses/anyio.txt`.
 
 The independent sound classifier adapts Apache-2.0 CivicCast code. The explicitly downloaded Google YAMNet model is hash-pinned and retains upstream Apache-2.0 terms; its weights are not embedded in the Python package. See NOTICE and `describer/engine/sound.py` for upstream attribution, model revision and SHA256. New Workbench code is Apache-2.0; this does not change the original translation restrictions or dependency terms.
+
+Desktop interface resources: Barlow and Barlow Condensed (SIL OFL 1.1; license texts in assets/fonts). Lucide icons from v0.468.0, ISC license and Feather-derived MIT components; full upstream license in assets/icons/LICENSE. Sources: https://github.com/jpt/barlow and https://github.com/lucide-icons/lucide/tree/0.468.0 .

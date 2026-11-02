@@ -75,7 +75,7 @@ def dpapi(data, decrypt=False):
     finally: ctypes.windll.kernel32.LocalFree(dst.data)
 
 
-DEFAULTS = {'model': 'gemini-2.5-flash', 'language': 'English', 'chunk': 300, 'fps': 2,
+DEFAULTS = {'ui_theme':'light','recent_projects':[], 'model': 'gemini-2.5-flash', 'language': 'English', 'chunk': 300, 'fps': 2,
             'sound_model':'', 'max_speech_speed':1.15, 'allow_cloud':False, 'captions':'',
             'analysis_provider':'Gemini','ollama_url':'http://127.0.0.1:11434','ollama_model':'',
             'ollama_key':'','ollama_timeout':600,'ollama_frame_interval':2,
@@ -109,6 +109,7 @@ class Settings:
                     if isinstance(default,(int,float)) and not isinstance(default,bool):
                         if isinstance(value,bool) or not isinstance(value,(int,float)) or not __import__('math').isfinite(value):raise ValueError('Invalid number.')
                     elif isinstance(default,str) and not isinstance(value,str):raise ValueError('Invalid text.')
+                    elif isinstance(default,list) and (not isinstance(value,list) or not all(isinstance(x,str) for x in value)):raise ValueError('Invalid recent projects.')
                     elif isinstance(default,dict) and not isinstance(value,dict):raise ValueError('Invalid presets.')
                     self.data[key]=value
                 if not all(isinstance(v,dict) and all(isinstance(k,str) and isinstance(t,str) for k,t in v.items()) for v in self.data['presets'].values()):raise ValueError('Invalid prompt presets.')

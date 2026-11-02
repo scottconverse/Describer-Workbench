@@ -35,16 +35,16 @@ OpenAI is optional for speech synthesis. It is not an analysis provider in this 
 
 1. Choose **Open video** (Ctrl+O). Select a local video such as an MP4 of Big Buck Bunny. Use the video file itself, not an SRT subtitle, soundtrack or folder. The default selector lists MP4, MKV, MOV, AVI and WebM. **All files** exposes other files, but decoding is still required.
 2. Press **Play / Pause** to confirm playback and sound. The position slider and **−10 s / +10 s** buttons move through the video.
-3. For a manual first cue, type `0` in Start and press Tab to leave that field. Then enter `3` in End and a short description of the opening image. Choose **Add**, then select the new cue's row. This inserts a cue; **Apply edit** changes a selected existing cue.
+3. Choose **Add at playhead** in Descriptions. This creates a three-second cue (clipped to the video end). Edit Start, End and the description inline. Changes apply as you type; **Ctrl+Z** undoes them.
 4. Save with Ctrl+S and choose a name ending in `.adproject`. The project points to your video; it does not copy it. Keep the video available.
-5. Select the cue in the table. It seeks to the cue's start. Enable **Speak descriptions**, then play. Adjust player volume with the main slider and speech volume in Settings.
-6. Correct the words or timings and choose **Apply edit**. Save again. Use **Export → Subtitles (*.srt)** for a simple first output, or choose MP3 for spoken narration mixed with the soundtrack.
+5. Select the cue in Descriptions. It seeks to the cue's start. Enable **Speak descriptions**, then play. Adjust player volume with the main slider and speech volume in Settings.
+6. Correct the words or timings inline. Save again. Use **Export → Subtitles (SRT)** for a simple first output, or choose MP3 for spoken narration mixed with the soundtrack.
 
 For an AI first draft, save your project, seek to the intended beginning and follow section 5. Start with **Next 20 seconds** or **Next 60 seconds** before requesting a whole film.
 
 ## 4. Find your way around
 
-The top row opens media, starts analysis, opens Settings and cancels a job. The **Analysis AI** row selects provider, exact model and analysis range. Under the video are playback controls, the current description, the cue table and editor. The bottom area has editorial presets and a status log.
+The Start screen opens videos, URLs and saved projects; saved projects appear in Recent projects. The editor places video and transport above a seekable timeline, alongside Descriptions, Scene and Glossary tabs. **Draft with AI** opens provider/model, range and editorial controls. The job card cancels active work. **View → Log** opens diagnostics. Settings uses section navigation. The Theme button switches light/dark appearance. Timeline description buttons support keyboard focus; activating one selects and seeks to that cue.
 
 The **File** menu includes projects, subtitle import, glossary, voice tools, original-data import and update checks. **Help** (F1) opens the built-in help. Some operations are unavailable while a background job is active; wait for completion or cancel it.
 
@@ -54,7 +54,7 @@ The **File** menu includes projects, subtitle import, glossary, voice tools, ori
 | Ctrl+U | Download/open URL |
 | Ctrl+Y | Open YouTube through the same download workflow |
 | Ctrl+Shift+O | Open project |
-| Ctrl+S | Apply selected cue editor and save project |
+| Ctrl+S | Save project (inline edits already apply) |
 | Ctrl+I | Import SRT/VTT after opening video |
 | Ctrl+, | Settings |
 | Ctrl+E | Export |
@@ -76,11 +76,11 @@ If the server is elsewhere, set its root address and optional key in Settings. L
 
 ### Gemini
 
-Enter **Gemini API key** and **Gemini model** in Settings. Choose Gemini in the main picker and use a model your account can access. Analyze, Ask and Explore ask before uploading video. Clips include audio by default; **Remove audio before uploading video** removes it and also removes the model's evidence for dialogue and audible names. Provider account access, quotas and charges apply.
+Enter **Gemini API key** and **Gemini model** in Settings. Choose Gemini in the Draft with AI dialog and use a model your account can access. Analyze, Ask and Explore ask before uploading video. Clips include audio by default; **Remove audio before uploading video** removes it and also removes the model's evidence for dialogue and audible names. Provider account access, quotas and charges apply.
 
 ### Range, prompts and replacement
 
-Choose **Whole video**, **Next 20 seconds** or **Next 60 seconds**. Next ranges start at the current playhead and stop at the end of the video if necessary. Pick a prompt preset or edit the editorial guidance, then choose **Analyze video**.
+Choose **Whole video**, **Next 20 seconds** or **Next 60 seconds**. Next ranges start at the current playhead and stop at the end of the video if necessary. Pick a prompt preset or edit the editorial guidance, then choose **Start draft**.
 
 **Analysis replaces the project's cue list after confirmation, including when only a short range is selected.** It does not append or merge a range into existing cues. Returned times remain absolute video times. Save before comparing models, copy the `.adproject` file in Windows File Explorer, and use **Open project** on the copy. This version has no Save As command; Ctrl+S continues saving the currently opened project.
 
@@ -104,9 +104,9 @@ For a clean model comparison, use identical media/range/prompts and clear the gl
 
 ## 6. Edit and review descriptions
 
-Select a cue in the table. Edit **Start**, **End** and description text below it, then choose **Apply edit**. The table itself is read-only. **Add** inserts the values as a new cue, but does not move the selection to it. **Select the newly added row before Ctrl+S**: saving applies the editor to the selected row, so leaving the old row selected can overwrite that old cue with the new values. **Delete** removes the selected cue after confirmation.
+Select a description to seek and expand its inline editor. Start, End and text update the project immediately when valid. Add at playhead inserts and selects a three-second cue. Delete removes the selected cue after confirmation. Ctrl+Z and Ctrl+Shift+Z undo/redo cue edits.
 
-Times accept numeric seconds (`62.5`), minutes/seconds (`1:02.5`) or hours/minutes/seconds (`00:01:02.5`). The cue must have nonempty text and an end after the start, within the video duration. **Set Start and leave the field before setting End**: leaving Start shifts End by the start-time change, with a minimum 0.1-second duration. Check both values before applying. Ctrl+S applies the current selected cue editor before saving. Apply edits explicitly before export or another operation.
+Times accept numeric seconds (`62.5`), minutes/seconds (`1:02.5`) or hours/minutes/seconds (`00:01:02.5`). Start and End are independent; the ± buttons nudge by 0.1 seconds. Invalid intermediate input stays in the editor but does not enter the project; correct it before saving or exporting. Text must be nonempty and the end must follow the start within the video duration.
 
 Use this review sequence:
 
@@ -177,7 +177,7 @@ Open video first, then **Import SRT / VTT** (Ctrl+I). Import replaces current cu
 
 | Setting group | Meaning |
 | --- | --- |
-| Provider fields | Gemini key/model; Ollama root URL, optional key; OpenAI key, speech model and base voice. Analysis provider/exact Ollama tag are in the main picker. |
+| Provider fields | Gemini key/model; Ollama root URL, optional key; OpenAI key, speech model and base voice. Analysis provider/exact Ollama tag are in Draft with AI. |
 | Description language / verbosity | Requested output language and Short/Standard/Detailed guidance. Model compliance is not guaranteed. |
 | Chunk duration / enable chunking | Gemini segment length (15–1800 seconds). Ollama additionally caps chunks at eight frame intervals even if chunking is disabled. |
 | Gemini frames per second | FFmpeg segment preparation, 1–30 fps. Despite the UI label, it also affects the prepared video from which Ollama samples frames; Ollama's sampling interval is separate. |
@@ -332,3 +332,15 @@ When extending a provider, trace selection → saved exact tag → capability/pr
 Report issues at the [GitHub issue tracker](https://github.com/scottconverse/Describer-Workbench/issues). Include app/Windows version, exact tag/provider, range, reproducible steps and redacted logs. Share a public sample only if you have the rights. Omit keys and private paths/media.
 
 This is newly written reconstruction source, not recovered original source or an original-author-endorsed release. New Workbench code is licensed under Apache-2.0 with no warranty. Third-party dependencies/translations retain their own terms; Apache-2.0 does not relicense those assets. See [third-party notices](../THIRD-PARTY-NOTICES.md).
+
+## Redesigned desktop interface
+
+The main source tree includes the Industry PySide6 interface; these instructions describe the source interface. The public v0.5.0 portable remains unchanged until a separately authorized release. New scene answers are marked for review. **Mark as checked** appears only on Needs review descriptions. Use it only after verifying visual facts; editing invalidates measured narration and the engine replans it at media export. Saved projects and engine protocols remain compatible.
+
+### Timeline navigation and desktop visual controls
+
+Use Ctrl+mouse-wheel over the timeline to zoom around the pointer, and the mouse wheel or bottom scrollbar to pan. The visible range follows the playhead; selecting a description brings it into view. The picture lane samples eight frames within the visible range and refreshes after zooming or panning; repeated frames can still occur in a static scene. Sped-up description blocks have diagonal stripes. Description tags distinguish In gap, Sped up, Pauses picture and Needs review. Theme and Settings are icon buttons; the editor toolbar and document status counts are hidden on Start. Sliders, checkboxes and scrollbars use the interface accent in both themes. Model tags can be edited in the model list (double-click or F2), with no duplicate tag field.
+
+The Draft dialog accepts multiline editorial instructions and gives both provider cards the same selection treatment. Scene questions have a labeled Context range and an Add as description action beside the latest answer. Glossary cards keep Add character beneath the list.
+
+At export, choose a narration engine and a voice in the dropdowns. Windows voices are read asynchronously for that engine; changing engines refreshes the list. OpenAI lists the configured base voice and saved presets. Selection applies only after accepting export; cancellation preserves settings. Voice listing does not send description text to any provider.
