@@ -18,7 +18,7 @@ AI descriptions need editorial review. In particular, the Ollama path sees still
 
 ## 2. Install and choose a working mode
 
-Download the Windows portable ZIP from the release page. Extract everything, then open `DescriberWorkbench/DescriberWorkbench.exe`. Keep the `_internal` directory with the executable. The current portable build is unsigned. It includes the application runtime and media tools; it does not include Ollama, AI model weights or videos.
+Download the Windows portable ZIP from the release page. Extract everything, then open `DescriberWorkbench/DescriberWorkbench.exe`. Keep the `_internal` directory with the executable. The current portable build has GUI and CLI executables signed as Scott Converse using Azure Trusted Signing with Microsoft timestamps. It includes the application runtime and media tools; it does not include Ollama, AI model weights or videos.
 
 Use one of these paths:
 

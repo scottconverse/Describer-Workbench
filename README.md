@@ -35,7 +35,7 @@ Open a video, draft timed descriptions with a local Ollama vision model or Googl
 4. Choose an analysis provider/model and a short range, or add cues manually. Follow the [first-project walkthrough](docs/USER-MANUAL.md#3-your-first-project).
 5. Save with **Ctrl+S**, review playback and use **Export** for SRT, text or MP3.
 
-The binary targets 64-bit Windows and is **unsigned**. Windows 11 was used for local acceptance. Windows speech depends on installed voices. Ollama, model weights and test media are separate. No macOS/Linux release or formal minimum RAM/GPU requirement is established; hardware needs depend on the local model.
+The binary targets 64-bit Windows and has GUI and CLI executables **signed as Scott Converse using Azure Trusted Signing**. Windows 11 was used for local acceptance. Windows speech depends on installed voices. Ollama, model weights and test media are separate. No macOS/Linux release or formal minimum RAM/GPU requirement is established; hardware needs depend on the local model.
 
 Compare your download with the release's `SHA256SUMS.txt`:
 
