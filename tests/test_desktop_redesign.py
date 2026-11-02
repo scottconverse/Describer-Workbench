@@ -182,7 +182,6 @@ def test_voice_discovery_waits_for_owned_completion_before_replacement(tmp_path)
     import threading
     import time
     from unittest.mock import patch
-    from PySide6.QtTest import QTest
     from describer.desktop import ExportVoices
     entered=threading.Event();release=threading.Event()
     def discover(engine,**kwargs):
@@ -203,13 +202,17 @@ def test_voice_discovery_waits_for_owned_completion_before_replacement(tmp_path)
             assert picker.thread is first
             deadline=time.monotonic()+3
             while picker.loading and time.monotonic()<deadline:
-                app.processEvents();QTest.qWait(10)
+                app.processEvents();time.sleep(.01)
             assert not picker.loading and picker.loaded=='Windows 32-bit'
             picker.engine.setCurrentText('Windows')
             picker.shutdown()
             deadline=time.monotonic()+3
-            while picker.thread is not None and time.monotonic()<deadline:app.processEvents();QTest.qWait(10)
+            while picker.thread is not None and time.monotonic()<deadline:app.processEvents();time.sleep(.01)
             assert picker.thread is None or not picker.thread.isRunning()
             app.processEvents()
         finally:
-            release.set();picker.shutdown();d.close();w.dirty=False;w.close();app.processEvents()
+            release.set()
+            stopped=picker.shutdown(wait_ms=5000)
+            app.processEvents()
+            assert stopped, 'Voice discovery did not stop during test teardown'
+            d.close();w.dirty=False;w.close();app.processEvents()
