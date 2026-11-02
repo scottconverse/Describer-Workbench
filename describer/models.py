@@ -43,10 +43,10 @@ def open_request(settings,path,payload=None,timeout=10):
     except urllib.error.HTTPError as exc:
         # Never include a provider's raw body, which can echo credentials or media.
         hint={401:'Check Ollama sign-in or the server API key.',403:'Check Ollama sign-in or account access.',
-              404:'Check the server address and installed model.',429:'Ollama usage limit reached; try later.'}.get(exc.code,'Check the Ollama server status.')
+              404:'The selected model or endpoint was not found. Open Settings > Keys & privacy to check the server address, then Draft > Refresh models. Install your chosen vision model in Ollama if it is absent.',429:'Ollama usage limit reached; try later.'}.get(exc.code,'Check the Ollama server status.')
         raise RuntimeError(f'Ollama HTTP {exc.code}. {hint}') from None
     except (urllib.error.URLError,TimeoutError,OSError) as exc:
-        raise RuntimeError('Could not reach Ollama. Start its server and check the address and timeout.') from None
+        raise RuntimeError('Could not reach Ollama. Start the Ollama application/server. If it is not installed, use https://ollama.com/download/windows. Check Settings > Keys & privacy > Ollama server address, then retry Draft > Refresh models. No model is downloaded automatically.') from None
 
 
 def json_request(settings,path,payload=None):
@@ -72,10 +72,10 @@ def discover(settings,cancel,log):
 
 def model_info(settings):
     name=settings.get('ollama_model','').strip()
-    if not name:raise ValueError('Choose an Ollama model and refresh the model list first.')
+    if not name:raise ValueError('Open Draft > Refresh models, then select or type the exact installed vision model ID. If none is installed, install your chosen vision model using Ollama first.')
     info=json_request(settings,'/api/show',{'model':name})
     if 'vision' not in info.get('capabilities',[]):
-        raise ValueError(f'{name} does not report vision support. Choose a vision model for video analysis.')
+        raise ValueError(f'{name} does not report vision support. Open Draft > Refresh models and select an installed vision model for video analysis. Your current selection has not been changed.')
     return info
 
 

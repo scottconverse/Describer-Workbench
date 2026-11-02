@@ -87,7 +87,8 @@ def export(project, output, settings, cancel, log, mode='complete'):
         check_cancel(cancel)
         # Copy to a same-directory partial before replace (output may be another drive).
         import shutil
-        partial = target.with_name(target.name+'.partial')
+        with tempfile.NamedTemporaryFile(prefix=target.name+'.',suffix='.partial',dir=target.parent,delete=False) as owned:
+            partial = Path(owned.name)
         try:
             shutil.copyfile(staged, partial)
             partial.replace(target)

@@ -1,8 +1,8 @@
 # Describer Workbench user manual
 
-For desktop/engine **0.5.1** · Documentation reviewed November 1, 2026 (America/Denver)
+For release **0.5.2** · November 2, 2026 (America/Denver). See [release acceptance](V052-ACCEPTANCE.md) for verification scope and limits.
 
-[Windows 0.5.1 download](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.5.1) · [Project](https://github.com/scottconverse/Describer-Workbench) · [Architecture guide](ARCHITECTURE.md)
+[Windows 0.5.2 download](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.5.2) · [Project](https://github.com/scottconverse/Describer-Workbench) · [Architecture guide](ARCHITECTURE.md)
 
 ## Part I — Everyday use, no programming required
 
@@ -12,7 +12,7 @@ Describer Workbench helps you write short spoken descriptions of a video's visua
 
 The outputs are an editable project; SRT, VTT, plain text or project JSON; narrated MP3/WAV; or a described MP4. Complete media exports include no-fit descriptions by pausing the source. MP4 freezes the picture at the original event while narration plays, then resumes. This extends the timeline; it does not create an embedded selectable alternate track.
 
-The 0.5.1 Windows portable package contains both the desktop app and `DescriberCLI.exe`, including REST and MCP access. Older 0.4.2 downloads do not contain the shared engine or transports.
+The 0.5.2 Windows portable package contains both the desktop app and `DescriberCLI.exe`, including REST and MCP access. Older 0.4.2 downloads do not contain the shared engine or transports.
 
 AI descriptions need editorial review. In particular, the Ollama path sees still images sampled from the video and receives no audio. It cannot know when someone is speaking or confirm a spoken name. The new engine measures speech/vocal protection separately with local YAMNet; it never asks vision to invent safe dialogue gaps. Review still matters for missed speech and visual facts.
 
@@ -46,7 +46,7 @@ For an AI first draft, save your project, seek to the intended beginning and fol
 
 The Start screen opens videos, URLs and saved projects; saved projects appear in Recent projects. The editor places video and transport above a seekable timeline, alongside Descriptions, Scene and Glossary tabs. **Draft with AI** opens provider/model, range and editorial controls. The job card cancels active work. **View → Log** opens diagnostics. Start contains Open video, From URL and Open project action cards; the editor toolbar Open action returns to Start. Drag a local video or .adproject file into the window to open it, after any unsaved-change confirmation. Settings uses section navigation. The Theme button switches light/dark appearance. Timeline description buttons support keyboard focus; activating one selects and seeks to that cue.
 
-The **File** menu includes projects, subtitle import, glossary, voice tools, original-data import and update checks. **Help** (F1) opens brief built-in help. The immutable v0.5.1 binary still contains legacy help wording about Analyze video and linked Start/End changes; use this maintained guide for the redesigned controls. The repository help text is corrected for the next build. Some operations are unavailable while a background job is active; wait for completion or cancel it.
+The **File** menu includes projects, subtitle import, glossary, voice tools, original-data import and update checks. **Help** (F1) opens brief built-in help. The immutable v0.5.1 binary still contains legacy help wording about Analyze video and linked Start/End changes; use this maintained guide for the redesigned controls. Version 0.5.2 packages corrected Help and displays its actual version. Some operations are unavailable while a background job is active; wait for completion or cancel it.
 
 | Shortcut | Action |
 | --- | --- |
@@ -68,7 +68,7 @@ Press Space to toggle playback when focus is outside single-line and multiline t
 
 Start your separately installed Ollama server. Open **Draft with AI**, choose the **Ollama** provider card, then **Refresh models**. Entries show their exact tag, local/cloud status, reported vision capability and whether they are loaded. A text-only model cannot analyze video, even if it answers ordinary chat prompts.
 
-Before your first analysis of a video with audio, choose **File → Install speech detector**. This explicitly downloads the pinned Google YAMNet ONNX file and verifies its SHA256. If it is unavailable or changed, analysis and narrated export stop before inference. An already verified file can be reused offline.
+Draft preflights the selected speech detector. If missing or corrupt, it offers an explicit download/repair and continues only after SHA256 and ONNX validation. Cancel makes no provider request. **File → Install speech detector** repairs the selected custom path as well as the default path. Network reads have a ten-second timeout; cancellation waits for a pending read and preserves an earlier valid asset. Completed installation is retained if cancellation arrives afterward. If it is unavailable or changed, analysis and narrated export stop before inference. An already verified file can be reused offline.
 
 Choose an installed vision entry. To change a tag, double-click the model row or press F2, enter the exact model ID without display annotations, and commit the edit. The model list is the editable control; there is no separate tag field. **Test connection** first checks capability and then sends a short text prompt; a successful reply does not prove visual understanding. Refresh itself makes metadata requests, not inference requests or downloads.
 
@@ -149,7 +149,7 @@ The **Audio export speech engine** is separate from playback voice:
 | Windows OneCore | Installed Windows OneCore voices |
 | OpenAI | Configured API key, model, base voice/preset and paid remote synthesis |
 
-Choose the engine and voice directly in the Export dialog for narrated media. Installed Windows voices load asynchronously for the selected engine; OpenAI lists the configured base voice and saved presets. Accepting Export saves the selected engine/voice for subsequent exports; Cancel leaves settings unchanged. Alternatively, configure **Settings → Export voice** or **File → Select Windows export voice** and use **Test selected export voice** for a preview. Changing engines clears an incompatible native voice selection. OpenAI preview and export confirm before sending text.
+Choose the engine and voice directly in the Export dialog for narrated media. Installed Windows voices load asynchronously for the selected engine; OpenAI lists the configured base voice and saved presets. Accepting Export saves the selected engine/voice for subsequent exports; Cancel leaves settings unchanged. Alternatively, configure **Settings → Export voice** or **File → Select Windows export voice** and use **Test selected export voice** for a preview. Changing engines clears an incompatible native voice selection. OpenAI preview and export confirm before sending text. Draft also names OpenAI speech separately from its vision destination before any external processing.
 
 **Manage voice presets** adds, edits, deletes or imports original `voices.json` personalities. Choose the active preset in Settings. Presets set a base voice, speed and delivery instructions; instructions are sent only for the compatible `gpt-4o-mini-tts` family. They do not turn a Windows voice into an OpenAI voice.
 
@@ -300,7 +300,7 @@ Optional update-feed shape (example only; no service is supplied):
 ```json
 {
   "application": "DescriberWorkbench",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "url": "https://example.org/DescriberWorkbench.zip",
   "sha256": "REPLACE_WITH_THE_ACTUAL_64_HEXADECIMAL_CHARACTER_DIGEST"
 }
@@ -344,3 +344,17 @@ Use Ctrl+mouse-wheel over the timeline to zoom around the pointer, and the mouse
 The Draft dialog accepts multiline editorial instructions and gives both provider cards the same selection treatment. Scene questions have a labeled Context range and an Add as description action beside the latest answer. Glossary cards keep Add character beneath the list.
 
 At export, choose a narration engine and a voice in the dropdowns. Windows voices are read asynchronously for that engine; changing engines refreshes the list. OpenAI lists the configured base voice and saved presets. Accepting Export saves the choice for subsequent exports; cancellation preserves settings. Voice listing does not send description text to any provider.
+
+
+## Setup and recovery changes (0.5.2)
+
+These controls are included in 0.5.2. [Release acceptance](V052-ACCEPTANCE.md) records the checks and remaining verification limits.
+
+- Draft provider/model edits are committed by Start; Cancel preserves saved settings. Ollama Refresh and Test operate on the exact displayed ID. Gemini does not expose an Ollama-backed test. Slow preflight runs in the background; Cancel prevents continuation. Install/start Ollama separately and install your chosen vision model, then use Draft > Refresh models. No automatic model selection or download occurs.
+- Setup distinguishes missing, configured, verified and error. A configured Gemini key is not an account-access test. Detector verification is cached and invalidated by file changes. Voice readiness concerns the selected export engine, not playback voices.
+- Editing text/timing retains visual evidence, original event timing and review status. Stale narration is invalidated. Use Mark as checked only after review. Opening another video/project clears Scene answers and ignores stale callbacks.
+- Export checks extension and destination access while keeping the dialog open for corrections. Existing output/coverage files require replacement confirmation even for typed paths. Failed or empty voice discovery blocks narrated media but leaves script formats usable; Retry voice discovery or choose another engine.
+- **File > Repair narration** regenerates missing narration and placement through the shared engine without repeating vision. Missing referenced audio is also reported on load/playback. Consent precedes cloud speech. Save the repaired project to retain its new audio references.
+- **File > Recover interrupted jobs** lists readable failed/cancelled/interrupted jobs with original source and operation. Resume uses original saved settings plus current keys, and opens the result as an unsaved recovered project. Checkpoints are reused only when source, model, settings and implementation identity match. An older release's checkpoints may be incompatible with this version; rejection preserves them. Damaged job records are reported and left unchanged; restore them from a backup rather than deleting the engine workspace.
+- The developer API announces readiness only after startup. A busy port is reported; no conflicting process is terminated. Stop/retry once the conflict is resolved.
+- URL failures offer connection/account/extractor guidance and a local-file fallback. The app does not import browser cookies or bypass bot challenges. With no update feed, Check for updates explains that nothing was checked and offers the official releases page.

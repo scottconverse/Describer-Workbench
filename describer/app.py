@@ -69,7 +69,7 @@ from .desktop import DesktopInterface
 
 class Window(DesktopInterface, QMainWindow):
     def __init__(self, settings_path=None):
-        super().__init__();self.setWindowTitle('Describer Workbench');self.resize(1180,850)
+        super().__init__();from . import __version__;self.setWindowTitle('Describer Workbench '+__version__);self.resize(1180,850)
         self.settings=Settings(settings_path);self.project=Project();self.project_path=None;self.dirty=False
         from .diagnostics import make_logger
         self.logger=make_logger(self.settings)
@@ -129,7 +129,7 @@ class Window(DesktopInterface, QMainWindow):
                              ('Import SRT / VTT','Ctrl+I',self.import_cues),('Settings','Ctrl+,',self.edit_settings),('Export','Ctrl+E',self.export)]:
             action=QAction(label,self);action.setShortcut(QKeySequence(key));action.triggered.connect(fn);menu.addAction(action)
         glossary=QAction('Character glossary',self);glossary.triggered.connect(self.edit_glossary);menu.addAction(glossary)
-        for label,fn in [('Install speech detector',self.install_detector),('Start developer API / MCP',self.start_api),('Stop developer API / MCP',self.stop_api)]:
+        for label,fn in [('Recover interrupted jobs',self.recover_jobs),('Repair narration',self.repair_narration),('Install speech detector',self.install_detector),('Start developer API / MCP',self.start_api),('Stop developer API / MCP',self.stop_api)]:
             action=QAction(label,self);action.triggered.connect(fn);menu.addAction(action)
         for label,fn in [('Manage voice presets',self.manage_voices),('Test selected export voice',self.test_voice),('Select Windows export voice',self.select_windows_voice),('Import original data',self.import_original),('Check for updates',self.check_updates)]:
             action=QAction(label,self);action.triggered.connect(fn);menu.addAction(action)
@@ -175,7 +175,9 @@ class Window(DesktopInterface, QMainWindow):
         self.model_picker.setEnabled(True)
         if hasattr(self,'job_card'):
             self.job_card.hide()
-            if self.cancel.is_set():self.notify('Cancelled. Nothing was changed.')
+            if self.cancel.is_set():self.notify('Operation stopped. Completed downloads and durable checkpoints are retained.')
+        pending=getattr(self,'pending_after_job',None);self.pending_after_job=None
+        if pending and not self.cancel.is_set():QTimer.singleShot(0,pending)
         if getattr(self,'pending_model_test',None):
             settings=self.pending_model_test;self.pending_model_test=None
             from .models import test_connection
@@ -188,12 +190,20 @@ class Window(DesktopInterface, QMainWindow):
         if choice==QMessageBox.StandardButton.Cancel:return False
         if choice==QMessageBox.StandardButton.Save:return bool(self.save_project())
         return True
+    def reset_scene(self):
+        self.history=[]
+        if hasattr(self,'answer'):del self.answer
+        self.conversation.clear();self.answer_text.setText('No answer yet.');self.add_answer_button.setEnabled(False)
+        self.question.clear()
+        while self.explore_host.count():
+            item=self.explore_host.takeAt(0)
+            if item.widget():item.widget().deleteLater()
     def set_video(self,path):
         from .services import probe
         self.pause_active=False;self.pause_player.stop();self.narration.stop();self.played_pauses.clear()
         duration=probe(path);self.playback_speech.stop();self.player.stop();self.project=Project(str(Path(path).resolve()),duration);self.project_path=None;self.dirty=False
         self.undo_stack.clear();self._selected_cue=None
-        self.history=[];self.player.setSource(QUrl.fromLocalFile(self.project.video));self.file_label.setText(self.project.video);self.refresh();self.last_spoken=None
+        self.reset_scene();self.player.setSource(QUrl.fromLocalFile(self.project.video));self.file_label.setText(self.project.video);self.refresh();self.last_spoken=None
     def open_video(self):
         if self.busy() or not self.guard_changes():return
         p,_=QFileDialog.getOpenFileName(self,'Open video','','Video files (*.mp4 *.mkv *.mov *.avi *.webm);;All files (*)')
@@ -233,7 +243,7 @@ class Window(DesktopInterface, QMainWindow):
             if self.speak_check.isChecked():
                 cue=found[1]
                 if cue.disposition=='in-gap':
-                    if not Path(cue.audio).is_file():self.log('Verified narration is missing; re-plan this project.');self.player.pause();return
+                    if not Path(cue.audio).is_file():self.player.pause();self.offer_narration_repair();return
                     # Media position callbacks and audio startup are not sample-accurate.
                     # If playback arrived late, pause rather than speaking past a safe slot.
                     if cue.speech_seconds/cue.speed+.2>cue.end-value/1000:
@@ -242,7 +252,7 @@ class Window(DesktopInterface, QMainWindow):
                 else:self.playback_speech.say(cue.text,self.settings.data['interrupt'])
         if not found:self.last_spoken=None
     def start_pause(self,cue):
-        if not Path(cue.audio).is_file():self.log('Pause narration is missing; re-plan/export this project.');self.player.pause();return
+        if not Path(cue.audio).is_file():self.player.pause();self.offer_narration_repair();return
         self.played_pauses.add(cue.event_id);self.pause_active=True;self.player.pause();self.narration.stop();self.playback_speech.stop()
         self.current.setText('Pause description: '+cue.text);self.pause_player.setSource(QUrl.fromLocalFile(cue.audio));self.pause_player.play()
     def pause_status(self,status):
@@ -307,7 +317,7 @@ class Window(DesktopInterface, QMainWindow):
         i=self.table.currentRow()
         if 0<=i<len(self.project.cues):
             old=self.project.cues[i]
-            if (old.start,old.end,old.text)==(candidate.start,candidate.end,candidate.text):return copy.deepcopy(old)
+            return old.edited(candidate.start,candidate.end,candidate.text,self.project.duration)
         return candidate
     def add_cue(self):
         if self.busy():return
@@ -352,9 +362,10 @@ class Window(DesktopInterface, QMainWindow):
                 from .services import probe
                 actual=probe(project.video)
                 for c in project.cues:c.validate(actual)
-                project.duration=actual;self.undo_stack.clear();self._selected_cue=None;self.project=project;self.project_path=p;self.dirty=False;self.history=[]
+                project.duration=actual;self.undo_stack.clear();self._selected_cue=None;self.project=project;self.project_path=p;self.dirty=False;self.reset_scene()
                 self.pause_active=False;self.pause_player.stop();self.narration.stop();self.played_pauses.clear()
                 self.playback_speech.stop();self.player.stop();self.last_spoken=None;self.player.setSource(QUrl.fromLocalFile(project.video));self.file_label.setText(project.video);self.refresh();self.remember_project()
+                QTimer.singleShot(0,lambda:self.offer_narration_repair() if self.project is project else None)
             except Exception as e:self.error(str(e))
     def import_cues(self):
         if self.busy():return
@@ -367,29 +378,74 @@ class Window(DesktopInterface, QMainWindow):
                 if self.project.cues and QMessageBox.question(self,'Replace descriptions','Replace all current descriptions with the imported captions?')!=QMessageBox.StandardButton.Yes:return
                 self.project.cues=cues;self.changed()
             except Exception as e:self.error(str(e))
-    def cloud_confirm(self):
-        if self.settings.data.get('analysis_provider','Gemini')=='Ollama':
-            from .models import model_info
-            try:return self.confirm_ollama(model_info(self.settings.data))
-            except Exception as exc:self.error(str(exc));return False
-        if not self.settings.data['gemini_key']:self.error('Enter a Gemini API key in Settings before using analysis or scene tools.');return False
-        return QMessageBox.question(self,'Send video to Google Gemini','This operation uploads video segments to Google Gemini using your API key and may incur charges. Continue?')==QMessageBox.StandardButton.Yes
-    def confirm_ollama(self,info):
+    def after_job(self,callback):
+        if self.thread is not None:self.pending_after_job=callback
+        else:QTimer.singleShot(0,callback)
+    def cloud_confirm(self,settings=None,info=None,narration=False,vision=True):
+        settings=settings or self.settings.data
+        destinations=[]
+        if not vision:pass
+        elif settings.get('analysis_provider','Gemini')=='Ollama':
+            from .models import is_cloud
+            if is_cloud(settings,info or {}):destinations.append('Sampled video frames and prompts to the selected remote/cloud Ollama server; may use paid allowance.')
+        else:destinations.append('Video segments and prompts to Google Gemini using your key; may include audio and incur charges.')
+        if narration and settings.get('voice_engine')=='OpenAI':destinations.append('Generated description text to OpenAI for paid speech synthesis.')
+        if not destinations:return True
+        return QMessageBox.question(self,'Confirm external processing','This operation sends:\n\n'+'\n\n'.join(destinations)+'\n\nContinue?')==QMessageBox.Yes
+    def confirm_ollama(self,info,settings=None):
+        settings=settings or self.settings.data
         from .models import is_cloud
-        if not is_cloud(self.settings.data,info):return True
-        return QMessageBox.question(self,'Use Ollama cloud or remote server',
-            'This sends prompts and sampled video frames to the selected remote model and may use paid allowance. Continue?')==QMessageBox.StandardButton.Yes
+        if not is_cloud(settings,info):return True
+        return QMessageBox.question(self,'Use Ollama cloud or remote server','This sends prompts and sampled video frames to the selected remote model and may use paid allowance. Continue?')==QMessageBox.Yes
+    def operation_preflight(self,settings,done,narration=False,detector=False,vision=True):
+        identity=self.project;current_settings=copy.deepcopy(self.settings.data)
+        def current():return self.project is identity and self.settings.data==current_settings
+        def check(cancel,log):
+            from .engine.core import check_cancel
+            check_cancel(cancel)
+            if detector:
+                from .engine.assets import validate_detector
+                try:validate_detector(settings)
+                except Exception as exc:return {'detector_error':str(exc)}
+            if narration:
+                from .services import narration_preflight
+                narration_preflight(settings,cancel)
+            info=None
+            if vision and settings.get('analysis_provider')=='Ollama':
+                from .models import model_info
+                log('Checking exact Ollama model; request timeout is 10 seconds. Cancel prevents starting inference.')
+                info=model_info(settings)
+            elif vision and not settings.get('gemini_key'):raise ValueError('Enter your Gemini key in Settings > Keys & privacy, then retry Draft or Scene.')
+            check_cancel(cancel)
+            return {'info':info}
+        def ready(result):
+            if self.cancel.is_set() or not current():return
+            if 'detector_error' in result:
+                message=result['detector_error']+'\n\nDownload/repair the selected pinned detector from Hugging Face, verify it, and continue this operation?'
+                if QMessageBox.question(self,'Set up speech detector',message,QMessageBox.Yes|QMessageBox.Cancel,QMessageBox.Cancel)!=QMessageBox.Yes:return
+                def install():
+                    if not current():return
+                    from .engine.assets import provision
+                    def installed(path):
+                        self.log('Speech detector installed and verified: '+str(path))
+                        self.after_job(lambda:self.operation_preflight(settings,done,narration,detector,vision) if current() else None)
+                    self.job(lambda c,l:provision(settings.get('sound_model') or None,c),installed)
+                self.after_job(install);return
+            if vision and settings.get('analysis_provider')=='Ollama':self.verified_model=(settings.get('ollama_url'),settings.get('ollama_model'))
+            if narration:self.verified_voice=(settings.get('voice_engine'),settings.get('windows_voice'))
+            if not self.cloud_confirm(settings,result['info'],narration,vision):return
+            self.after_job(lambda:done() if current() else None)
+        self.job(check,ready)
     def analyze(self):
         if self.busy() or not self.project.video:return
         if self.project.cues and QMessageBox.question(self,'Replace descriptions','Replace existing descriptions with newly generated results?')!=QMessageBox.StandardButton.Yes:return
-        if not self.cloud_confirm():return
-        snapshot=copy.deepcopy(self.project);settings=copy.deepcopy(self.settings.data);settings['allow_cloud']=True;prompt=self.prompt.toPlainText()
+        snapshot=copy.deepcopy(self.project);original_settings=copy.deepcopy(self.settings.data);settings=dict(original_settings,allow_cloud=True);prompt=self.prompt.toPlainText()
         scope=self.model_picker.scope.currentIndex()
         start_at=self.player.position()/1000 if scope else 0
         duration={1:20,2:60}.get(scope)
         def task(c,l):
             cues=generate(snapshot,settings,prompt,c,l,start_at,duration);return cues,snapshot.glossary,snapshot.coverage,snapshot.analysis
-        self.job(task,self.generated)
+        self.operation_preflight(original_settings,lambda:self.job(task,self.generated),narration=True,detector=True)
     def generated(self,result):
         cues,glossary,*metadata=result;self.project.glossary=glossary;self.project.cues=cues
         if metadata:self.project.coverage,self.project.analysis=metadata
@@ -398,7 +454,7 @@ class Window(DesktopInterface, QMainWindow):
         # Save commits the selected editor, which must not still contain the old cue.
         if cues:self.table.setCurrentCell(0,0);self.select_cue()
     def scene_request(self,instruction,done,length=10):
-        if self.busy() or not self.project.video or not self.cloud_confirm():return
+        if self.busy() or not self.project.video:return
         self.player.pause();pos=self.player.position()/1000;source=self.project.video;duration=self.project.duration;settings=copy.deepcopy(self.settings.data);settings['allow_cloud']=True
         def task(cancel,log):
             from .engine import get_service
@@ -407,10 +463,14 @@ class Window(DesktopInterface, QMainWindow):
             job=service.submit(source=source,settings=settings,prompt=instruction,start=start,duration=max(.1,min(length,duration-start)),operation=operation)
             service.wait(job['id'],cancel,log)
             return json.dumps(service.scene_result(job['id']))
-        self.job(task,done)
+        identity=self.project
+        self.operation_preflight(copy.deepcopy(self.settings.data),lambda:self.job(task,lambda result:done(result) if self.project is identity else None))
     def add_scene_answer(self,answer,position,button=None):
         if self.busy():return
-        cue=Cue(position,min(position+4,self.project.duration),answer).validate(self.project.duration)
+        try:cue=Cue(position,min(position+4,self.project.duration),answer).validate(self.project.duration)
+        except (ValueError,TypeError):
+            if button:button.setEnabled(False)
+            self.error('Move the playhead before the end of the video and ask again before adding a description.');return
         cue.disposition='unresolved';cue.uncertainty='AI scene answer: verify visual facts.'
         if hasattr(self,'undo_stack'):self.commit_cues([*self.project.cues,cue],'Add scene answer')
         else:self.project.cues.append(cue);self.changed()
@@ -424,15 +484,97 @@ class Window(DesktopInterface, QMainWindow):
                 explorer.setWindowFlags(Qt.Widget);self.explore_host.addWidget(explorer);explorer.show()
             except Exception as e:self.error(str(e))
         self.scene_request(instruction,done,2)
+    def missing_narration(self):
+        return [c for c in self.project.cues if c.disposition in ('in-gap','pause') and not Path(c.audio).is_file()]
+    def offer_narration_repair(self):
+        missing=self.missing_narration()
+        if not missing or self.thread is not None:return
+        self.player.pause()
+        if QMessageBox.question(self,'Narration files are missing',f'{len(missing)} descriptions refer to missing narration. Repair narration using the selected speech engine? Text, evidence and source media are preserved. You can also use File > Repair narration later.',QMessageBox.Yes|QMessageBox.No,QMessageBox.No)==QMessageBox.Yes:self.repair_narration()
+    def repair_narration(self):
+        if self.busy() or not self.project.video or not self.project.cues:return
+        self.player.pause();snapshot=copy.deepcopy(self.project);settings=copy.deepcopy(self.settings.data);identity=self.project
+        def launch():
+            from .engine import get_service
+            service=get_service();allowed=dict(settings,allow_cloud=True)
+            def done(project):
+                if self.project is identity:
+                    self.project=project;self.undo_stack.clear();self._selected_cue=None;self.changed();self.log('Narration repaired. Save the project to keep the new audio references.')
+            self.job(lambda c,l:service.repair_narration(snapshot,allowed,c,l),done)
+        self.operation_preflight(settings,launch,narration=True,detector=True,vision=False)
+    def recover_jobs(self):
+        if self.busy() or not self.guard_changes():return
+        from .engine import get_service
+        try:
+            service=get_service();jobs=service.list_jobs(limit=200)
+            if service.damaged_jobs:
+                details='\n'.join(item['path'] for item in service.damaged_jobs.values())
+                QMessageBox.warning(self,'Damaged job records preserved','These records could not be read and have been left unchanged. Other jobs remain available. Restore damaged records from a backup if available.\n'+details)
+            rows=[]
+            for job in jobs:
+                if job['state'] not in ('error','cancelled','interrupted'):continue
+                try:project=service.input_project(job['id'])
+                except (OSError,ValueError,KeyError) as exc:
+                    self.log('Cannot recover '+job['id']+': '+str(exc));continue
+                rows.append((job,project))
+            if not rows:QMessageBox.information(self,'Recover interrupted jobs','No readable failed, cancelled or interrupted jobs were found in this workspace.');return
+            labels=[f"{job['id']} | {job['operation']} | {job['state']} | {Path(project.video).name}" for job,project in rows]
+            selected,ok=QInputDialog.getItem(self,'Recover interrupted jobs','Choose a saved job. Original project and settings are used; current credentials are supplied without changing your saved preferences.',labels,0,False)
+            if not ok:return
+            job,project=rows[labels.index(selected)]
+            if not Path(project.video).is_file():self.error('The saved job source is missing. Restore it to its original path before resuming; existing checkpoints are preserved.');return
+            if QMessageBox.question(self,'Resume saved job',f"Resume {job['operation']} for {project.video}? Completed checkpoints will be reused only when source, settings and implementation match. The result opens as an unsaved recovered project.",QMessageBox.Yes|QMessageBox.Cancel,QMessageBox.Cancel)!=QMessageBox.Yes:return
+            settings=dict(job['settings'])
+            settings.update({k:v for k,v in self.settings.data.items() if k.endswith('_key')})
+            vision=job['operation'] in ('describe','ask','explore')
+            narration=job['operation'] in ('describe','prepare','voice-preview') or (job['operation']=='export' and job['export_format'] in ('mp3','wav','mp4'))
+            identity=self.project
+            def launch():
+                def task(cancel,log):
+                    # Retain the original permission value in checkpoint identity;
+                    # current consent was obtained above for actual destinations.
+                    service.resume(job['id'],settings=settings)
+                    return service.wait(job['id'],cancel,log)
+                def done(result):
+                    if self.project is not identity:return
+                    self.project=result;self.project_path=None;self.undo_stack.clear();self._selected_cue=None;self.reset_scene();self.played_pauses.clear()
+                    self.player.setSource(QUrl.fromLocalFile(result.video));self.file_label.setText(result.video);self.changed()
+                    artifact=service.get_job(job['id']).get('artifact')
+                    self.log('Recovered job '+job['id']+'. Save the recovered project.'+((' Artifact: '+artifact['path']) if artifact else ''))
+                self.job(task,done)
+            self.operation_preflight(settings,launch,narration=narration,detector=narration and job['operation']!='voice-preview',vision=vision)
+        except Exception as exc:self.error(str(exc))
     def edit_glossary(self):
         self.tabs.setCurrentIndex(2)
-    def export_to(self,p):
+    def validate_export_destination(self,p,extension=None,parent=None):
+        import tempfile
+        target=Path(p).expanduser().resolve()
+        if extension and target.suffix.lower()!='.'+extension:
+            raise ValueError('Save path extension must match the selected format: .'+extension)
+        source=Path(self.project.video).resolve()
+        if target==source or (target.exists() and source.exists() and target.samefile(source)):
+            raise ValueError('Cannot overwrite original media. Choose another destination.')
+        if not target.parent.is_dir():raise ValueError('Choose an existing output folder.')
+        for output in (target,Path(str(target)+'.coverage.json')):
+            if output.exists():
+                if not output.is_file():raise ValueError('Choose a file, not a folder: '+str(output))
+                if output==source or (source.exists() and output.samefile(source)):
+                    raise ValueError('Cannot overwrite original media. Choose another destination.')
+                if QMessageBox.question(parent or self,'Replace existing file',f'Replace {output}?',QMessageBox.Yes|QMessageBox.No|QMessageBox.Cancel,QMessageBox.No)!=QMessageBox.Yes:return False
+                with output.open('r+b'):pass
+        with tempfile.NamedTemporaryFile(prefix='.describer-write-',dir=target.parent):pass
+        return True
+    def export_to(self,p,destination_checked=False):
         if self.busy() or not self.project.cues:return
         i=self.table.currentRow()
         if i>=0:
             try:self.project.cues[i]=self.editor_cue()
             except Exception as exc:self.error(str(exc));return
         if not p:return
+        if not destination_checked:
+            try:
+                if not self.validate_export_destination(p):return
+            except (OSError,ValueError) as exc:self.error(str(exc));return
         if Path(p).suffix.lower() in ('.mp3','.wav','.mp4'):
             if self.settings.data['voice_engine']=='OpenAI' and QMessageBox.question(self,'OpenAI speech','Send description text to OpenAI for paid speech synthesis?')!=QMessageBox.StandardButton.Yes:return
             project=copy.deepcopy(self.project);settings=copy.deepcopy(self.settings.data);settings['allow_cloud']=True
@@ -600,7 +742,11 @@ class Window(DesktopInterface, QMainWindow):
     def check_updates(self):
         if self.busy():return
         feed=self.settings.data.get('update_feed','')
-        if not feed:self.log('No Workbench update feed is configured. This local build has no published update service.');return
+        if not feed:
+            if QMessageBox.question(self,'Update source not configured','No update feed is configured, so no version check was performed. Open the official GitHub releases page to review available downloads?',QMessageBox.Yes|QMessageBox.No,QMessageBox.No)==QMessageBox.Yes:
+                from PySide6.QtGui import QDesktopServices
+                QDesktopServices.openUrl(QUrl('https://github.com/scottconverse/Describer-Workbench/releases'))
+            return
         from .updates import read_feed
         def done(data):
             if not data['newer']:self.log('No newer version in the configured feed.');return
@@ -631,12 +777,14 @@ class Window(DesktopInterface, QMainWindow):
         if self.thread is not None:QTimer.singleShot(100,self.close_for_update)
         else:self.close()
     def help(self):
-        QMessageBox.information(self,'Describer Workbench',
+        from . import __version__
+        QMessageBox.information(self,'Describer Workbench '+__version__,
+            'Version '+__version__+'. '
             'Open a video, then choose Draft with AI or import SRT/VTT. Select a description to seek and edit it inline. '
             'Start/end accept seconds or HH:MM:SS and change independently. Click the timeline to seek; Ctrl+wheel zooms. Space toggles playback outside text editors when the window receives it. Save with Ctrl+S. '
             'Export MP4, MP3/WAV, SRT/VTT, text or JSON. The shared engine protects measured speech, '
             'caps narration speed at 1.15x, and retains no-fit descriptions as pauses. '
-            'Install the local speech detector from File before analysis. Unresolved facts block complete media exports. '
+            'Draft checks the selected detector and offers verified setup before inference. File also offers detector installation, Repair narration and Recover interrupted jobs. Edits preserve review evidence; Mark as checked clears review deliberately. Unresolved facts block complete media exports. '
             'File can also start the authenticated developer API/MCP server. Windows speech works offline. '
             'Cloud operations use your own keys and require confirmation. Cancel stops local jobs; an in-flight cloud request may take up to its timeout. '
             'This is an independent reconstruction. Read the maintained user manual at https://describer-workbench.sconverse.chatgpt.site/manual for controls and verification limits.')
@@ -644,7 +792,8 @@ class Window(DesktopInterface, QMainWindow):
         if self.busy():return
         if QMessageBox.question(self,'Install local speech detector','Download the pinned Google YAMNet speech detector from Hugging Face? Analysis stays local and the checksum is verified.')!=QMessageBox.StandardButton.Yes:return
         from .engine.assets import provision
-        self.job(lambda c,l:str(provision()),lambda path:self.log('Speech detector installed: '+path))
+        target=self.settings.data.get('sound_model') or None
+        self.job(lambda c,l:(l('Installing selected detector; cancellation waits at most one network read timeout (10 seconds).'),str(provision(target,c)))[1],lambda path:self.log('Speech detector installed and verified: '+path))
     def start_api(self):
         if self.api_thread and self.api_thread.is_alive():self.log('Developer API is already running.');return
         try:
@@ -655,16 +804,41 @@ class Window(DesktopInterface, QMainWindow):
             path=service.root/'api-token.txt'
             descriptor=os.open(str(path),os.O_WRONLY|os.O_CREAT|os.O_TRUNC,0o600)
             with os.fdopen(descriptor,'w',encoding='utf-8') as out:out.write(token)
-            self.api_server=uvicorn.Server(uvicorn.Config(create_app(service,token),host='127.0.0.1',port=8796,log_level='warning'))
-            self.api_thread=threading.Thread(target=self.api_server.run,name='describer-api',daemon=True);self.api_thread.start()
-            self.log('Developer API: http://127.0.0.1:8796 ; MCP: /mcp/ ; private bearer token: '+str(path))
+            # The windowed executable has no stdout/stderr for console formatters.
+            self.api_server=uvicorn.Server(uvicorn.Config(create_app(service,token),host='127.0.0.1',port=8796,log_level='warning',log_config=None))
+            server=self.api_server;self.api_start_error=None;self.api_ready=False
+            def run_server():
+                try:server.run()
+                except BaseException as exc:self.api_start_error=type(exc).__name__
+            self.api_thread=threading.Thread(target=run_server,name='describer-api',daemon=True);self.api_thread.start()
+            import time
+            deadline=time.monotonic()+10
+            def check_start():
+                if self.api_server is not server:return
+                if server.started and self.api_thread.is_alive():
+                    self.api_ready=True
+                    self.log('Developer API ready: http://127.0.0.1:8796 ; MCP: /mcp/ ; private bearer token: '+str(path));return
+                if not self.api_thread.is_alive():
+                    self.api_server=None;self.api_thread=None;self.api_ready=False
+                    self.error('Developer API did not start. Port 8796 may be in use. Stop the conflicting service yourself or retry after it exits; no other process was stopped.');return
+                if time.monotonic()>deadline:
+                    server.should_exit=True
+                    self.error('Developer API startup timed out. Stop API, then retry after checking port 8796.');return
+                QTimer.singleShot(50,check_start)
+            QTimer.singleShot(0,check_start)
         except Exception as exc:self.error(str(exc))
     def stop_api(self):
         if self.api_server:self.api_server.should_exit=True
         if self.api_thread:self.api_thread.join(timeout=5)
         if self.api_thread and self.api_thread.is_alive():self.log('Developer API is still stopping; active requests may need to finish.');return False
-        self.api_server=None;self.api_thread=None;return True
+        self.api_server=None;self.api_thread=None;self.api_ready=False;return True
     def closeEvent(self,event):
+        for picker in list(getattr(self,'voice_discoveries',set())):
+            if picker.thread is not None and not picker.thread.isRunning():picker.finished()
+        pending=[picker for picker in getattr(self,'voice_discoveries',set()) if picker.thread is not None]
+        if pending:
+            for picker in pending:picker.shutdown()
+            self.log('Cancelling voice discovery; close again after it finishes.');event.ignore();return
         if self.thread is not None:
             self.cancel.set();self.log('Cancelling; wait for the current operation to finish before closing.');event.ignore();return
         if not self.guard_changes():event.ignore();return

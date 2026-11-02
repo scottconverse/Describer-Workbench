@@ -131,7 +131,6 @@ def test_review_action_start_counts_and_multiline_prompt():
 def test_export_voice_picker_selects_ids_for_the_correct_engine():
     import time
     from unittest.mock import patch
-    from PySide6.QtTest import QTest
     from describer.desktop import ExportVoices
     with tempfile.TemporaryDirectory() as tmp:
         app,w=make_window(tmp)
@@ -139,7 +138,7 @@ def test_export_voice_picker_selects_ids_for_the_correct_engine():
             d=QDialog(w);picker=ExportVoices(w,d)
             def finish():
                 deadline=time.monotonic()+3
-                while picker.loading and time.monotonic()<deadline:app.processEvents();QTest.qWait(10)
+                while picker.loading and time.monotonic()<deadline:app.processEvents();time.sleep(.01)
                 assert not picker.loading
             try:
                 finish();picker.voice.setCurrentIndex(1);assert picker.selection()['windows_voice']=='Windows-id'
@@ -148,4 +147,69 @@ def test_export_voice_picker_selects_ids_for_the_correct_engine():
                 picker.engine.setCurrentText('OpenAI');assert picker.voice.count()>0
                 assert picker.selection()['voice_engine']=='OpenAI'
                 assert w.settings.data['voice_engine']=='Windows'  # Cancel never mutates settings.
-            finally:picker.shutdown();d.close();w.dirty=False;w.close();app.processEvents()
+            finally:
+                # Keep the owner alive even if an assertion fails during discovery.
+                stopped=picker.shutdown(wait_ms=5000);app.processEvents()
+                assert stopped,'Voice discovery did not stop during test teardown'
+                d.close();w.dirty=False;w.close();app.processEvents()
+
+
+def test_edit_preserves_review_evidence_through_undo_save_and_check(tmp_path):
+    from describer.project import Project
+    app,w=make_window(tmp_path)
+    try:
+        original=Cue(20,24,'Verify this.',event_id='event-a',event_start=18,event_end=25,
+                     evidence='Visible shape',uncertainty='Identity uncertain',disposition='unresolved',
+                     audio='old.wav',speech_seconds=2,speed=1.1)
+        w.project.cues=[original];w.refresh();w.choose(0)
+        w.text.setPlainText('Verify this!')
+        edited=w.project.cues[0]
+        assert (edited.disposition,edited.uncertainty,edited.evidence)==('unresolved','Identity uncertain','Visible shape')
+        assert (edited.event_id,edited.event_start,edited.event_end)==('event-a',18,25)
+        assert (edited.audio,edited.speech_seconds,edited.speed)==('',0,1)
+        w.undo_stack.undo();assert w.project.cues[0]==original
+        w.undo_stack.redo();assert w.project.cues[0]==edited
+        w.start.setText('21');assert w.project.cues[0].event_start==18
+        path=tmp_path/'review.adproject';w.project.save(path)
+        assert Project.load(path).cues[0]==w.project.cues[0]
+        w.mark_checked();assert not w.project.cues[0].uncertainty
+        assert w.project.cues[0].disposition=='unplanned'
+        w.undo_stack.undo();assert w.project.cues[0].disposition=='unresolved'
+    finally:w.dirty=False;w.close();app.processEvents()
+
+
+def test_voice_discovery_waits_for_owned_completion_before_replacement(tmp_path):
+    import threading
+    import time
+    from unittest.mock import patch
+    from PySide6.QtTest import QTest
+    from describer.desktop import ExportVoices
+    entered=threading.Event();release=threading.Event()
+    def discover(engine,**kwargs):
+        entered.set();assert release.wait(3)
+        return [{'name':engine,'id':engine}]
+    app,w=make_window(tmp_path);d=QDialog(w)
+    with patch('describer.windows_speech.windows_speech',side_effect=discover):
+        picker=ExportVoices(w,d)
+        try:
+            assert entered.wait(3)
+            first=picker.thread
+            picker.engine.setCurrentText('Windows OneCore')
+            assert picker.thread is first
+            release.set()
+            # Deliberately hold the GUI queue until the old native thread ends.
+            assert first.wait(3000)
+            picker.engine.setCurrentText('Windows 32-bit')
+            assert picker.thread is first
+            deadline=time.monotonic()+3
+            while picker.loading and time.monotonic()<deadline:
+                app.processEvents();QTest.qWait(10)
+            assert not picker.loading and picker.loaded=='Windows 32-bit'
+            picker.engine.setCurrentText('Windows')
+            picker.shutdown()
+            deadline=time.monotonic()+3
+            while picker.thread is not None and time.monotonic()<deadline:app.processEvents();QTest.qWait(10)
+            assert picker.thread is None or not picker.thread.isRunning()
+            app.processEvents()
+        finally:
+            release.set();picker.shutdown();d.close();w.dirty=False;w.close();app.processEvents()

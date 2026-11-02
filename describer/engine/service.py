@@ -36,11 +36,32 @@ class DescriptionService:
         self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix='describer')
         self._cancels, self._secrets, self._futures = {}, {}, {}
         self._closed = False
+        self.damaged_jobs = {}
         for path in self.root.glob('*/job.json'):
-            data = json.loads(path.read_text('utf-8'))
+            data = self._read_record(path)
+            if data is None:continue
             if data['state'] in ('queued', 'running', 'cancelling'):
                 data.update(state='interrupted', error='Previous owner exited; resume explicitly.')
                 atomic_json(path, data)
+
+    def _read_record(self, path):
+        """Report unusable records without rewriting or deleting their evidence."""
+        try:
+            data = json.loads(path.read_text('utf-8'))
+            if not isinstance(data, dict):raise ValueError('Expected a job object')
+            if data.get('id') != path.parent.name or len(data['id']) != 32 or any(c not in '0123456789abcdef' for c in data['id']):
+                raise ValueError('Invalid job identity')
+            if data.get('state') not in TERMINAL | {'queued','running','cancelling'}:raise ValueError('Invalid job state')
+            if not isinstance(data.get('created'), (int,float)) or not math.isfinite(data['created']):raise ValueError('Invalid creation time')
+            if not isinstance(data.get('revision'), int) or data['revision'] < 0:raise ValueError('Invalid revision')
+            if not isinstance(data.get('settings'), dict):raise ValueError('Invalid settings')
+            if data.get('operation') not in ('describe','export','ask','explore','voice-preview','prepare'):raise ValueError('Invalid operation')
+            if not isinstance(data.get('progress'), str):raise ValueError('Invalid progress')
+        except (OSError,ValueError,TypeError,KeyError) as exc:
+            self.damaged_jobs[path.parent.name] = {'path':str(path), 'error':type(exc).__name__+': unreadable or invalid job record; original preserved'}
+            return None
+        self.damaged_jobs.pop(path.parent.name,None)
+        return data
 
     def _path(self, job_id):
         if not isinstance(job_id, str) or len(job_id) != 32 or any(c not in '0123456789abcdef' for c in job_id):
@@ -52,13 +73,15 @@ class DescriptionService:
 
     def get_job(self, job_id):
         with self._mutex:
-            return json.loads((self._path(job_id) / 'job.json').read_text('utf-8'))
+            data = self._read_record(self._path(job_id) / 'job.json')
+            if data is None:raise ValueError('Damaged job record; original preserved. Inspect damaged_jobs for its location.')
+            return data
 
     def list_jobs(self, limit=50, state=None):
         if not 1 <= limit <= 200:
             raise ValueError('limit must be 1..200')
         with self._mutex:
-            rows = [json.loads(p.read_text('utf-8')) for p in self.root.glob('*/job.json')]
+            rows = [data for p in self.root.glob('*/job.json') if (data := self._read_record(p)) is not None]
         return sorted((j for j in rows if state is None or j['state'] == state), key=lambda j:j['created'], reverse=True)[:limit]
 
     def _update(self, job_id, **values):
@@ -70,7 +93,7 @@ class DescriptionService:
 
     def submit(self, source=None, project=None, settings=None, prompt='', start=0, duration=None, operation='describe', export_format=None, mode='complete'):
         from ..services import probe
-        if operation not in ('describe', 'export', 'ask', 'explore', 'voice-preview'):
+        if operation not in ('describe', 'export', 'ask', 'explore', 'voice-preview', 'prepare'):
             raise ValueError('Unknown job operation')
         if project is None:
             if not source:
@@ -89,16 +112,7 @@ class DescriptionService:
         if not math.isfinite(project.duration) or project.duration <= 0 or not math.isfinite(start) or start < 0 or start >= project.duration or (duration is not None and (not math.isfinite(duration) or duration <= 0)):
             raise ValueError('Invalid analysis range')
         selected = dict(copy.deepcopy(self.settings), **(settings or {}))
-        # API callers must explicitly permit remote inference, not inherit a GUI dialog.
-        if selected.get('analysis_provider') == 'Gemini' and operation in ('describe','ask','explore') and not selected.get('allow_cloud', False):
-            raise ValueError('Gemini requires allow_cloud=true')
-        if selected.get('voice_engine') == 'OpenAI' and not selected.get('allow_cloud', False):
-            raise ValueError('OpenAI speech requires allow_cloud=true')
-        if selected.get('analysis_provider') == 'Ollama' and operation in ('describe','ask','explore'):
-            from ..models import endpoint, is_cloud, model_info
-            endpoint(selected)
-            if is_cloud(selected, model_info(selected)) and not selected.get('allow_cloud', False):
-                raise ValueError('Remote/cloud Ollama requires allow_cloud=true')
+        self._check_permissions(selected,operation,export_format)
         if operation == 'export' and export_format not in ('mp3', 'wav', 'mp4', 'srt', 'vtt', 'txt', 'json'):
             raise ValueError('Choose a supported export format')
         if mode not in ('complete', 'in-gap-only'):
@@ -121,6 +135,19 @@ class DescriptionService:
             self._schedule(job_id)
             return self.get_job(job_id)
 
+    @staticmethod
+    def _check_permissions(selected,operation,export_format=None):
+        # API callers must explicitly permit remote inference, not inherit a GUI dialog.
+        if selected.get('analysis_provider') == 'Gemini' and operation in ('describe','ask','explore') and not selected.get('allow_cloud', False):
+            raise ValueError('Gemini requires allow_cloud=true')
+        uses_speech = operation in ('describe','voice-preview','prepare') or (operation == 'export' and export_format in ('mp3','wav','mp4'))
+        if uses_speech and selected.get('voice_engine') == 'OpenAI' and not selected.get('allow_cloud', False):
+            raise ValueError('OpenAI speech requires allow_cloud=true')
+        if selected.get('analysis_provider') == 'Ollama' and operation in ('describe','ask','explore'):
+            from ..models import endpoint, is_cloud, model_info
+            endpoint(selected)
+            if is_cloud(selected, model_info(selected)) and not selected.get('allow_cloud', False):
+                raise ValueError('Remote/cloud Ollama requires allow_cloud=true')
     def submit_batch(self, items):
         if not 1 <= len(items) <= 20:
             raise ValueError('Batch must contain 1..20 jobs')
@@ -154,6 +181,10 @@ class DescriptionService:
             stages = root / 'stages'
             if data['operation'] == 'describe':
                 result = core.describe(project, settings, data['prompt'], stages, cancel, log, data['start'], data['duration'])
+            elif data['operation'] == 'prepare':
+                from ..services import narration_preflight
+                narration_preflight(settings,cancel)
+                result = core.plan_export(project,settings,stages,cancel,log)
             elif data['operation'] == 'export':
                 result = (project if data['export_format'] in ('srt','vtt','txt','json')
                           else core.plan_export(project, settings, stages, cancel, log))
@@ -210,7 +241,9 @@ class DescriptionService:
             if job['state'] not in ('error', 'cancelled', 'interrupted') or (job_id in self._futures and not self._futures[job_id].done()):
                 raise ValueError('Only a terminal interrupted, failed or cancelled job may resume')
             # Non-secret changed settings are validated against checkpoint identity.
-            self._secrets[job_id] = {**self.settings, **job['settings'], **self._secrets.get(job_id, {}), **(settings or {})}
+            selected = {**self.settings, **job['settings'], **self._secrets.get(job_id, {}), **(settings or {})}
+            self._check_permissions(selected,job['operation'],job.get('export_format'))
+            self._secrets[job_id] = selected
             self._update(job_id, state='queued', progress='queued', error=None)
             self._schedule(job_id)
             return self.get_job(job_id)
@@ -250,7 +283,7 @@ class DescriptionService:
 
     def capabilities(self):
         from .. import __version__
-        return {'version':__version__, 'operations':['describe','export','ask','explore','voice-preview'],
+        return {'version':__version__, 'operations':['describe','export','ask','explore','voice-preview','prepare'],
                 'exports':['mp4','mp3','wav','srt','vtt','txt','json'],
                 'providers':['Ollama','Gemini'], 'transports':['python','cli','http','mcp-stdio','mcp-streamable-http'],
                 'single_owner':True, 'max_concurrent_jobs':1, 'telemetry':False}
@@ -262,9 +295,25 @@ class DescriptionService:
                 raise ValueError('Project revision changed; read it again before editing')
             project = self.result(job_id)
             if cues is not None:
-                project.cues = parse_cues(cues, project.duration)
-                for cue in project.cues:
-                    cue.disposition, cue.audio, cue.speech_seconds = 'unplanned', '', 0
+                previous = project.cues
+                edited = parse_cues(cues, project.duration)
+                for cue in edited:
+                    matches = [old for old in previous if
+                               (cue.event_id and old.event_id == cue.event_id) or
+                               (not cue.event_id and (old.start, old.end) == (cue.start, cue.end))]
+                    if not matches and not cue.event_id:
+                        matches = [old for old in previous if old.text == cue.text]
+                    if len(matches) != 1 and any(old.uncertainty or old.disposition=='unresolved' for old in previous):
+                        raise ValueError('Ambiguous edit of reviewed observations. Preserve each original event_id, or edit one identified cue without discarding its metadata.')
+                    if len(matches) == 1:
+                        old = matches[0]
+                        preserved = old.edited(cue.start, cue.end, cue.text, project.duration)
+                        cue.event_id, cue.event_start, cue.event_end = preserved.event_id, preserved.event_start, preserved.event_end
+                        cue.evidence, cue.uncertainty, cue.kind = preserved.evidence, preserved.uncertainty, preserved.kind
+                        cue.disposition = preserved.disposition
+                    cue.disposition = 'unresolved' if cue.disposition == 'unresolved' or cue.uncertainty else 'unplanned'
+                    cue.audio, cue.speech_seconds, cue.speed = '', 0, 1
+                project.cues = edited
                 project.coverage = []
                 project.analysis = {'note':'Edited; re-plan before exporting narration.'}
             if glossary is not None:
@@ -289,6 +338,14 @@ class DescriptionService:
                 self.cancel(job_id)
             time.sleep(.05)
 
+    def input_project(self, job_id):
+        self.get_job(job_id)
+        return Project.load(self._path(job_id) / 'input.adproject')
+
+    def repair_narration(self, project, settings, cancel, log):
+        job = self.submit(project=project,settings=settings,operation='prepare')
+        return self.wait(job['id'],cancel,log)
+
     def describe(self, project, settings, prompt, cancel, log, start=0, duration=None):
         job = self.submit(project=project, settings=settings, prompt=prompt, start=start, duration=duration)
         result = self.wait(job['id'], cancel, log)
@@ -304,7 +361,9 @@ class DescriptionService:
         self.wait(job['id'], cancel, log)
         artifact = self.get_job(job['id'])['artifact']
         target.parent.mkdir(parents=True, exist_ok=True)
-        partial = target.with_name(target.name+'.partial')
+        import tempfile
+        with tempfile.NamedTemporaryFile(prefix=target.name+'.',suffix='.partial',dir=target.parent,delete=False) as owned:
+            partial = Path(owned.name)
         try:
             shutil.copyfile(artifact['path'], partial)
             partial.replace(target)
