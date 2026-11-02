@@ -1,6 +1,6 @@
 # Describer Workbench user manual
 
-For desktop/engine **0.5.1** · Documentation updated November 2, 2026
+For desktop/engine **0.5.1** · Documentation reviewed November 1, 2026 (America/Denver)
 
 [Windows 0.5.1 download](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.5.1) · [Project](https://github.com/scottconverse/Describer-Workbench) · [Architecture guide](ARCHITECTURE.md)
 
@@ -34,19 +34,19 @@ OpenAI is optional for speech synthesis. It is not an analysis provider in this 
 ## 3. Your first project
 
 1. Choose **Open video** (Ctrl+O). Select a local video such as an MP4 of Big Buck Bunny. Use the video file itself, not an SRT subtitle, soundtrack or folder. The default selector lists MP4, MKV, MOV, AVI and WebM. **All files** exposes other files, but decoding is still required.
-2. Press **Play / Pause** to confirm playback and sound. The position slider and **−10 s / +10 s** buttons move through the video.
+2. Use the **Play/Pause icon** to confirm playback and sound. Click the timeline to seek; **−10 s / +10 s** moves in ten-second steps. Ctrl+wheel zooms the timeline; the wheel or its bottom scrollbar pans the visible range.
 3. Choose **Add at playhead** in Descriptions. This creates a three-second cue (clipped to the video end). Edit Start, End and the description inline. Changes apply as you type; **Ctrl+Z** undoes them.
 4. Save with Ctrl+S and choose a name ending in `.adproject`. The project points to your video; it does not copy it. Keep the video available.
-5. Select the cue in Descriptions. It seeks to the cue's start. Enable **Speak descriptions**, then play. Adjust player volume with the main slider and speech volume in Settings.
-6. Correct the words or timings inline. Save again. Use **Export → Subtitles (SRT)** for a simple first output, or choose MP3 for spoken narration mixed with the soundtrack.
+5. Select the cue in Descriptions. It seeks to the cue's start. Enable **Speak descriptions**, then play. Adjust the **Video** and **Speech** sliders beside the playback controls; speech volume is also available in Settings.
+6. Correct the words or timings inline. Save again. Use **Export → Subtitles · .srt** for a simple first output, or choose MP3 for spoken narration mixed with the soundtrack.
 
 For an AI first draft, save your project, seek to the intended beginning and follow section 5. Start with **Next 20 seconds** or **Next 60 seconds** before requesting a whole film.
 
 ## 4. Find your way around
 
-The Start screen opens videos, URLs and saved projects; saved projects appear in Recent projects. The editor places video and transport above a seekable timeline, alongside Descriptions, Scene and Glossary tabs. **Draft with AI** opens provider/model, range and editorial controls. The job card cancels active work. **View → Log** opens diagnostics. Settings uses section navigation. The Theme button switches light/dark appearance. Timeline description buttons support keyboard focus; activating one selects and seeks to that cue.
+The Start screen opens videos, URLs and saved projects; saved projects appear in Recent projects. The editor places video and transport above a seekable timeline, alongside Descriptions, Scene and Glossary tabs. **Draft with AI** opens provider/model, range and editorial controls. The job card cancels active work. **View → Log** opens diagnostics. Start contains Open video, From URL and Open project action cards; the editor toolbar Open action returns to Start. Drag a local video or .adproject file into the window to open it, after any unsaved-change confirmation. Settings uses section navigation. The Theme button switches light/dark appearance. Timeline description buttons support keyboard focus; activating one selects and seeks to that cue.
 
-The **File** menu includes projects, subtitle import, glossary, voice tools, original-data import and update checks. **Help** (F1) opens the built-in help. Some operations are unavailable while a background job is active; wait for completion or cancel it.
+The **File** menu includes projects, subtitle import, glossary, voice tools, original-data import and update checks. **Help** (F1) opens brief built-in help. The immutable v0.5.1 binary still contains legacy help wording about Analyze video and linked Start/End changes; use this maintained guide for the redesigned controls. The repository help text is corrected for the next build. Some operations are unavailable while a background job is active; wait for completion or cancel it.
 
 | Shortcut | Action |
 | --- | --- |
@@ -60,17 +60,17 @@ The **File** menu includes projects, subtitle import, glossary, voice tools, ori
 | Ctrl+E | Export |
 | F1 | Built-in help |
 
-There is no documented global Space shortcut for playback. Use the Play / Pause control. Ordinary Tab navigation follows Qt focus order.
+Press Space to toggle playback when focus is outside single-line and multiline text editors and the key reaches the main window. Text editors retain Space for typing; focused buttons/lists may handle it themselves. The Play/Pause icon always provides an explicit playback action. Ctrl+Z and Ctrl+Shift+Z undo/redo cue edits. Ordinary Tab navigation follows Qt focus order.
 
 ## 5. Draft with AI
 
 ### Local Ollama
 
-Start your separately installed Ollama server. In Workbench choose **Ollama** and **Refresh models**. Entries show their exact tag, local/cloud status, reported vision capability and whether they are loaded. A text-only model cannot analyze video, even if it answers ordinary chat prompts.
+Start your separately installed Ollama server. Open **Draft with AI**, choose the **Ollama** provider card, then **Refresh models**. Entries show their exact tag, local/cloud status, reported vision capability and whether they are loaded. A text-only model cannot analyze video, even if it answers ordinary chat prompts.
 
-Before your first analysis of a video with audio, choose **File → Install local speech detector**. This explicitly downloads the pinned Google YAMNet ONNX file and verifies its SHA256. If it is unavailable or changed, analysis and narrated export stop before inference. An already verified file can be reused offline.
+Before your first analysis of a video with audio, choose **File → Install speech detector**. This explicitly downloads the pinned Google YAMNet ONNX file and verifies its SHA256. If it is unavailable or changed, analysis and narrated export stop before inference. An already verified file can be reused offline.
 
-Choose an installed vision entry. To type a custom tag, enter its exact ID and leave the field with Tab. **Test connection** first checks capability and then sends a short text prompt; a successful reply does not prove visual understanding. Refresh itself makes metadata requests, not inference requests or downloads.
+Choose an installed vision entry. To change a tag, double-click the model row or press F2, enter the exact model ID without display annotations, and commit the edit. The model list is the editable control; there is no separate tag field. **Test connection** first checks capability and then sends a short text prompt; a successful reply does not prove visual understanding. Refresh itself makes metadata requests, not inference requests or downloads.
 
 If the server is elsewhere, set its root address and optional key in Settings. Local default: `http://127.0.0.1:11434`. Remote addresses require HTTPS. For cloud tags, sign in using Ollama itself. Workbench has no OAuth flow. Remote/cloud inference asks permission before sending sampled frames/prompts and may use paid allowance. Local server selection alone does not guarantee private inference if Ollama routes the chosen tag to its cloud.
 
@@ -98,7 +98,7 @@ These use the model's native sampling settings. They are request profiles, not g
 
 ### Glossary and consistency
 
-With **Recognize characters during analysis** enabled, the model is asked to return stable visual identities. Generated glossary entries are carried into later chunks. **File → Character glossary** lets you correct them. It is stored in the project and can affect future analysis, Ask and Explore.
+With **Recognize characters and update the glossary** enabled in Draft with AI, the model is asked to return stable visual identities. Generated glossary entries are carried into later chunks. The **Glossary** tab (also reached through **File → Character glossary**) lets you edit character cards; **Add character** is beneath the list. It is stored in the project and can affect future analysis, Ask and Explore.
 
 For a clean model comparison, use identical media/range/prompts and clear the glossary before each run. Keep each result in a separate project. Do not let incorrect identities become established facts. Ollama is told to leave names unknown because it has no audio; a visual label is not an established personal name.
 
@@ -118,13 +118,13 @@ Use this review sequence:
 
 Automatic normalization skips malformed rows, bounds valid intervals and removes only duplicates of the same event/time/text. It preserves genuine repetitions and overlapping event intervals. The planner then selects an independently protected gap within the original event; it never moves an event to a different scene to conceal overlap.
 
-The fourth table column shows **in-gap**, **pause**, **unresolved** or **unplanned**. Pause means the narration could not fit at intelligible speed within its event. Unresolved means an uncertain observation needs correction; it cannot silently count as described. Editing a cue clears its old plan; narrated export replans and checks it.
+Description rows show **In gap**, **Sped up**, **Pauses picture** (or a pause duration), **Needs review**, or **Not yet placed** tags. Needs review corresponds to the stored `unresolved` disposition; Not yet placed corresponds to `unplanned`. Use the All / Needs review / Pauses filter above the list. **Mark as checked** appears only on Needs review cues and clears the uncertainty after you verify the facts; it does not measure narration or establish accuracy. Editing a cue clears its old plan; narrated export replans it. The inline fit meter is a word-count estimate unless a matching measured narration duration is available. **Start at playhead** and **End at playhead** set the respective boundary. **Preview in context** plays from two seconds before Start; it is not a bounded-loop preview.
 
 ## 7. Ask and explore a scene
 
-**Ask about scene** asks for a question and a context window from 1 to 120 seconds around the current position. The player pauses and the selected provider analyzes the region. Answers appear in a conversation dialog. **Add to descriptions** inserts the answer as a four-second cue at the captured position, bounded by the video end. Edit its timing and text before using it. Conversation history is session memory, not a saved project field.
+Open **Scene → Ask** (or **Ask about scene** in the description editor). Enter a question, choose **Context** ±2.5 s, ±5 s or ±10 s, then select **Ask**. These request 5-, 10- or 20-second windows centered on the captured playhead, bounded by the media ends. The player pauses and the selected provider analyzes that window. Answers and conversation history appear in the tab. **Add as description**, beside the latest answer, inserts a four-second cue at the captured position, clipped to the video end and marked Needs review. Check its facts, timing and text. Conversation history is session memory, not a saved project field.
 
-**Explore scene** requests an AI-generated object layout around the current position. It is a simplified 0–10 grid, not measured coordinates or an interactive reconstruction of the video. Models can omit or misplace objects.
+For a spatial view, open **Scene → Explore layout → Observe current scene**. This analyzes a two-second window and embeds an explorer in the tab. It is an AI-generated 0–10 object grid, not measured coordinates or a reconstruction. Models can omit or misplace objects. Click or Tab into the grid before using its keys:
 
 | Explorer key | Action |
 | --- | --- |
@@ -134,11 +134,11 @@ The fourth table column shows **in-gap**, **pause**, **unresolved** or **unplann
 | Shift+L | Choose/jump to an object |
 | Enter | Describe the nearest returned object |
 
-Both tools use the selected analysis provider and applicable transmission confirmations. Ollama uses sampled frames without audio. Close the dialog to return to the editor.
+Both tools use the selected analysis provider and applicable transmission confirmations. Ollama receives sampled frames without audio. Switch back to **Descriptions** to edit cues; these tools no longer require a separate conversation/explorer window.
 
 ## 8. Listen, choose voices and export
 
-**Speak descriptions** enables speech when the playhead enters a cue. Planned cues play their measured narration WAV: in-gap cues use the bounded speed and duck the soundtrack; pause cues stop the source, speak, then resume. Unresolved cues are not narrated. Seeking stops narration and resets pending pauses. If a video position callback reaches a safe slot too late to play the entire WAV, desktop playback pauses rather than overrunning that slot. Older unplanned cues use the selected Qt Windows voice or optional active screen-reader output until replanned. Player volume and speech volume are separate. **Allow new descriptions to interrupt speech** chooses interruption rather than queued speech. Seeking stops the current speech.
+**Speak descriptions** enables speech when the playhead enters a cue. Planned cues play their measured narration WAV: in-gap cues use the bounded speed and duck the soundtrack; pause cues stop the source, speak, then resume. Unresolved cues are not narrated. Seeking stops narration and resets pending pauses. If a video position callback reaches a safe slot too late to play the entire WAV, desktop playback pauses rather than overrunning that slot. Older unplanned cues use the selected Qt Windows voice or optional active screen-reader output until replanned. Player volume and speech volume are separate. The Speech slider changes live Qt speech and the volume used for newly synthesized native narration; it does not rescale existing measured WAV playback, OpenAI audio or a screen reader's own output. **Allow new descriptions to interrupt speech** chooses interruption rather than queued speech. Seeking stops the current speech.
 
 The **Audio export speech engine** is separate from playback voice:
 
@@ -149,7 +149,7 @@ The **Audio export speech engine** is separate from playback voice:
 | Windows OneCore | Installed Windows OneCore voices |
 | OpenAI | Configured API key, model, base voice/preset and paid remote synthesis |
 
-Select an engine in Settings, then use **File → Select Windows export voice** for the native engine's voice list. Changing engine clears the old export voice selection. **Test selected export voice** synthesizes a preview. OpenAI preview and export confirm before sending text.
+Choose the engine and voice directly in the Export dialog for narrated media. Installed Windows voices load asynchronously for the selected engine; OpenAI lists the configured base voice and saved presets. Accepting Export saves the selected engine/voice for subsequent exports; Cancel leaves settings unchanged. Alternatively, configure **Settings → Export voice** or **File → Select Windows export voice** and use **Test selected export voice** for a preview. Changing engines clears an incompatible native voice selection. OpenAI preview and export confirm before sending text.
 
 **Manage voice presets** adds, edits, deletes or imports original `voices.json` personalities. Choose the active preset in Settings. Presets set a base voice, speed and delivery instructions; instructions are sent only for the compatible `gpt-4o-mini-tts` family. They do not turn a Windows voice into an OpenAI voice.
 
@@ -187,11 +187,11 @@ Open video first, then **Import SRT / VTT** (Ctrl+I). Import replaces current cu
 | Recognize characters | Requests and carries a visual glossary. |
 | Remove audio | Strips audio from prepared video. Gemini then loses dialogue evidence; Ollama already receives no audio. |
 | Background ducking | −40 to 0 dB, default −15 dB. More negative reduces the original bed more. |
-| Speech rate / volume | Native export voice rate −10 to 10; speech volume 0–100 for Qt/native Windows speech. The app does not apply this volume setting to OpenAI exports or a screen reader's own output. |
+| Speech rate / volume | Native export voice rate −10 to 10; speech volume 0–100 for Qt speech and newly synthesized Windows narration. Existing measured WAV playback, OpenAI exports and a screen reader retain their own audio levels. |
 | Playback voice / output | Qt Windows voice or active screen reader; separate from export engine/voice. |
 | Interruption | Allow new cue speech to interrupt, or queue it. |
 | Interface language | English, Arabic, Spanish, French, Italian, Portuguese, Russian, Turkish, Ukrainian or Vietnamese. Arabic uses RTL. Unmatched strings/help/logs fall back to English; no native-speaker acceptance is claimed. |
-| Presets | Main prompt manager stores guidance per description language. Voice manager stores speech personalities. |
+| Presets | Draft with AI selects a language-specific prompt preset or accepts multiline guidance. Original prompt data can be imported through File → Import original data. The redesigned dialog has no prompt-preset manager button. Manage voice presets stores speech personalities. |
 | Download quality | Best, 360p, 480p, 720p or 1080p, subject to available formats. |
 | Notifications / diagnostics | Enable sounds and choose DEBUG through CRITICAL logging. |
 | Gemini BLOCK_NONE | Requests supported adjustable thresholds only; provider core safeguards/account restrictions remain. |
@@ -199,7 +199,7 @@ Open video first, then **Import SRT / VTT** (Ctrl+I). Import replaces current cu
 
 ## 11. Accessibility and keyboard use
 
-Controls have Qt accessibility labels; timed cues are exposed in a table and main file actions have shortcuts. Scene Explorer has its own keys. **Screen reader** playback asks an active supported reader to speak, with asynchronous Windows speech fallback if unavailable. Workbench cannot measure screen-reader speech duration for ducking.
+Controls have Qt accessibility labels; timed cues appear in the Descriptions list and as focusable timeline buttons, and main file actions have shortcuts. Scene Explorer has its own keys. **Screen reader** playback asks an active supported reader to speak, with asynchronous Windows speech fallback if unavailable. Workbench cannot measure screen-reader speech duration for ducking.
 
 NVDA/JAWS end-to-end acceptance was not performed. The presence of controller modules or accessible labels does not establish usability for every assistive setup. Test your reader, voice and workflow before relying on them for a production session.
 
@@ -277,7 +277,7 @@ Gemini uses google-genai file upload, processing polling and generation with the
 
 ## 17. Project format and integrations
 
-The [developer guide](DEVELOPER-GUIDE.md) covers the shared Python service, scriptable CLI, REST/OpenAPI and MCP over stdio or Streamable HTTP. Submit returns a durable job handle; inspect status, cancel/resume, page/time-filter descriptions, read coverage, edit with a revision, ask/explore and export. One process owns each workspace and runs one job at a time. GUI users can choose **File → Start developer API** to share their engine at `127.0.0.1:8796`; the private token path is logged. Other clients connect to that owner. Do not expose this local service directly on the Internet.
+The [developer guide](DEVELOPER-GUIDE.md) covers the shared Python service, scriptable CLI, REST/OpenAPI and MCP over stdio or Streamable HTTP. Submit returns a durable job handle; inspect status, cancel/resume, page/time-filter descriptions, read coverage, edit with a revision, ask/explore and export. One process owns each workspace and runs one job at a time. GUI users can choose **File → Start developer API / MCP** to share their engine at `127.0.0.1:8796`; the private token path is logged. Other clients connect to that owner. Do not expose this local service directly on the Internet.
 
 Example `.adproject` (illustrative; update the media path):
 
@@ -314,7 +314,7 @@ Run the standard suite on Windows:
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -q
-.\.venv\Scripts\python.exe -m tests.local_acceptance "C:\media\sample.mp4" "C:\receipts\workbench"
+.\.venv\Scripts\python.exe tests/local_acceptance.py "C:\media\sample.mp4" "C:\receipts\workbench"
 ```
 
 The optional second command opens an owned window, makes a short clip, tests editing/seeking/playback, DPAPI, native speech and MP3. It writes local artifacts and is not a cloud test. Additional acceptance scripts in `tests/` exercise library formats, audio mixing and update staging/rollback; read their inputs before running. `verify_payload.py` compares frozen source code fingerprints to the executable and checks reader dependencies. It does not prove human usability or visual accuracy.
@@ -343,4 +343,4 @@ Use Ctrl+mouse-wheel over the timeline to zoom around the pointer, and the mouse
 
 The Draft dialog accepts multiline editorial instructions and gives both provider cards the same selection treatment. Scene questions have a labeled Context range and an Add as description action beside the latest answer. Glossary cards keep Add character beneath the list.
 
-At export, choose a narration engine and a voice in the dropdowns. Windows voices are read asynchronously for that engine; changing engines refreshes the list. OpenAI lists the configured base voice and saved presets. Selection applies only after accepting export; cancellation preserves settings. Voice listing does not send description text to any provider.
+At export, choose a narration engine and a voice in the dropdowns. Windows voices are read asynchronously for that engine; changing engines refreshes the list. OpenAI lists the configured base voice and saved presets. Accepting Export saves the choice for subsequent exports; cancellation preserves settings. Voice listing does not send description text to any provider.
