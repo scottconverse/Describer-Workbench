@@ -21,9 +21,12 @@ def sha(path):
 def atomic_json(path, value):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix('.partial')
-    tmp.write_text(json.dumps(value, indent=2, ensure_ascii=False), encoding='utf-8')
-    tmp.replace(path)
+    import tempfile
+    with tempfile.NamedTemporaryFile(mode='w',encoding='utf-8',prefix=path.name+'.',suffix='.partial',dir=path.parent,delete=False) as out:
+        tmp=Path(out.name)
+        json.dump(value,out,indent=2,ensure_ascii=False)
+    try:tmp.replace(path)
+    finally:tmp.unlink(missing_ok=True)
 
 
 class Checkpoints:
@@ -51,7 +54,7 @@ class Checkpoints:
 
 
 def check_cancel(cancel):
-    if cancel.is_set():
+    if cancel is not None and cancel.is_set():
         raise InterruptedError('Cancelled; completed stages are available for resume.')
 
 
@@ -115,7 +118,7 @@ def prepare(project, settings, root, cancel, log, checkpoint):
         row = {'event_id': ident, 'text': cue.text, 'kind': cue.kind,
                'event_start': cue.event_start, 'event_end': cue.event_end,
                'evidence': cue.evidence, 'uncertainty': cue.uncertainty}
-        if cue.uncertainty:
+        if cue.uncertainty or cue.disposition == 'unresolved':
             cue.disposition = 'unresolved'
             row.update(disposition='unresolved', reason=cue.uncertainty)
             coverage.append(row)
@@ -150,7 +153,8 @@ def prepare(project, settings, root, cancel, log, checkpoint):
 
 
 def describe(project, settings, prompt, root, cancel, log, start=0, duration=None):
-    from ..services import observe
+    from ..services import observe, narration_preflight
+    narration_preflight(settings,cancel)
     checkpoint = Checkpoints(root, identity(project, settings, prompt, start, duration))
     check_cancel(cancel)
     # Audio preflight before expensive inference. No unsafe fallback on missing assets.

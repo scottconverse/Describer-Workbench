@@ -2,6 +2,8 @@
 
 **One audio-description engine for a Windows workbench, Python, CLI, REST/OpenAPI and MCP.**
 
+This source checkout is local remediation candidate **0.5.2**, not a new public release. Candidate workflow changes are described in [the manual](docs/USER-MANUAL.md). Public download links below still refer to immutable v0.5.1.
+
 Version **0.5.1** combines the Windows workbench and developer interfaces in one shared engine. Download the portable Windows package or build the tagged source.
 
 Open a video, draft timed descriptions with a local Ollama vision model or Google Gemini, edit every cue, listen alongside the video, and export subtitles or a narrated audio mix. Manual editing, subtitle import and Windows speech work without an AI API key.
@@ -81,7 +83,7 @@ Version 0.5.1 includes the redesigned native PySide6 interface in source and the
 
 The engine measures synthesized speech and fits it only within the visual event and independently protected soundtrack. Speed is capped at 1.15x; no-fit descriptions pause the source instead of being discarded or moved to an unrelated scene. Complete MP4 exports freeze the video during those descriptions; MP3/WAV exports insert matching audio pauses. Uncertain events remain unresolved and block a complete narrated export. Explicit `in-gap-only` exports are marked incomplete. Script exports retain all events and a coverage sidecar; a subtitle file alone cannot express pause playback. Audio mixes downmix to stereo.
 
-Before analysis or narrated export of media with audio, use **File → Install speech detector** once. This explicitly downloads and verifies the pinned Google YAMNet asset. Missing or corrupt assets fail safely; no model guesses dialogue slots.
+In this candidate, Draft checks the selected detector and offers explicit install/repair before inference. You can also use **File → Install speech detector**. This explicitly downloads and verifies the pinned Google YAMNet asset. Missing or corrupt assets fail safely; no model guesses dialogue slots.
 
 ## Architecture
 

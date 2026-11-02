@@ -55,7 +55,7 @@ class DescriptionService:
             if not isinstance(data.get('created'), (int,float)) or not math.isfinite(data['created']):raise ValueError('Invalid creation time')
             if not isinstance(data.get('revision'), int) or data['revision'] < 0:raise ValueError('Invalid revision')
             if not isinstance(data.get('settings'), dict):raise ValueError('Invalid settings')
-            if data.get('operation') not in ('describe','export','ask','explore','voice-preview'):raise ValueError('Invalid operation')
+            if data.get('operation') not in ('describe','export','ask','explore','voice-preview','prepare'):raise ValueError('Invalid operation')
             if not isinstance(data.get('progress'), str):raise ValueError('Invalid progress')
         except (OSError,ValueError,TypeError,KeyError) as exc:
             self.damaged_jobs[path.parent.name] = {'path':str(path), 'error':type(exc).__name__+': unreadable or invalid job record; original preserved'}
@@ -93,7 +93,7 @@ class DescriptionService:
 
     def submit(self, source=None, project=None, settings=None, prompt='', start=0, duration=None, operation='describe', export_format=None, mode='complete'):
         from ..services import probe
-        if operation not in ('describe', 'export', 'ask', 'explore', 'voice-preview'):
+        if operation not in ('describe', 'export', 'ask', 'explore', 'voice-preview', 'prepare'):
             raise ValueError('Unknown job operation')
         if project is None:
             if not source:
@@ -112,17 +112,7 @@ class DescriptionService:
         if not math.isfinite(project.duration) or project.duration <= 0 or not math.isfinite(start) or start < 0 or start >= project.duration or (duration is not None and (not math.isfinite(duration) or duration <= 0)):
             raise ValueError('Invalid analysis range')
         selected = dict(copy.deepcopy(self.settings), **(settings or {}))
-        # API callers must explicitly permit remote inference, not inherit a GUI dialog.
-        if selected.get('analysis_provider') == 'Gemini' and operation in ('describe','ask','explore') and not selected.get('allow_cloud', False):
-            raise ValueError('Gemini requires allow_cloud=true')
-        uses_speech = operation in ('describe','voice-preview') or (operation == 'export' and export_format in ('mp3','wav','mp4'))
-        if uses_speech and selected.get('voice_engine') == 'OpenAI' and not selected.get('allow_cloud', False):
-            raise ValueError('OpenAI speech requires allow_cloud=true')
-        if selected.get('analysis_provider') == 'Ollama' and operation in ('describe','ask','explore'):
-            from ..models import endpoint, is_cloud, model_info
-            endpoint(selected)
-            if is_cloud(selected, model_info(selected)) and not selected.get('allow_cloud', False):
-                raise ValueError('Remote/cloud Ollama requires allow_cloud=true')
+        self._check_permissions(selected,operation,export_format)
         if operation == 'export' and export_format not in ('mp3', 'wav', 'mp4', 'srt', 'vtt', 'txt', 'json'):
             raise ValueError('Choose a supported export format')
         if mode not in ('complete', 'in-gap-only'):
@@ -145,6 +135,19 @@ class DescriptionService:
             self._schedule(job_id)
             return self.get_job(job_id)
 
+    @staticmethod
+    def _check_permissions(selected,operation,export_format=None):
+        # API callers must explicitly permit remote inference, not inherit a GUI dialog.
+        if selected.get('analysis_provider') == 'Gemini' and operation in ('describe','ask','explore') and not selected.get('allow_cloud', False):
+            raise ValueError('Gemini requires allow_cloud=true')
+        uses_speech = operation in ('describe','voice-preview','prepare') or (operation == 'export' and export_format in ('mp3','wav','mp4'))
+        if uses_speech and selected.get('voice_engine') == 'OpenAI' and not selected.get('allow_cloud', False):
+            raise ValueError('OpenAI speech requires allow_cloud=true')
+        if selected.get('analysis_provider') == 'Ollama' and operation in ('describe','ask','explore'):
+            from ..models import endpoint, is_cloud, model_info
+            endpoint(selected)
+            if is_cloud(selected, model_info(selected)) and not selected.get('allow_cloud', False):
+                raise ValueError('Remote/cloud Ollama requires allow_cloud=true')
     def submit_batch(self, items):
         if not 1 <= len(items) <= 20:
             raise ValueError('Batch must contain 1..20 jobs')
@@ -178,6 +181,10 @@ class DescriptionService:
             stages = root / 'stages'
             if data['operation'] == 'describe':
                 result = core.describe(project, settings, data['prompt'], stages, cancel, log, data['start'], data['duration'])
+            elif data['operation'] == 'prepare':
+                from ..services import narration_preflight
+                narration_preflight(settings,cancel)
+                result = core.plan_export(project,settings,stages,cancel,log)
             elif data['operation'] == 'export':
                 result = (project if data['export_format'] in ('srt','vtt','txt','json')
                           else core.plan_export(project, settings, stages, cancel, log))
@@ -234,7 +241,9 @@ class DescriptionService:
             if job['state'] not in ('error', 'cancelled', 'interrupted') or (job_id in self._futures and not self._futures[job_id].done()):
                 raise ValueError('Only a terminal interrupted, failed or cancelled job may resume')
             # Non-secret changed settings are validated against checkpoint identity.
-            self._secrets[job_id] = {**self.settings, **job['settings'], **self._secrets.get(job_id, {}), **(settings or {})}
+            selected = {**self.settings, **job['settings'], **self._secrets.get(job_id, {}), **(settings or {})}
+            self._check_permissions(selected,job['operation'],job.get('export_format'))
+            self._secrets[job_id] = selected
             self._update(job_id, state='queued', progress='queued', error=None)
             self._schedule(job_id)
             return self.get_job(job_id)
@@ -274,7 +283,7 @@ class DescriptionService:
 
     def capabilities(self):
         from .. import __version__
-        return {'version':__version__, 'operations':['describe','export','ask','explore','voice-preview'],
+        return {'version':__version__, 'operations':['describe','export','ask','explore','voice-preview','prepare'],
                 'exports':['mp4','mp3','wav','srt','vtt','txt','json'],
                 'providers':['Ollama','Gemini'], 'transports':['python','cli','http','mcp-stdio','mcp-streamable-http'],
                 'single_owner':True, 'max_concurrent_jobs':1, 'telemetry':False}
@@ -292,6 +301,10 @@ class DescriptionService:
                     matches = [old for old in previous if
                                (cue.event_id and old.event_id == cue.event_id) or
                                (not cue.event_id and (old.start, old.end) == (cue.start, cue.end))]
+                    if not matches and not cue.event_id:
+                        matches = [old for old in previous if old.text == cue.text]
+                    if len(matches) != 1 and any(old.uncertainty or old.disposition=='unresolved' for old in previous):
+                        raise ValueError('Ambiguous edit of reviewed observations. Preserve each original event_id, or edit one identified cue without discarding its metadata.')
                     if len(matches) == 1:
                         old = matches[0]
                         preserved = old.edited(cue.start, cue.end, cue.text, project.duration)
@@ -325,6 +338,14 @@ class DescriptionService:
                 self.cancel(job_id)
             time.sleep(.05)
 
+    def input_project(self, job_id):
+        self.get_job(job_id)
+        return Project.load(self._path(job_id) / 'input.adproject')
+
+    def repair_narration(self, project, settings, cancel, log):
+        job = self.submit(project=project,settings=settings,operation='prepare')
+        return self.wait(job['id'],cancel,log)
+
     def describe(self, project, settings, prompt, cancel, log, start=0, duration=None):
         job = self.submit(project=project, settings=settings, prompt=prompt, start=start, duration=duration)
         result = self.wait(job['id'], cancel, log)
@@ -340,7 +361,9 @@ class DescriptionService:
         self.wait(job['id'], cancel, log)
         artifact = self.get_job(job['id'])['artifact']
         target.parent.mkdir(parents=True, exist_ok=True)
-        partial = target.with_name(target.name+'.partial')
+        import tempfile
+        with tempfile.NamedTemporaryFile(prefix=target.name+'.',suffix='.partial',dir=target.parent,delete=False) as owned:
+            partial = Path(owned.name)
         try:
             shutil.copyfile(artifact['path'], partial)
             partial.replace(target)

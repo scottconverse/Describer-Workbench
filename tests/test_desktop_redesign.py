@@ -204,6 +204,8 @@ def test_voice_discovery_waits_for_owned_completion_before_replacement(tmp_path)
             assert not picker.loading and picker.loaded=='Windows 32-bit'
             picker.engine.setCurrentText('Windows')
             picker.shutdown()
+            deadline=time.monotonic()+3
+            while picker.thread is not None and time.monotonic()<deadline:app.processEvents();QTest.qWait(10)
             assert picker.thread is None or not picker.thread.isRunning()
             app.processEvents()
         finally:

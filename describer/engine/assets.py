@@ -7,6 +7,8 @@ from pathlib import Path
 
 from .sound import MODEL_SHA256, MODEL_URL
 
+_VERIFIED = {}
+
 
 def default_root() -> Path:
     return Path(os.environ.get('DESCRIBER_HOME', Path(os.environ.get('LOCALAPPDATA', Path.home())) / 'DescriberWorkbench'))
@@ -19,6 +21,29 @@ def speech_model(settings: dict) -> Path:
     with path.open('rb') as f:
         if hashlib.file_digest(f, 'sha256').hexdigest() != MODEL_SHA256:
             raise ValueError('Speech detector checksum mismatch; provision it again.')
+    return path
+
+
+def detector_state(settings):
+    path = Path(settings.get('sound_model') or default_root() / 'assets' / 'yamnet.onnx').resolve()
+    try:
+        stat = path.stat()
+        signature = (stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns)
+    except OSError:return 'missing'
+    previous = _VERIFIED.get(str(path))
+    return previous[1] if previous and previous[0] == signature else 'configured (not verified)'
+
+
+def validate_detector(settings):
+    path = Path(settings.get('sound_model') or default_root() / 'assets' / 'yamnet.onnx').resolve()
+    try:
+        speech_model(settings)
+        validate_session(path)
+    except Exception:
+        if path.is_file():
+            stat=path.stat();_VERIFIED[str(path)]=((stat.st_size,stat.st_mtime_ns,stat.st_ctime_ns),'error')
+        raise
+    stat=path.stat();_VERIFIED[str(path)]=((stat.st_size,stat.st_mtime_ns,stat.st_ctime_ns),'verified')
     return path
 
 
@@ -56,6 +81,7 @@ def provision(destination: str | Path | None = None, cancel=None) -> Path:
         validate_session(temporary)
         check_cancel(cancel)
         temporary.replace(target)
+        stat=target.stat();_VERIFIED[str(target.resolve())]=((stat.st_size,stat.st_mtime_ns,stat.st_ctime_ns),'verified')
         return target
     finally:
         temporary.unlink(missing_ok=True)

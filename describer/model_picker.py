@@ -1,10 +1,12 @@
 """TownReporter-style provider/model selection adapted to a Qt desktop app."""
 import copy
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QWidget,QHBoxLayout,QVBoxLayout,QLabel,QComboBox,QPushButton
 from .models import discover,model_info,is_cloud,test_connection
 
 
 class ModelPicker(QWidget):
+    reloaded=Signal()
     def __init__(self,window):
         super().__init__(window);self.window=window;self.rows=[]
         layout=QVBoxLayout(self);layout.setContentsMargins(0,0,0,0);row=QHBoxLayout();layout.addLayout(row)
@@ -25,11 +27,14 @@ class ModelPicker(QWidget):
         return self.draft if getattr(self,'draft',None) is not None else self.window.settings.data
 
     def begin_draft(self):
+        self.draft_token=object()
         self.draft=copy.deepcopy(self.window.settings.data)
 
     def end_draft(self,accepted):
         if accepted:self.window.settings.data.update(self.draft)
-        self.draft=None
+        self.draft=None;self.draft_token=None
+        if not accepted and self.window.thread is not None:
+            self.window.cancel.set();self.window.pending_model_test=None
         self.provider.blockSignals(True);self.provider.setCurrentText(self.data['analysis_provider']);self.provider.blockSignals(False)
         self.reload()
 
@@ -44,7 +49,7 @@ class ModelPicker(QWidget):
         selected=settings['ollama_model' if ollama else 'model'];index=self.model.findData(selected)
         if index>=0:self.model.setCurrentIndex(index)
         else:self.model.setCurrentIndex(-1);self.model.setEditText(selected)
-        self.model.blockSignals(False);self.refresh_button.setEnabled(ollama);self.test_button.setEnabled(ollama);self.status()
+        self.model.blockSignals(False);self.refresh_button.setEnabled(ollama);self.test_button.setEnabled(ollama);self.status();self.reloaded.emit()
 
     def status(self):
         if self.provider.currentText()=='Gemini':
@@ -82,7 +87,8 @@ class ModelPicker(QWidget):
     def refresh(self):
         if self.window.busy() or self.provider.currentText()!='Ollama':return
         settings=copy.deepcopy(self.data)
-        self.window.job(lambda c,l:discover(settings,c,l),self.discovered)
+        token=getattr(self,'draft_token',None)
+        self.window.job(lambda c,l:discover(settings,c,l),lambda rows:self.discovered(rows) if token is getattr(self,'draft_token',None) and self.data==settings else None)
 
     def discovered(self,rows):
         self.rows=rows;self.reload()
@@ -91,9 +97,10 @@ class ModelPicker(QWidget):
         if self.window.busy() or self.provider.currentText()!='Ollama':return
         self.model_edited()
         settings=copy.deepcopy(self.data)
+        token=getattr(self,'draft_token',None)
         def ready(info):
-            if self.window.cancel.is_set():return
-            if not self.window.confirm_ollama(info):return
+            if self.window.cancel.is_set() or token is not getattr(self,'draft_token',None) or self.data!=settings:return
+            if not self.window.confirm_ollama(info,settings):return
             # Discovery callback still owns its QThread until teardown.
             self.window.pending_model_test=settings
         self.window.job(lambda c,l:model_info(settings),ready)

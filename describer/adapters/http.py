@@ -48,7 +48,8 @@ def create_app(service, token, enable_mcp=True):
         else:
             yield
 
-    app = FastAPI(title='Describer Workbench', version='0.5.1', lifespan=lifespan,
+    from .. import __version__
+    app = FastAPI(title='Describer Workbench', version=__version__, lifespan=lifespan,
                   telemetry={'tracing':False,'metrics':False,'logs':False,'operation_spans':False,'auto_configure':False})
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=['localhost','127.0.0.1','[::1]'])
 

@@ -242,8 +242,35 @@ def download(url, destination, cancel, log, quality="Best"):
     with YoutubeDL({'outtmpl':str(Path(destination)/'%(title).100s-%(id)s.%(ext)s'),
                     'format':selected,'noplaylist':True,'quiet':True,'progress_hooks':[progress],
                     'socket_timeout':30, 'ffmpeg_location':str(Path(tool('ffmpeg')).parent)}) as y:
-        info=y.extract_info(url,download=True)
-        return y.prepare_filename(info)
+        try:
+            info=y.extract_info(url,download=True)
+            return y.prepare_filename(info)
+        except Exception as exc:
+            if cancel.is_set():raise InterruptedError('Download cancelled.') from None
+            message=str(exc).lower()
+            if any(word in message for word in ('sign in','login','private','authentication','cookies','bot')):
+                reason='The provider requires account access or a browser/bot check. This app does not import browser cookies or bypass access checks.'
+            elif any(word in message for word in ('javascript','runtime','extractor','unsupported url')):
+                reason='The extractor or its runtime could not handle this URL. Check the project release notes for a supported app update.'
+            elif any(word in message for word in ('timed out','network','resolve','connection')):
+                reason='The provider could not be reached. Check the connection and retry.'
+            else:reason='The provider or extractor rejected the download.'
+            raise RuntimeError(reason+' Retry Open URL, check Settings > Interface download quality, or use Open video with a local file you can access. Diagnostic category: '+type(exc).__name__) from None
+
+
+def narration_preflight(settings, cancel=None):
+    """Check selected speech prerequisites without paid preview synthesis."""
+    if cancel and cancel.is_set():raise InterruptedError('Cancelled')
+    engine=settings.get('voice_engine','Windows')
+    if engine=='OpenAI':
+        if not settings.get('openai_key'):raise ValueError('OpenAI speech needs an API key. Open Settings > Keys & privacy, or select a Windows narration engine.')
+        return
+    if engine not in ('Windows','Windows 32-bit','Windows OneCore'):raise ValueError('Select a supported narration engine in Settings > Export voice.')
+    from .windows_speech import windows_speech
+    rows=windows_speech(engine,cancel=cancel,listing=True)
+    if not rows:raise ValueError('No voices are installed for '+engine+'. Choose another engine or install a voice in Windows Settings.')
+    selected=settings.get('windows_voice','')
+    if selected and not any(row.get('id')==selected for row in rows):raise ValueError('The selected narration voice is missing. Select an installed voice in Settings > Export voice.')
 
 
 def synthesize(text, output, settings, cancel=None):

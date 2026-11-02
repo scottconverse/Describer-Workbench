@@ -1,4 +1,6 @@
-# Developer guide — v0.5.1
+# Developer guide — local candidate 0.5.2
+
+Public release remains v0.5.1; the candidate changes below are not a published upgrade.
 
 Describer Workbench has one headless engine. The Qt desktop, Python API, CLI,
 REST API and MCP tools call the same `DescriptionService`. No WSL, Docker,
@@ -109,7 +111,7 @@ OpenAPI schema: authenticated `GET /openapi.json`. The API defines:
 | --- | --- | --- |
 | GET | `/capabilities` | Version, operations, resource limits |
 | POST | `/models` | Ollama discovery; settings JSON body |
-| POST | `/jobs` | Submit describe/export/ask/explore/voice-preview; returns202 |
+| POST | `/jobs` | Submit describe/export/ask/explore/voice-preview/prepare; returns202 |
 | POST | `/jobs/batch` | Batch submission |
 | GET | `/jobs` | List/filter jobs |
 | GET | `/jobs/{id}` | Progress and terminal state |
@@ -200,3 +202,14 @@ does not certify legal accessibility compliance or claim99% visual accuracy.
 See the [architecture guide](ARCHITECTURE.md) for ownership, timing and data boundaries.
 
 Remote hosted model aliases can change upstream without a locally verifiable weight digest. Local Ollama model identity uses the digest reported by `/api/tags`.
+
+
+## Candidate recovery and export semantics
+
+The common service now accepts `operation="prepare"` to repair narration/placement without vision, using the same durable queue and `core.plan_export` path. It requires speech consent for OpenAI. Both submit and resume check actual-operation cloud permissions; text-only export does not require unrelated speech consent. No GUI dialogs are introduced into developer operations.
+
+`edit` retains existing observation metadata when identity is unambiguous. Preserve `event_id` when changing text and timing together; ambiguous edits involving unresolved observations are rejected instead of silently dropping review safeguards. Stale narration is invalidated.
+
+`damaged_jobs` exposes paths of unreadable/invalid records; these records are excluded from usable job lists and retained unchanged. Valid jobs and owner locking remain available. Desktop recovery uses original job settings, current credentials, and normal checkpoint identity checks.
+
+Developer exports intentionally replace an existing final target and coverage sidecar without interactive confirmation. Callers must choose/approve those destinations. Temporary staging files are uniquely created and owned, so an existing predictable `.partial` file is not used as scratch. Desktop exports add interactive overwrite confirmation and early destination checks.

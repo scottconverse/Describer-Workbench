@@ -384,11 +384,17 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
         self.project_title.setText((Path(self.project_path or self.project.video).stem if self.project.video else 'New project')+'  · '+('Unsaved changes (Ctrl+S)' if self.dirty else 'Saved'))
         running=self.thread is not None;self.inline.setEnabled(not running);self.glossary_list.parentWidget().setEnabled(not running);self.draft_button.setEnabled(not running and bool(self.project.video));self.export_button.setEnabled(not running and bool(self.project.cues));self.job_card.setVisible(running)
         counts={k:sum(c.disposition==k for c in self.project.cues) for k in ('in-gap','pause','unresolved')}
-        from .engine.assets import default_root
-        detector=Path(self.settings.data.get('sound_model') or default_root()/'assets'/'yamnet.onnx').is_file()
-        for key,value in [('Speech detector',detector),('Ollama',bool(self.settings.data.get('ollama_model'))),('Windows voices',bool(self.speech.availableVoices())),('Gemini key',bool(self.settings.data.get('gemini_key')))]:self.setup_checks[key].setChecked(value);self.setup_actions[key].setVisible(not value)
-        self.setup_checks['Ollama'].setToolTip('Exact model configured; use Test connection to verify the server.')
-        self.state_label.setText(f"Speech detector: {'installed' if detector else 'not installed'}  |  {'Working' if running else 'Engine idle'}     {('In gap '+str(counts['in-gap'])+' · Pauses '+str(counts['pause'])+' · Review '+str(counts['unresolved'])) if self.pages.currentIndex()==1 else ''}     Voice: {self.settings.data.get('playback_voice') or 'System default'}     API: {'running' if self.api_thread and self.api_thread.is_alive() else 'off'}")
+        from .engine.assets import detector_state
+        detector=detector_state(self.settings.data)
+        model_ready=getattr(self,'verified_model',None)==(self.settings.data.get('ollama_url'),self.settings.data.get('ollama_model'))
+        voice_ready=getattr(self,'verified_voice',None)==(self.settings.data.get('voice_engine'),self.settings.data.get('windows_voice'))
+        statuses={'Speech detector':detector,'Ollama':'verified' if model_ready else 'configured (not verified)' if self.settings.data.get('ollama_model') else 'missing',
+                  'Windows voices':'verified' if voice_ready else 'selected engine not verified', 'Gemini key':'configured' if self.settings.data.get('gemini_key') else 'missing'}
+        for key,status in statuses.items():
+            self.setup_checks[key].setChecked(status=='verified');self.setup_checks[key].setText(key+' - '+status);self.setup_actions[key].setVisible(True)
+        self.setup_checks['Windows voices'].setToolTip('Selected export engine: '+self.settings.data.get('voice_engine','Windows'))
+        self.setup_checks['Ollama'].setToolTip('Verification is for this server/model in this session. Draft checks again before inference.')
+        self.state_label.setText(f"Speech detector: {detector}  |  {'Working' if running else 'Engine idle'}     {('In gap '+str(counts['in-gap'])+' · Pauses '+str(counts['pause'])+' · Review '+str(counts['unresolved'])) if self.pages.currentIndex()==1 else ''}     Voice: {self.settings.data.get('playback_voice') or 'System default'}     API: {'running' if getattr(self,'api_ready',False) and self.api_thread and self.api_thread.is_alive() else 'starting/stopping' if self.api_thread and self.api_thread.is_alive() else 'off'}")
     def presentation_position(self,value):
         cue=next((c for c in self.project.cues if c.start<=value/1000<c.end),None);self.current.setText(cue.text if cue else '')
         self.clock.setText(clock(value/1000)+' / '+clock(self.project.duration));self.timeline.ensure_visible(value/1000);self.timeline.update();self.pause_badge.setVisible(self.pause_active);self.current.setVisible(bool(self.current.text().strip()))
@@ -518,10 +524,12 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
         def sync_models(*args):
             model_list.blockSignals(True);model_list.clear()
             for i in range(self.model_picker.model.count()):model_list.addItem(self.model_picker.model.itemData(i) or self.model_picker.model.itemText(i))
-            if not model_list.count():model_list.addItem(self.model_picker.model.currentText())
+            selected=self.model_picker.data['ollama_model' if self.model_picker.provider.currentText()=='Ollama' else 'model']
+            if selected and not any(model_list.item(i).text()==selected for i in range(model_list.count())):model_list.addItem(selected)
+            if not model_list.count():model_list.addItem(selected)
             for i in range(model_list.count()):model_list.item(i).setFlags(model_list.item(i).flags()|Qt.ItemIsEditable)
-            model_list.setCurrentRow(max(0,self.model_picker.model.currentIndex()));model_list.blockSignals(False)
-        sync_models();model_list.currentRowChanged.connect(lambda i:self.model_picker.model.setCurrentIndex(i))
+            model_list.setCurrentRow(next((i for i in range(model_list.count()) if model_list.item(i).text()==selected),-1));model_list.blockSignals(False)
+        sync_models();model_list.currentRowChanged.connect(lambda i:self.model_picker.store_model(model_list.item(i).text()) if i>=0 else None)
         model_list.setEditTriggers(QListWidget.DoubleClicked|QListWidget.EditKeyPressed)
         for i in range(model_list.count()):model_list.item(i).setFlags(model_list.item(i).flags()|Qt.ItemIsEditable)
         model_list.itemChanged.connect(lambda item:self.model_picker.store_model(item.text().strip()) if item.text().strip() else None)
@@ -533,7 +541,7 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
         provider_actions();self.model_picker.provider.currentTextChanged.connect(provider_actions)
         status=QLabel(self.model_picker.help.text());status.setWordWrap(True);v.addWidget(status)
         timer=QTimer(d);timer.timeout.connect(lambda:status.setText(self.model_picker.help.text()));timer.start(300)
-        self.model_picker.model.model().rowsInserted.connect(sync_models)
+        self.model_picker.reloaded.connect(sync_models)
         self.model_picker.provider.currentTextChanged.connect(sync_models)
         v.addWidget(section('3 · RANGE'))
         scope=QComboBox();scope.addItems([f'Whole video · {clock(self.project.duration)}',f'Next 20 s from {clock(self.player.position()/1000)}',f'Next 60 s from {clock(self.player.position()/1000)}']);scope.setCurrentIndex(self.model_picker.scope.currentIndex());v.addWidget(scope)
@@ -545,7 +553,7 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
         def update_note():note.setText(('Sampled frames, no audio, go to the selected Ollama server. Remote/cloud confirmation remains required.' if self.model_picker.provider.currentText()=='Ollama' else 'Uploads video to Google with your key; may include audio and incur charges.')+f' Range analysis replaces the {len(self.project.cues)} current descriptions.')
         update_note();self.model_picker.provider.currentTextChanged.connect(update_note)
         actions=QDialogButtonBox(QDialogButtonBox.Cancel);actions.addButton('Start draft',QDialogButtonBox.AcceptRole).setProperty('role','primary');actions.accepted.connect(d.accept);actions.rejected.connect(d.reject);v.addWidget(actions)
-        accepted=d.exec();timer.stop();self.model_picker.provider.currentTextChanged.disconnect(update_note);self.model_picker.provider.currentTextChanged.disconnect(sync_models);self.model_picker.model.model().rowsInserted.disconnect(sync_models)
+        accepted=d.exec();timer.stop();self.model_picker.provider.currentTextChanged.disconnect(update_note);self.model_picker.provider.currentTextChanged.disconnect(sync_models);self.model_picker.reloaded.disconnect(sync_models)
         for widget in (self.model_picker,self.preset,self.prompt):widget.setParent(self.centralWidget());widget.hide()
         self.model_picker.provider.currentTextChanged.disconnect(provider_actions)
         self.model_picker.end_draft(bool(accepted))
@@ -585,7 +593,7 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
             media=formats.currentRow()<3;blocked=media and bool(counts['unresolved']);warning.setVisible(blocked);review.setVisible(blocked);voice_picker.setVisible(media);go.setEnabled(bool(path.text()) and not blocked and (not media or voice_picker.usable()))
         formats.currentRowChanged.connect(lambda _:state());path.textChanged.connect(state);formats.setCurrentRow(0);state()
         voice_picker.changed.connect(state)
-        accepted=d.exec();voice_picker.shutdown()
+        accepted=d.exec();voice_picker.shutdown(5000)
         if accepted:
             ext=extensions[formats.currentRow()]
             if Path(path.text()).suffix.lower()!='.'+ext:self.error('Save path extension must match the selected format.');return
@@ -675,7 +683,7 @@ class ExportVoices(QWidget):
         layout.addWidget(QLabel('Narration voice'));self.voice=QComboBox();self.voice.setAccessibleName('Export narration voice');layout.addWidget(self.voice)
         self.note=QLabel();self.note.setWordWrap(True);layout.addWidget(self.note)
         self.retry=QPushButton('Retry voice discovery');layout.addWidget(self.retry);self.retry.clicked.connect(lambda:self.request(self.engine.currentText()))
-        self.voice.currentIndexChanged.connect(self.changed.emit)
+        self.voice.currentIndexChanged.connect(lambda _:self.changed.emit())
         self.engine.currentTextChanged.connect(self.request);self.request(self.engine.currentText())
     def request(self,engine):
         self.requested=engine
@@ -688,9 +696,11 @@ class ExportVoices(QWidget):
             settings=self.window.settings.data;self.voice.addItem('Base voice · '+settings['voice'],{'voice':settings['voice'],'voice_preset':''})
             for name,preset in settings['voice_presets'].items():self.voice.addItem(name+' · '+preset['base_voice'],{'voice':preset['base_voice'],'voice_preset':name})
             index=next((i for i in range(self.voice.count()) if self.voice.itemData(i)['voice_preset']==settings.get('voice_preset')),0);self.voice.setCurrentIndex(index)
-            self.loading=False;self.voice.setEnabled(True);self.note.setText('Description text is sent to OpenAI only after export confirmation.');self.changed.emit();return
+            self.loading=False;self.voice.setEnabled(True);self.note.setText('OpenAI narration sends description text for paid synthesis. Draft and export ask for consent before sending.');self.changed.emit();return
         self.loading=True;self.voice.addItem('Loading installed voices…',None);self.voice.setEnabled(False);self.note.setText('Reading voices installed for this engine.');self.changed.emit()
         self.cancel=threading.Event();thread=QThread(self.window);worker=VoiceDiscovery(engine,self.cancel);worker.moveToThread(thread);self.thread=thread;self.worker=worker
+        if not hasattr(self.window,'voice_discoveries'):self.window.voice_discoveries=set()
+        self.window.voice_discoveries.add(self)
         thread.started.connect(worker.run);worker.done.connect(self.discovered);worker.failed.connect(self.failed);worker.finished.connect(thread.quit,Qt.DirectConnection);worker.finished.connect(worker.deleteLater);thread.finished.connect(self.finished);thread.start()
     def discovered(self,rows):
         if self.closing or self.requested!=self.loaded:return
@@ -716,6 +726,7 @@ class ExportVoices(QWidget):
         if thread is None:return
         self.thread=None;self.worker=None;self.loading=False
         thread.deleteLater()
+        self.window.voice_discoveries.discard(self)
         if not self.closing and self.requested!=self.loaded:self.start_discovery()
         self.changed.emit()
     def usable(self):
@@ -724,6 +735,9 @@ class ExportVoices(QWidget):
         result={'voice_engine':self.engine.currentText()};result.update(self.voice.currentData() or {})
         if result['voice_engine']!='OpenAI':result['voice_preset']=''
         return result
-    def shutdown(self):
+    def shutdown(self,wait_ms=0):
         self.closing=True
-        if self.thread and self.thread.isRunning():self.cancel.set();self.thread.quit();self.thread.wait(5000)
+        if self.thread is not None:
+            self.cancel.set();self.thread.quit()
+            if wait_ms:self.thread.wait(wait_ms)
+        return self.thread is None or not self.thread.isRunning()

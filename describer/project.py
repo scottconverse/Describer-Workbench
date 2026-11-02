@@ -168,10 +168,8 @@ class Project:
     analysis: dict = field(default_factory=dict)
 
     def save(self, path):
-        target = Path(path)
-        temp = target.with_suffix(target.suffix + '.tmp')
-        temp.write_text(json.dumps({'version': 1, **asdict(self)}, indent=2, ensure_ascii=False), encoding='utf-8')
-        temp.replace(target)
+        from .engine.core import atomic_json
+        atomic_json(path, {'version': 1, **asdict(self)})
 
     @classmethod
     def load(cls, path):
