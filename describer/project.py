@@ -40,6 +40,17 @@ class Cue:
     speech_seconds: float = 0
     speed: float = 1
 
+    def edited(self, start, end, text, duration=0):
+        """Keep observation/review identity while invalidating changed narration."""
+        from dataclasses import replace
+        candidate = replace(self, start=start, end=end, text=text).validate(duration)
+        if (candidate.start, candidate.end, candidate.text) != (self.start, self.end, self.text):
+            candidate.audio = ''
+            candidate.speech_seconds = 0
+            candidate.speed = 1
+            candidate.disposition = 'unresolved' if self.disposition == 'unresolved' or self.uncertainty else 'unplanned'
+        return candidate
+
     def validate(self, duration=0):
         self.start, self.end = seconds(self.start), seconds(self.end)
         for name in ('text', 'event_id', 'kind', 'evidence', 'uncertainty', 'audio'):

@@ -175,7 +175,7 @@ class Window(DesktopInterface, QMainWindow):
         self.model_picker.setEnabled(True)
         if hasattr(self,'job_card'):
             self.job_card.hide()
-            if self.cancel.is_set():self.notify('Cancelled. Nothing was changed.')
+            if self.cancel.is_set():self.notify('Operation stopped. Completed downloads and durable checkpoints are retained.')
         if getattr(self,'pending_model_test',None):
             settings=self.pending_model_test;self.pending_model_test=None
             from .models import test_connection
@@ -188,12 +188,20 @@ class Window(DesktopInterface, QMainWindow):
         if choice==QMessageBox.StandardButton.Cancel:return False
         if choice==QMessageBox.StandardButton.Save:return bool(self.save_project())
         return True
+    def reset_scene(self):
+        self.history=[]
+        if hasattr(self,'answer'):del self.answer
+        self.conversation.clear();self.answer_text.setText('No answer yet.');self.add_answer_button.setEnabled(False)
+        self.question.clear()
+        while self.explore_host.count():
+            item=self.explore_host.takeAt(0)
+            if item.widget():item.widget().deleteLater()
     def set_video(self,path):
         from .services import probe
         self.pause_active=False;self.pause_player.stop();self.narration.stop();self.played_pauses.clear()
         duration=probe(path);self.playback_speech.stop();self.player.stop();self.project=Project(str(Path(path).resolve()),duration);self.project_path=None;self.dirty=False
         self.undo_stack.clear();self._selected_cue=None
-        self.history=[];self.player.setSource(QUrl.fromLocalFile(self.project.video));self.file_label.setText(self.project.video);self.refresh();self.last_spoken=None
+        self.reset_scene();self.player.setSource(QUrl.fromLocalFile(self.project.video));self.file_label.setText(self.project.video);self.refresh();self.last_spoken=None
     def open_video(self):
         if self.busy() or not self.guard_changes():return
         p,_=QFileDialog.getOpenFileName(self,'Open video','','Video files (*.mp4 *.mkv *.mov *.avi *.webm);;All files (*)')
@@ -307,7 +315,7 @@ class Window(DesktopInterface, QMainWindow):
         i=self.table.currentRow()
         if 0<=i<len(self.project.cues):
             old=self.project.cues[i]
-            if (old.start,old.end,old.text)==(candidate.start,candidate.end,candidate.text):return copy.deepcopy(old)
+            return old.edited(candidate.start,candidate.end,candidate.text,self.project.duration)
         return candidate
     def add_cue(self):
         if self.busy():return
@@ -352,7 +360,7 @@ class Window(DesktopInterface, QMainWindow):
                 from .services import probe
                 actual=probe(project.video)
                 for c in project.cues:c.validate(actual)
-                project.duration=actual;self.undo_stack.clear();self._selected_cue=None;self.project=project;self.project_path=p;self.dirty=False;self.history=[]
+                project.duration=actual;self.undo_stack.clear();self._selected_cue=None;self.project=project;self.project_path=p;self.dirty=False;self.reset_scene()
                 self.pause_active=False;self.pause_player.stop();self.narration.stop();self.played_pauses.clear()
                 self.playback_speech.stop();self.player.stop();self.last_spoken=None;self.player.setSource(QUrl.fromLocalFile(project.video));self.file_label.setText(project.video);self.refresh();self.remember_project()
             except Exception as e:self.error(str(e))
@@ -407,10 +415,14 @@ class Window(DesktopInterface, QMainWindow):
             job=service.submit(source=source,settings=settings,prompt=instruction,start=start,duration=max(.1,min(length,duration-start)),operation=operation)
             service.wait(job['id'],cancel,log)
             return json.dumps(service.scene_result(job['id']))
-        self.job(task,done)
+        identity=self.project
+        self.job(task,lambda result:done(result) if self.project is identity else None)
     def add_scene_answer(self,answer,position,button=None):
         if self.busy():return
-        cue=Cue(position,min(position+4,self.project.duration),answer).validate(self.project.duration)
+        try:cue=Cue(position,min(position+4,self.project.duration),answer).validate(self.project.duration)
+        except (ValueError,TypeError):
+            if button:button.setEnabled(False)
+            self.error('Move the playhead before the end of the video and ask again before adding a description.');return
         cue.disposition='unresolved';cue.uncertainty='AI scene answer: verify visual facts.'
         if hasattr(self,'undo_stack'):self.commit_cues([*self.project.cues,cue],'Add scene answer')
         else:self.project.cues.append(cue);self.changed()
@@ -426,13 +438,35 @@ class Window(DesktopInterface, QMainWindow):
         self.scene_request(instruction,done,2)
     def edit_glossary(self):
         self.tabs.setCurrentIndex(2)
-    def export_to(self,p):
+    def validate_export_destination(self,p,extension=None,parent=None):
+        import tempfile
+        target=Path(p).expanduser().resolve()
+        if extension and target.suffix.lower()!='.'+extension:
+            raise ValueError('Save path extension must match the selected format: .'+extension)
+        source=Path(self.project.video).resolve()
+        if target==source or (target.exists() and source.exists() and target.samefile(source)):
+            raise ValueError('Cannot overwrite original media. Choose another destination.')
+        if not target.parent.is_dir():raise ValueError('Choose an existing output folder.')
+        for output in (target,Path(str(target)+'.coverage.json')):
+            if output.exists():
+                if not output.is_file():raise ValueError('Choose a file, not a folder: '+str(output))
+                if output==source or (source.exists() and output.samefile(source)):
+                    raise ValueError('Cannot overwrite original media. Choose another destination.')
+                if QMessageBox.question(parent or self,'Replace existing file',f'Replace {output}?',QMessageBox.Yes|QMessageBox.No|QMessageBox.Cancel,QMessageBox.No)!=QMessageBox.Yes:return False
+                with output.open('r+b'):pass
+        with tempfile.NamedTemporaryFile(prefix='.describer-write-',dir=target.parent):pass
+        return True
+    def export_to(self,p,destination_checked=False):
         if self.busy() or not self.project.cues:return
         i=self.table.currentRow()
         if i>=0:
             try:self.project.cues[i]=self.editor_cue()
             except Exception as exc:self.error(str(exc));return
         if not p:return
+        if not destination_checked:
+            try:
+                if not self.validate_export_destination(p):return
+            except (OSError,ValueError) as exc:self.error(str(exc));return
         if Path(p).suffix.lower() in ('.mp3','.wav','.mp4'):
             if self.settings.data['voice_engine']=='OpenAI' and QMessageBox.question(self,'OpenAI speech','Send description text to OpenAI for paid speech synthesis?')!=QMessageBox.StandardButton.Yes:return
             project=copy.deepcopy(self.project);settings=copy.deepcopy(self.settings.data);settings['allow_cloud']=True
@@ -644,7 +678,8 @@ class Window(DesktopInterface, QMainWindow):
         if self.busy():return
         if QMessageBox.question(self,'Install local speech detector','Download the pinned Google YAMNet speech detector from Hugging Face? Analysis stays local and the checksum is verified.')!=QMessageBox.StandardButton.Yes:return
         from .engine.assets import provision
-        self.job(lambda c,l:str(provision()),lambda path:self.log('Speech detector installed: '+path))
+        target=self.settings.data.get('sound_model') or None
+        self.job(lambda c,l:(l('Installing selected detector; cancellation waits at most one network read timeout (10 seconds).'),str(provision(target,c)))[1],lambda path:self.log('Speech detector installed and verified: '+path))
     def start_api(self):
         if self.api_thread and self.api_thread.is_alive():self.log('Developer API is already running.');return
         try:

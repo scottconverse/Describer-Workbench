@@ -20,8 +20,21 @@ class ModelPicker(QWidget):
         self.model.currentIndexChanged.connect(self.model_selected)
         self.model.lineEdit().editingFinished.connect(self.model_edited)
 
+    @property
+    def data(self):
+        return self.draft if getattr(self,'draft',None) is not None else self.window.settings.data
+
+    def begin_draft(self):
+        self.draft=copy.deepcopy(self.window.settings.data)
+
+    def end_draft(self,accepted):
+        if accepted:self.window.settings.data.update(self.draft)
+        self.draft=None
+        self.provider.blockSignals(True);self.provider.setCurrentText(self.data['analysis_provider']);self.provider.blockSignals(False)
+        self.reload()
+
     def reload(self):
-        settings=self.window.settings.data;ollama=self.provider.currentText()=='Ollama'
+        settings=self.data;ollama=self.provider.currentText()=='Ollama'
         self.model.blockSignals(True);self.model.clear()
         if ollama:
             for row in self.rows:
@@ -36,16 +49,17 @@ class ModelPicker(QWidget):
     def status(self):
         if self.provider.currentText()=='Gemini':
             self.help.setText('Gemini uploads video with audio unless removed in Settings. Uses your Google API key.');return
-        name=self.window.settings.data['ollama_model'];row=next((r for r in self.rows if r['name']==name),None)
+        name=self.data['ollama_model'];row=next((r for r in self.rows if r['name']==name),None)
         place=('Cloud model: frames leave this computer and use your Ollama allowance. ' if row and row['cloud'] else 'Local Ollama model. ' if row else 'Refresh to check this exact model. ')
         self.help.setText(place+('This model does not report vision support. ' if row and not row['vision'] else '')+'Analysis sends sampled frames without audio; review description timing and dialogue gaps.')
 
     def save(self):
+        if getattr(self,'draft',None) is not None:return
         try:self.window.settings.save()
         except Exception as exc:self.window.error(str(exc))
 
     def provider_changed(self,value):
-        self.window.settings.data['analysis_provider']=value;self.reload();self.save()
+        self.data['analysis_provider']=value;self.reload();self.save()
 
     def model_selected(self,index):
         name=self.model.itemData(index)
@@ -58,20 +72,25 @@ class ModelPicker(QWidget):
 
     def store_model(self,name):
         key='ollama_model' if self.provider.currentText()=='Ollama' else 'model'
-        self.window.settings.data[key]=name;self.status();self.save()
+        self.data[key]=name
+        self.model.blockSignals(True)
+        index=self.model.findData(name)
+        if index>=0:self.model.setCurrentIndex(index)
+        else:self.model.setCurrentIndex(-1);self.model.setEditText(name)
+        self.model.blockSignals(False);self.status();self.save()
 
     def refresh(self):
-        if self.window.busy():return
-        settings=copy.deepcopy(self.window.settings.data)
+        if self.window.busy() or self.provider.currentText()!='Ollama':return
+        settings=copy.deepcopy(self.data)
         self.window.job(lambda c,l:discover(settings,c,l),self.discovered)
 
     def discovered(self,rows):
         self.rows=rows;self.reload()
 
     def test(self):
-        if self.window.busy():return
+        if self.window.busy() or self.provider.currentText()!='Ollama':return
         self.model_edited()
-        settings=copy.deepcopy(self.window.settings.data)
+        settings=copy.deepcopy(self.data)
         def ready(info):
             if self.window.cancel.is_set():return
             if not self.window.confirm_ollama(info):return

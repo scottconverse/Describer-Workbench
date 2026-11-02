@@ -36,11 +36,32 @@ class DescriptionService:
         self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix='describer')
         self._cancels, self._secrets, self._futures = {}, {}, {}
         self._closed = False
+        self.damaged_jobs = {}
         for path in self.root.glob('*/job.json'):
-            data = json.loads(path.read_text('utf-8'))
+            data = self._read_record(path)
+            if data is None:continue
             if data['state'] in ('queued', 'running', 'cancelling'):
                 data.update(state='interrupted', error='Previous owner exited; resume explicitly.')
                 atomic_json(path, data)
+
+    def _read_record(self, path):
+        """Report unusable records without rewriting or deleting their evidence."""
+        try:
+            data = json.loads(path.read_text('utf-8'))
+            if not isinstance(data, dict):raise ValueError('Expected a job object')
+            if data.get('id') != path.parent.name or len(data['id']) != 32 or any(c not in '0123456789abcdef' for c in data['id']):
+                raise ValueError('Invalid job identity')
+            if data.get('state') not in TERMINAL | {'queued','running','cancelling'}:raise ValueError('Invalid job state')
+            if not isinstance(data.get('created'), (int,float)) or not math.isfinite(data['created']):raise ValueError('Invalid creation time')
+            if not isinstance(data.get('revision'), int) or data['revision'] < 0:raise ValueError('Invalid revision')
+            if not isinstance(data.get('settings'), dict):raise ValueError('Invalid settings')
+            if data.get('operation') not in ('describe','export','ask','explore','voice-preview'):raise ValueError('Invalid operation')
+            if not isinstance(data.get('progress'), str):raise ValueError('Invalid progress')
+        except (OSError,ValueError,TypeError,KeyError) as exc:
+            self.damaged_jobs[path.parent.name] = {'path':str(path), 'error':type(exc).__name__+': unreadable or invalid job record; original preserved'}
+            return None
+        self.damaged_jobs.pop(path.parent.name,None)
+        return data
 
     def _path(self, job_id):
         if not isinstance(job_id, str) or len(job_id) != 32 or any(c not in '0123456789abcdef' for c in job_id):
@@ -52,13 +73,15 @@ class DescriptionService:
 
     def get_job(self, job_id):
         with self._mutex:
-            return json.loads((self._path(job_id) / 'job.json').read_text('utf-8'))
+            data = self._read_record(self._path(job_id) / 'job.json')
+            if data is None:raise ValueError('Damaged job record; original preserved. Inspect damaged_jobs for its location.')
+            return data
 
     def list_jobs(self, limit=50, state=None):
         if not 1 <= limit <= 200:
             raise ValueError('limit must be 1..200')
         with self._mutex:
-            rows = [json.loads(p.read_text('utf-8')) for p in self.root.glob('*/job.json')]
+            rows = [data for p in self.root.glob('*/job.json') if (data := self._read_record(p)) is not None]
         return sorted((j for j in rows if state is None or j['state'] == state), key=lambda j:j['created'], reverse=True)[:limit]
 
     def _update(self, job_id, **values):
@@ -92,7 +115,8 @@ class DescriptionService:
         # API callers must explicitly permit remote inference, not inherit a GUI dialog.
         if selected.get('analysis_provider') == 'Gemini' and operation in ('describe','ask','explore') and not selected.get('allow_cloud', False):
             raise ValueError('Gemini requires allow_cloud=true')
-        if selected.get('voice_engine') == 'OpenAI' and not selected.get('allow_cloud', False):
+        uses_speech = operation in ('describe','voice-preview') or (operation == 'export' and export_format in ('mp3','wav','mp4'))
+        if uses_speech and selected.get('voice_engine') == 'OpenAI' and not selected.get('allow_cloud', False):
             raise ValueError('OpenAI speech requires allow_cloud=true')
         if selected.get('analysis_provider') == 'Ollama' and operation in ('describe','ask','explore'):
             from ..models import endpoint, is_cloud, model_info
@@ -262,9 +286,21 @@ class DescriptionService:
                 raise ValueError('Project revision changed; read it again before editing')
             project = self.result(job_id)
             if cues is not None:
-                project.cues = parse_cues(cues, project.duration)
-                for cue in project.cues:
-                    cue.disposition, cue.audio, cue.speech_seconds = 'unplanned', '', 0
+                previous = project.cues
+                edited = parse_cues(cues, project.duration)
+                for cue in edited:
+                    matches = [old for old in previous if
+                               (cue.event_id and old.event_id == cue.event_id) or
+                               (not cue.event_id and (old.start, old.end) == (cue.start, cue.end))]
+                    if len(matches) == 1:
+                        old = matches[0]
+                        preserved = old.edited(cue.start, cue.end, cue.text, project.duration)
+                        cue.event_id, cue.event_start, cue.event_end = preserved.event_id, preserved.event_start, preserved.event_end
+                        cue.evidence, cue.uncertainty, cue.kind = preserved.evidence, preserved.uncertainty, preserved.kind
+                        cue.disposition = preserved.disposition
+                    cue.disposition = 'unresolved' if cue.disposition == 'unresolved' or cue.uncertainty else 'unplanned'
+                    cue.audio, cue.speech_seconds, cue.speed = '', 0, 1
+                project.cues = edited
                 project.coverage = []
                 project.analysis = {'note':'Edited; re-plan before exporting narration.'}
             if glossary is not None:
