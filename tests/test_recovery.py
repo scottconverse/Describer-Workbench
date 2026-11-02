@@ -77,6 +77,10 @@ def test_export_decline_preserves_bytes_and_source_identity(tmp_path):
         w.project.video=str(target)
         with pytest.raises(ValueError,match='original media'):w.validate_export_destination(target,'txt')
         with pytest.raises(ValueError,match='extension'):w.validate_export_destination(tmp_path/'wrong.wav','txt')
+        sidecar=tmp_path/'fresh.txt.coverage.json';sidecar.write_bytes(b'prior coverage')
+        with patch.object(QMessageBox,'question',return_value=QMessageBox.No):
+            assert not w.validate_export_destination(tmp_path/'fresh.txt','txt')
+        assert sidecar.read_bytes()==b'prior coverage' and not (tmp_path/'fresh.txt').exists()
         assert not list(tmp_path.glob('.describer-write-*'))
     finally:w.dirty=False;w.close();app.processEvents()
 
@@ -118,13 +122,13 @@ def test_draft_cancel_keeps_disk_and_exact_model_test_snapshot(tmp_path):
     finally:w.dirty=False;w.close();app.processEvents()
 
 
-@pytest.mark.parametrize('rows', [[],RuntimeError('unavailable')])
+@pytest.mark.parametrize('rows', [[],RuntimeError('unavailable'),[{'id':'available','name':'Available voice'}]])
 def test_failed_voice_discovery_cannot_enable_media(tmp_path,rows):
     import time
     from PySide6.QtTest import QTest
     from PySide6.QtWidgets import QDialog
     from describer.desktop import ExportVoices
-    app,w=make_window(tmp_path);d=QDialog(w)
+    app,w=make_window(tmp_path);d=QDialog(w);w.settings.data['windows_voice']='removed-voice'
     def discover(*args,**kwargs):
         if isinstance(rows,Exception):raise rows
         return rows
@@ -164,6 +168,12 @@ def test_detector_cancel_or_bad_hash_preserves_selected_asset(tmp_path):
         with pytest.raises(ValueError,match='checksum'):provision(target,cancel)
     assert target.read_bytes()==b'previous asset'
     assert not list(tmp_path.glob('*.download'))
+    class CancelDuringRead(io.BytesIO):
+        def read(self,size=-1):
+            block=super().read(size);cancel.set();return block
+    with patch('urllib.request.urlopen',return_value=CancelDuringRead(b'transfer in progress')):
+        with pytest.raises(InterruptedError):provision(target,cancel)
+    assert target.read_bytes()==b'previous asset' and not list(tmp_path.glob('*.download'))
 
 
 def test_preflight_declined_detector_does_not_call_provider_or_change_project(tmp_path):
