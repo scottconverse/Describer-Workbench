@@ -1,4 +1,4 @@
-# Developer guide — v0.5.0
+# Developer guide — v0.5.1
 
 Describer Workbench has one headless engine. The Qt desktop, Python API, CLI,
 REST API and MCP tools call the same `DescriptionService`. No WSL, Docker,

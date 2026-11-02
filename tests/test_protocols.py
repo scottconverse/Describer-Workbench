@@ -22,7 +22,7 @@ def test_http_auth_openapi_and_mcp_transport(tmp_path):
         with TestClient(create_app(service,token),base_url='http://127.0.0.1') as client:
             assert client.get('/capabilities').status_code==401
             assert client.get('/capabilities',headers=dict(headers,Origin='https://outside.example')).status_code==403
-            assert client.get('/capabilities',headers=headers).json()['version']=='0.5.0'
+            assert client.get('/capabilities',headers=headers).json()['version']=='0.5.1'
             schema=client.get('/openapi.json',headers=headers).json()
             assert '/jobs/{job_id}/export' in schema['paths']
             assert client.post('/jobs',headers=headers,json={'source':'does-not-exist'}).status_code==422
@@ -37,7 +37,7 @@ def test_http_auth_openapi_and_mcp_transport(tmp_path):
             client.post('/mcp/',headers=mh,json={'jsonrpc':'2.0','method':'notifications/initialized'})
             response=client.post('/mcp/',headers=mh,json={'jsonrpc':'2.0','id':2,'method':'tools/call','params':{'name':'capabilities','arguments':{}}})
             assert response.status_code==200,response.text
-            assert '0.5.0' in response.text
+            assert '0.5.1' in response.text
             source=tmp_path/'source.mp4';source.write_bytes(b'fixture source')
             project=Project(str(source),3,[Cue(0,1,'A door opens.')])
             # Protocol fixture replaces inference only; real queue, storage, paging,
@@ -70,8 +70,8 @@ def test_real_stdio_harness_and_cli(tmp_path):
                 assert {'submit_description','cancel_job','resume_job','edit_descriptions','export_descriptions','ask_scene','get_coverage'} <= {t.name for t in tools.tools}
                 result=await session.call_tool('capabilities',{})
                 assert not result.isError
-                assert '0.5.0' in str(result)
+                assert '0.5.1' in str(result)
     asyncio.run(asyncio.wait_for(check(),30))
     completed=subprocess.run([sys.executable,'-m','describer.cli','--workspace',str(tmp_path/'cli'),'capabilities'],capture_output=True,text=True,timeout=20)
     assert completed.returncode==0,completed.stderr
-    assert json.loads(completed.stdout)['version']=='0.5.0'
+    assert json.loads(completed.stdout)['version']=='0.5.1'
