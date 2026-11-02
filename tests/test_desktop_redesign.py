@@ -70,3 +70,44 @@ def test_settings_categories_and_draft_cancel_keep_widgets_alive():
             assert w.model_picker.scope.count()==3
             w.refresh();assert w.project.cues[0].text=='Original description.'
         finally:w.dirty=False;w.close();app.processEvents()
+
+
+def test_timeline_zoom_scroll_and_selection_follow():
+    from PySide6.QtCore import QPointF, QPoint, Qt
+    from PySide6.QtGui import QWheelEvent
+    with tempfile.TemporaryDirectory() as tmp:
+        app,w=make_window(tmp)
+        try:
+            w.project.duration=600;w.timeline.view_seconds=90;w.timeline.resize(800,238);w.timeline.set_view(200)
+            anchor=w.timeline.seconds_at(400);old_span=w.timeline.span()
+            event=QWheelEvent(QPointF(400,80),QPointF(400,80),QPoint(),QPoint(0,120),Qt.NoButton,Qt.ControlModifier,Qt.NoScrollPhase,False)
+            w.timeline.wheelEvent(event)
+            assert w.timeline.span()<old_span
+            assert abs(w.timeline.seconds_at(400)-anchor)<.002
+            w.timeline.ensure_visible(550)
+            assert w.timeline.view_start<=550<w.timeline.view_start+w.timeline.span()
+            w.choose(0)
+            assert w.timeline.view_start<=10<w.timeline.view_start+w.timeline.span()
+        finally:w.dirty=False;w.close();app.processEvents()
+
+
+def test_visual_hierarchy_start_state_caption_and_fit_spacing():
+    with tempfile.TemporaryDirectory() as tmp:
+        app,w=make_window(tmp)
+        try:
+            w.show();app.processEvents();w.show_start();app.processEvents()
+            assert not w.editor_toolbar.isVisible()
+            assert w.recent_empty.isVisible()
+            for name in ('Theme','Settings'):
+                control=next(b for b in w.findChildren(QPushButton) if b.accessibleName()==name)
+                assert not control.text() and control.property('role')=='ghost'
+            w.pages.setCurrentIndex(1);w.current.setText('');w.presentation_position(0)
+            assert not w.current.isVisible()
+            w.presentation_position(10000)
+            assert w.current.isVisible()
+            cues=w.project.cues;w.project.cues=[];w.refresh();assert not w.current.isVisible();w.project.cues=cues;w.refresh()
+            assert not w.fit_bar.isTextVisible()
+            assert w.fit_label.geometry().bottom()<w.fit_bar.geometry().top()
+            assert w.export_button.property('role')=='primary'
+            assert w.cue_list.item(0).data(256).text=='Original description.'
+        finally:w.dirty=False;w.close();app.processEvents()

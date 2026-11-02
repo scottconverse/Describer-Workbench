@@ -266,6 +266,8 @@ class Window(DesktopInterface, QMainWindow):
             self.pages.setCurrentIndex(1 if self.project.video else 0)
             self.render_cues();self.sync_glossary();self.presentation_position(self.player.position())
             self.recents.clear()
+            self.recent_empty.setVisible(not self.settings.data.get('recent_projects'));self.recents.setVisible(bool(self.settings.data.get('recent_projects')))
+            self.editor_toolbar.setVisible(self.pages.currentIndex()==1)
             for path in self.settings.data.get('recent_projects',[]):
                 from PySide6.QtWidgets import QListWidgetItem
                 item=QListWidgetItem(Path(path).stem);item.setData(Qt.UserRole,path);item.setToolTip(path);self.recents.addItem(item)
@@ -466,7 +468,8 @@ class Window(DesktopInterface, QMainWindow):
             except Exception as e:self.error(str(e))
     def edit_settings(self, section=None):
         if self.busy():return
-        d=QDialog(self);d.setWindowTitle('Settings');d.resize(780,720);outer=QVBoxLayout(d);scroll=QScrollArea();scroll.setWidgetResizable(True);content=QWidget();form=QFormLayout(content);scroll.setWidget(content);outer.addWidget(scroll);fields={}
+        from .desktop import BlueprintDialog
+        d=BlueprintDialog(self);d.setWindowTitle('Settings');d.resize(780,720);outer=QVBoxLayout(d);scroll=QScrollArea();scroll.setWidgetResizable(True);content=QWidget();form=QFormLayout(content);scroll.setWidget(content);outer.addWidget(scroll);fields={}
         for key,label in [('gemini_key','Gemini API key'),('model','Gemini model'),('ollama_url','Ollama server address'),('ollama_key','Ollama server API key (optional)'),('openai_key','OpenAI API key'),('tts_model','OpenAI speech model'),('voice','OpenAI base voice'),('language','Description language'),('update_feed','Update feed (HTTPS URL or local JSON)')]:
             field=QLineEdit(str(self.settings.data[key]));field.setAccessibleName(label)
             if key.endswith('_key'):field.setEchoMode(QLineEdit.EchoMode.Password)

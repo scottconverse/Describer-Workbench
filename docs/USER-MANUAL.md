@@ -336,3 +336,7 @@ This is newly written reconstruction source, not recovered original source or an
 ## Desktop redesign working branch
 
 The Industry PySide6 interface is implemented on `feat/blueprint-desktop-interface`; these UI instructions describe that source branch. The public v0.5.0 portable remains unchanged until a separately authorized release. New scene answers are marked for review. Use **Mark as checked** only after verifying visual facts; editing invalidates measured narration and the engine replans it at media export. Saved projects and engine protocols remain compatible.
+
+### Timeline navigation and desktop visual controls
+
+Use Ctrl+mouse-wheel over the timeline to zoom around the pointer, and the mouse wheel or bottom scrollbar to pan. The visible range follows the playhead; selecting a description brings it into view. Picture-lane thumbnails are overview samples from the source. Description tags distinguish In gap, Sped up, Pauses picture and Needs review. Theme and Settings are icon buttons; the editor toolbar is hidden on Start. Model tags can be edited in the model list (double-click or F2), with no duplicate tag field.

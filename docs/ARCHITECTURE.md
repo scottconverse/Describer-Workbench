@@ -102,3 +102,5 @@ Automated checks cover structural behavior, real MCP initialization, HTTP bounda
 ## Industry desktop presentation (working branch)
 
 `describer/desktop.py` supplies native Qt widgets, QSS, timeline painting, focusable cue targets, scene layout and dialogs to `app.Window`. `Window` retains worker ownership, cloud confirmations and service calls. Cue changes use a Qt undo stack; invalid intermediate edits never enter the project. Thumbnail generation uses an owned, bounded FFmpeg QProcess and stops on close. Barlow fonts and Lucide icons are bundled locally with licenses. No browser runtime is embedded.
+
+The timeline maintains a bounded visible time range with pointer-anchored Ctrl+wheel zoom, scrollbar panning, and playhead/selection following. Overview thumbnails are cropped from sampled source frames. Cue row delegates render human status tags and tinted selection; model, format and Settings lists use the same tint/edge selection policy.
