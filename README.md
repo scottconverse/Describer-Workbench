@@ -55,7 +55,7 @@ The analysis picker has **Gemini and Ollama**. OpenAI is a speech/export engine,
 
 ## Ollama quick start
 
-Install and start [Ollama](https://ollama.com/), and separately install a vision model suitable for your hardware. In Workbench choose **Ollama → Refresh models**, then select an installed entry marked **vision**. You may type an exact tag; press Tab to commit it. **Test connection** checks capability and makes a small text request, not a visual accuracy test. Seek to a scene, choose **Next 20 seconds** or **Next 60 seconds**, then **Analyze video**.
+Install and start [Ollama](https://ollama.com/), and separately install a vision model suitable for your hardware. In Workbench choose **Ollama → Refresh models**, then select an installed entry marked **vision**. You may type an exact tag; press Tab to commit it. **Test connection** checks capability and makes a small text request, not a visual accuracy test. Seek to a scene, choose **Next 20 seconds** or **Next 60 seconds**, then **Start draft** in **Draft with AI**.
 
 Default server root: `http://127.0.0.1:11434`. Settings can change it. Remote servers require HTTPS; do not append `/api` or `/v1`. Configure cloud sign-in in Ollama itself.
 
@@ -75,7 +75,9 @@ Ollama receives up to eight timestamped frames per request, 640 pixels wide. At 
 
 Open media → draft or import cues → correct the glossary → edit facts and timing → listen with the soundtrack → save → export.
 
-Select a cue to seek to its start. Times accept seconds, `MM:SS` or `HH:MM:SS`. Leaving the start field shifts the end by the same amount: set Start, leave that field, then enter the intended End. Use **Apply edit** before export; **Ctrl+S** also applies the selected cue editor and saves. After Add, select the newly added row before saving so the old selected row is not overwritten by the editor values. Analysis and subtitle import replace existing descriptions after confirmation. Range analysis replaces the cue list; it does not append to a full-film project. To preserve a comparison copy, save, copy the `.adproject` file in File Explorer and open the copy; this version has no Save As command.
+Select a description to seek to its start and expand the inline editor. Times accept seconds, `MM:SS` or `HH:MM:SS`; Start and End update independently. Valid edits apply as you type; Ctrl+Z undoes. **Add at playhead** creates and selects a three-second cue. **Ctrl+S** saves the project. Analysis and subtitle import replace descriptions after confirmation; range analysis replaces the cue list. Save a separate `.adproject` copy to preserve comparisons.
+
+The redesigned native PySide6 interface is on `feat/blueprint-desktop-interface`. Public v0.5.0 downloads retain the earlier interface until the next authorized release.
 
 The engine measures synthesized speech and fits it only within the visual event and independently protected soundtrack. Speed is capped at 1.15x; no-fit descriptions pause the source instead of being discarded or moved to an unrelated scene. Complete MP4 exports freeze the video during those descriptions; MP3/WAV exports insert matching audio pauses. Uncertain events remain unresolved and block a complete narrated export. Explicit `in-gap-only` exports are marked incomplete. Script exports retain all events and a coverage sidecar; a subtitle file alone cannot express pause playback. Audio mixes downmix to stereo.
 

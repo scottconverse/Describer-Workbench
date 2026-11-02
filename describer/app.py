@@ -10,12 +10,12 @@ from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QFileDialog, QInputDialog, QMessageBox, QLabel, QPlainTextEdit, QLineEdit,
     QComboBox, QTableWidget, QTableWidgetItem, QSlider, QSplitter, QDialog, QFormLayout,
-    QDialogButtonBox, QScrollArea, QSpinBox, QDoubleSpinBox, QCheckBox, QGroupBox)
+    QDialogButtonBox, QScrollArea, QSpinBox, QDoubleSpinBox, QCheckBox)
 from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 from PySide6.QtMultimediaWidgets import QVideoWidget
 from PySide6.QtTextToSpeech import QTextToSpeech
 from .project import Project, Cue, seconds, stamp, import_subtitles,response_json
-from .services import Settings, generate, video_request, segment, download, export_audio, synthesize
+from .services import Settings, generate, download, export_audio, synthesize
 from .i18n import LANGUAGES,apply_language
 
 
@@ -23,7 +23,10 @@ class Worker(QObject):
     done=Signal(object);failed=Signal(str);log=Signal(str);finished=Signal()
     def __init__(self, fn, cancel): super().__init__();self.fn=fn;self.cancel=cancel
     def run(self):
-        try: self.done.emit(self.fn(self.cancel,self.log.emit))
+        try:
+            result=self.fn(self.cancel,self.log.emit)
+            if self.cancel.is_set():raise InterruptedError('Operation cancelled.')
+            self.done.emit(result)
         except Exception as e: self.failed.emit(f'{type(e).__name__}: {e}')
         finally: self.finished.emit()
 
@@ -36,6 +39,8 @@ class SceneExplorer(QDialog):
         layout=QVBoxLayout(self)
         layout.addWidget(QLabel('Arrow keys: move · D: layout · L: objects · Shift+L: jump · Enter: nearest object'))
         self.view=QPlainTextEdit();self.view.setReadOnly(True);self.view.setFocusPolicy(Qt.FocusPolicy.NoFocus);layout.addWidget(self.view)
+        from .desktop import LayoutGrid
+        self.grid=LayoutGrid(self);layout.insertWidget(1,self.grid)
         self.describe(data.get('layout','No layout returned.'))
     def describe(self,text): self.view.appendPlainText(text);self.speech.say(text)
     def keyPressEvent(self,e):
@@ -56,9 +61,13 @@ class SceneExplorer(QDialog):
             o=min(objects,key=lambda o:(float(o.get('x',5))-self.x)**2+(float(o.get('y',5))-self.y)**2)
             self.describe(str(o.get('name','Object'))+': '+str(o.get('description','')))
         else: super().keyPressEvent(e)
+        self.grid.update()
 
 
-class Window(QMainWindow):
+from .desktop import DesktopInterface
+
+
+class Window(DesktopInterface, QMainWindow):
     def __init__(self, settings_path=None):
         super().__init__();self.setWindowTitle('Describer Workbench');self.resize(1180,850)
         self.settings=Settings(settings_path);self.project=Project();self.project_path=None;self.dirty=False
@@ -105,7 +114,7 @@ class Window(QMainWindow):
         self.table.itemSelectionChanged.connect(self.select_cue);el.addWidget(self.table,1)
         form=QHBoxLayout();el.addLayout(form);self.start=QLineEdit('0');self.end=QLineEdit('3')
         form.addWidget(QLabel('Start'));form.addWidget(self.start);form.addWidget(QLabel('End'));form.addWidget(self.end)
-        self.start.setAccessibleName('Description start time');self.end.setAccessibleName('Description end time');self.start.editingFinished.connect(self.shift_end)
+        self.start.setAccessibleName('Description start time');self.end.setAccessibleName('Description end time');self.start.editingFinished.connect(self.update_fit)
         self.text=QPlainTextEdit();self.text.setAccessibleName('Description text');self.text.setMaximumHeight(95);el.addWidget(self.text)
         self.text.textChanged.connect(self.editor_changed);self.start.textChanged.connect(self.editor_changed);self.end.textChanged.connect(self.editor_changed)
         editrow=QHBoxLayout();el.addLayout(editrow)
@@ -131,12 +140,14 @@ class Window(QMainWindow):
         if self.settings.load_warning:self.log(self.settings.load_warning)
         if self.settings.data.get('auto_update_check') and self.settings.data.get('update_feed'):QTimer.singleShot(1500,self.check_updates)
         helpaction=QAction('Help',self);helpaction.setShortcut('F1');helpaction.triggered.connect(self.help);self.menuBar().addAction(helpaction);apply_language(self,self.settings.data['ui_language'])
+        self.build_interface()
     def button(self,row,text,fn):
         b=QPushButton(text);b.clicked.connect(fn);row.addWidget(b);return b
     def log(self,text,level=logging.INFO):
         for key in ['gemini_key','openai_key','ollama_key']:
             if self.settings.data[key]:text=text.replace(self.settings.data[key],'[redacted]')
         if level>=logging.INFO:self.log_view.appendPlainText(text)
+        if hasattr(self,'job_note') and self.thread is not None:self.job_note.setText(text);self.job_label.setText('Working · '+text[:75])
         self.logger.setLevel(getattr(logging,self.settings.data.get('logging_level','INFO'),logging.INFO));self.logger.log(level,text)
     def error(self,text): self.sound('error');QMessageBox.warning(self,'Operation failed',text);self.log(text,logging.ERROR)
     def busy(self):
@@ -147,6 +158,7 @@ class Window(QMainWindow):
         self.log('Starting background operation.',logging.DEBUG)
         self.sound('start');self.cancel=threading.Event();thread=QThread(self);worker=Worker(fn,self.cancel);worker.moveToThread(thread)
         self.thread=thread;self.worker=worker;self.done_callback=done;self.cancel_button.setEnabled(True)
+        if hasattr(self,'job_card'):self.job_card.show();self.job_progress.setRange(0,0)
         self.model_picker.setEnabled(False)
         thread.started.connect(worker.run);worker.log.connect(self.log);worker.failed.connect(self.error);worker.done.connect(self.on_job_done,Qt.ConnectionType.QueuedConnection)
         worker.finished.connect(thread.quit);worker.finished.connect(worker.deleteLater);thread.finished.connect(self.job_finished);thread.finished.connect(thread.deleteLater)
@@ -161,6 +173,9 @@ class Window(QMainWindow):
         self.log('Background operation finished.',logging.DEBUG)
         self.thread=None;self.worker=None;self.cancel_button.setEnabled(False)
         self.model_picker.setEnabled(True)
+        if hasattr(self,'job_card'):
+            self.job_card.hide()
+            if self.cancel.is_set():self.notify('Cancelled. Nothing was changed.')
         if getattr(self,'pending_model_test',None):
             settings=self.pending_model_test;self.pending_model_test=None
             from .models import test_connection
@@ -177,6 +192,7 @@ class Window(QMainWindow):
         from .services import probe
         self.pause_active=False;self.pause_player.stop();self.narration.stop();self.played_pauses.clear()
         duration=probe(path);self.playback_speech.stop();self.player.stop();self.project=Project(str(Path(path).resolve()),duration);self.project_path=None;self.dirty=False
+        self.undo_stack.clear();self._selected_cue=None
         self.history=[];self.player.setSource(QUrl.fromLocalFile(self.project.video));self.file_label.setText(self.project.video);self.refresh();self.last_spoken=None
     def open_video(self):
         if self.busy() or not self.guard_changes():return
@@ -246,14 +262,39 @@ class Window(QMainWindow):
         for i,c in enumerate(self.project.cues):
             for k,v in enumerate([stamp(c.start),stamp(c.end),c.text,c.disposition+(': '+c.uncertainty if c.uncertainty else '')]):self.table.setItem(i,k,QTableWidgetItem(v))
         self.table.blockSignals(False)
+        if hasattr(self,'pages'):
+            self.pages.setCurrentIndex(1 if self.project.video else 0)
+            self.render_cues();self.sync_glossary();self.presentation_position(self.player.position())
+            self.recents.clear()
+            for path in self.settings.data.get('recent_projects',[]):
+                from PySide6.QtWidgets import QListWidgetItem
+                item=QListWidgetItem(Path(path).stem);item.setData(Qt.UserRole,path);item.setToolTip(path);self.recents.addItem(item)
     def select_cue(self):
         i=self.table.currentRow()
         if 0<=i<len(self.project.cues):
             self._editor_loading=True
             c=self.project.cues[i];self.start.setText(str(c.start));self.end.setText(str(c.end));self.text.setPlainText(c.text);self.seek(round(c.start*1000));self._old_start=c.start
             self._editor_loading=False
+            if hasattr(self,'inline'):self._selected_cue=c;self.inline.show();self.update_fit()
     def editor_changed(self):
-        if not getattr(self,'_editor_loading',False) and 0<=self.table.currentRow()<len(self.project.cues):self.dirty=True
+        if getattr(self,'_editor_loading',False) or self.busy():return
+        i=self.table.currentRow()
+        if not 0<=i<len(self.project.cues):return
+        try:
+            candidate=self.editor_cue()
+        except ValueError:
+            return  # Keep intermediate typing; never publish an invalid cue.
+        if candidate==self.project.cues[i]:return
+        before=copy.deepcopy(self.project.cues);after=copy.deepcopy(before);after[i]=candidate;after.sort(key=lambda c:c.start)
+        if hasattr(self,'undo_stack'):
+            from .desktop import CueEdit
+            self._typing=True
+            try:self.undo_stack.push(CueEdit(self,before,after,'Edit description'))
+            finally:self._typing=False
+            index=next(j for j,c in enumerate(self.project.cues) if c==candidate)
+            self.table.blockSignals(True);self.table.setCurrentCell(index,0);self.table.blockSignals(False)
+            self._selected_cue=self.project.cues[index];self.update_fit()
+        else:self.project.cues=after;self.dirty=True
     def shift_end(self):
         try:
             new=seconds(self.start.text());old=getattr(self,'_old_start',new);self.end.setText(str(max(new+.1,seconds(self.end.text())+new-old)));self._old_start=new
@@ -280,7 +321,8 @@ class Window(QMainWindow):
         if self.busy():return
         i=self.table.currentRow()
         if i>=0:
-            if QMessageBox.question(self,'Delete description','Delete the selected description?')==QMessageBox.StandardButton.Yes:self.project.cues.pop(i);self.changed()
+            if QMessageBox.question(self,'Delete description','Delete the selected description?')==QMessageBox.StandardButton.Yes:
+                cues=copy.deepcopy(self.project.cues);cues.pop(i);self.commit_cues(cues,'Delete description')
     def changed(self):self.project.cues.sort(key=lambda c:c.start);self.dirty=True;self.refresh();self.last_spoken=None
     def save_project(self):
         if self.busy():return False
@@ -291,11 +333,13 @@ class Window(QMainWindow):
         p=self.project_path
         if not p:p,_=QFileDialog.getSaveFileName(self,'Save project','','Describer project (*.adproject)')
         if not p:return False
-        try:self.project.save(p);self.project_path=p;self.dirty=False;self.log('Project saved.');return True
+        try:self.project.save(p);self.project_path=p;self.dirty=False;self.remember_project();self.update_status();self.log('Project saved.');return True
         except Exception as e:self.error(str(e));return False
     def load_project(self):
         if self.busy() or not self.guard_changes():return
-        p,_=QFileDialog.getOpenFileName(self,'Open project','','Describer project (*.adproject)')
+        p=getattr(self,'_recent_path',None)
+        self._recent_path=None
+        if not p:p,_=QFileDialog.getOpenFileName(self,'Open project','','Describer project (*.adproject)')
         if p:
             try:
                 project=Project.load(p)
@@ -306,9 +350,9 @@ class Window(QMainWindow):
                 from .services import probe
                 actual=probe(project.video)
                 for c in project.cues:c.validate(actual)
-                project.duration=actual;self.project=project;self.project_path=p;self.dirty=False;self.history=[]
+                project.duration=actual;self.undo_stack.clear();self._selected_cue=None;self.project=project;self.project_path=p;self.dirty=False;self.history=[]
                 self.pause_active=False;self.pause_player.stop();self.narration.stop();self.played_pauses.clear()
-                self.playback_speech.stop();self.player.stop();self.last_spoken=None;self.player.setSource(QUrl.fromLocalFile(project.video));self.file_label.setText(project.video);self.refresh()
+                self.playback_speech.stop();self.player.stop();self.last_spoken=None;self.player.setSource(QUrl.fromLocalFile(project.video));self.file_label.setText(project.video);self.refresh();self.remember_project()
             except Exception as e:self.error(str(e))
     def import_cues(self):
         if self.busy():return
@@ -362,42 +406,30 @@ class Window(QMainWindow):
             service.wait(job['id'],cancel,log)
             return json.dumps(service.scene_result(job['id']))
         self.job(task,done)
-    def ask(self):
-        question,ok=QInputDialog.getText(self,'Ask about scene','Your question')
-        if not ok or not question:return
-        length,ok=QInputDialog.getInt(self,'Scene context','Seconds around the current position',10,1,120)
-        if not ok:return
-        position=self.player.position()/1000
-        instruction=f'Return JSON {{"answer":"your answer"}}. Answer in {self.settings.data["language"]}. Question: {question}. Prior conversation: {json.dumps(self.history[-6:])}. Character glossary: {self.project.glossary}'
-        def done(text):
-            answer=response_json(text)['answer']
-            if not isinstance(answer,str) or not answer.strip():raise ValueError('No scene answer was returned.')
-            self.history.append({'question':question,'answer':answer});dialog=QDialog(self);dialog.setWindowTitle('Scene conversation');dialog.resize(650,450)
-            layout=QVBoxLayout(dialog);view=QPlainTextEdit();view.setReadOnly(True);view.setPlainText('\n\n'.join(f'Q: {x["question"]}\nA: {x["answer"]}' for x in self.history));layout.addWidget(view)
-            add=self.button(layout,'Add to descriptions',lambda:self.add_scene_answer(answer,position,add));dialog.exec()
-        self.scene_request(instruction,done,length)
     def add_scene_answer(self,answer,position,button=None):
         if self.busy():return
         cue=Cue(position,min(position+4,self.project.duration),answer).validate(self.project.duration)
-        self.project.cues.append(cue);self.changed()
+        cue.disposition='unresolved';cue.uncertainty='AI scene answer: verify visual facts.'
+        if hasattr(self,'undo_stack'):self.commit_cues([*self.project.cues,cue],'Add scene answer')
+        else:self.project.cues.append(cue);self.changed()
         if button:button.setEnabled(False)
     def explore(self):
         instruction=f'In {self.settings.data["language"]}, describe spatial layout of the middle frame. Return JSON {{"layout":"summary","objects":[{{"name":"object","x":5,"y":5,"description":"detail"}}]}}. Grid x and y range 0 to 10, left-to-right and top-to-bottom. Avoid duplicate coordinates. Character glossary: {self.project.glossary}'
         def done(text):
-            try:SceneExplorer(response_json(text),self.playback_speech,self).exec()
+            try:
+                explorer=SceneExplorer(response_json(text),self.playback_speech,self)
+                while self.explore_host.count():self.explore_host.takeAt(0).widget().deleteLater()
+                explorer.setWindowFlags(Qt.Widget);self.explore_host.addWidget(explorer);explorer.show()
             except Exception as e:self.error(str(e))
         self.scene_request(instruction,done,2)
     def edit_glossary(self):
-        if self.busy():return
-        text,ok=QInputDialog.getMultiLineText(self,'Character glossary','Names and visual descriptions',self.project.glossary)
-        if ok:self.project.glossary=text;self.dirty=True
-    def export(self):
+        self.tabs.setCurrentIndex(2)
+    def export_to(self,p):
         if self.busy() or not self.project.cues:return
         i=self.table.currentRow()
         if i>=0:
             try:self.project.cues[i]=self.editor_cue()
             except Exception as exc:self.error(str(exc));return
-        p,_=QFileDialog.getSaveFileName(self,'Export descriptions','','Complete described video (*.mp4);;Subtitles (*.srt);;WebVTT (*.vtt);;Plain text (*.txt);;Complete narrated audio (*.mp3);;Wave audio (*.wav);;Project JSON (*.json)')
         if not p:return
         if Path(p).suffix.lower() in ('.mp3','.wav','.mp4'):
             if self.settings.data['voice_engine']=='OpenAI' and QMessageBox.question(self,'OpenAI speech','Send description text to OpenAI for paid speech synthesis?')!=QMessageBox.StandardButton.Yes:return
@@ -432,7 +464,7 @@ class Window(QMainWindow):
             presets[name]=text
             try:self.settings.save();self.reload_presets();self.preset.setCurrentText(name)
             except Exception as e:self.error(str(e))
-    def edit_settings(self):
+    def edit_settings(self, section=None):
         if self.busy():return
         d=QDialog(self);d.setWindowTitle('Settings');d.resize(780,720);outer=QVBoxLayout(d);scroll=QScrollArea();scroll.setWidgetResizable(True);content=QWidget();form=QFormLayout(content);scroll.setWidget(content);outer.addWidget(scroll);fields={}
         for key,label in [('gemini_key','Gemini API key'),('model','Gemini model'),('ollama_url','Ollama server address'),('ollama_key','Ollama server API key (optional)'),('openai_key','OpenAI API key'),('tts_model','OpenAI speech model'),('voice','OpenAI base voice'),('language','Description language'),('update_feed','Update feed (HTTPS URL or local JSON)')]:
@@ -454,6 +486,8 @@ class Window(QMainWindow):
         interrupt=QCheckBox('Allow new descriptions to interrupt speech');interrupt.setChecked(self.settings.data['interrupt']);form.addRow(interrupt)
         voices=QComboBox();available=self.speech.availableVoices();voices.addItems([v.name() for v in available]);voices.setCurrentText(self.settings.data.get('playback_voice',''));form.addRow('Playback Windows voice',voices)
         buttons=QDialogButtonBox(QDialogButtonBox.StandardButton.Ok|QDialogButtonBox.StandardButton.Cancel);buttons.accepted.connect(d.accept);buttons.rejected.connect(d.reject);form.addRow(buttons)
+        from .desktop import organize_settings
+        organize_settings(self,d,outer,scroll,content,form,buttons,section)
         if d.exec():
             old=copy.deepcopy(self.settings.data)
             try:
@@ -564,7 +598,7 @@ class Window(QMainWindow):
         if self.busy():return
         feed=self.settings.data.get('update_feed','')
         if not feed:self.log('No Workbench update feed is configured. This local build has no published update service.');return
-        from .updates import read_feed,stage_update
+        from .updates import read_feed
         def done(data):
             if not data['newer']:self.log('No newer version in the configured feed.');return
             if QMessageBox.question(self,'Workbench update','Version '+data['version']+' is available. Download and verify a separate portable copy?')!=QMessageBox.StandardButton.Yes:return
@@ -633,6 +667,7 @@ class Window(QMainWindow):
         if not self.guard_changes():event.ignore();return
         if not self.stop_api():event.ignore();return
         self.pause_active=False;self.pause_player.stop();self.narration.stop()
+        self.timeline.stop_decoder()
         self.player.stop();self.player.setSource(QUrl());self.playback_speech.stop();self.preview.stop();self.preview.setSource(QUrl());self.preview_tmp.cleanup()
         for handler in self.logger.handlers:handler.close()
         event.accept()
