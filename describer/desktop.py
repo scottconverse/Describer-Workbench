@@ -1,7 +1,7 @@
 """Industry desktop presentation; all media/model work remains in Window services."""
 import copy
 from pathlib import Path
-from PySide6.QtCore import Qt, QRectF, QTimer, QProcess, QSize
+from PySide6.QtCore import Qt, QRectF, QTimer, QProcess, QSize, QObject, QThread, Signal
 from PySide6.QtGui import QColor, QPainter, QPen, QFont, QFontDatabase, QUndoStack, QUndoCommand, QPixmap, QIcon
 from PySide6.QtWidgets import (QWidget, QFrame, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QStackedWidget, QTabWidget, QScrollArea, QSplitter, QDialog, QDialogButtonBox,
@@ -92,7 +92,19 @@ class BlueprintFrame(QFrame):
         super().paintEvent(event)
         p=QPainter(self);color=QColor('#5980a6') if self.property('selected') else self.palette().windowText().color()
         if not self.property('selected'):color.setAlphaF(.18)
+        if self.property('selected'):p.fillRect(self.rect().adjusted(6,6,-6,-6),QColor(89,128,166,24))
         p.setPen(QPen(color,1));p.drawRect(6,6,self.width()-13,self.height()-13);p.end();mark_corners(self)
+
+
+class TimelineBlock(QPushButton):
+    def __init__(self,text,parent,striped=False):
+        super().__init__(text,parent);self.striped=striped
+    def paintEvent(self,event):
+        super().paintEvent(event)
+        if self.striped:
+            p=QPainter(self);p.setClipRect(self.rect().adjusted(1,1,-1,-1));p.setPen(QPen(QColor(89,128,166,130),2))
+            for x in range(-self.height(),self.width()+self.height(),6):p.drawLine(x,self.height(),x+self.height(),0)
+            p.setPen(self.palette().text().color());p.drawText(self.rect(),Qt.AlignCenter,self.text())
 
 
 class Timeline(QWidget):
@@ -101,13 +113,14 @@ class Timeline(QWidget):
         super().__init__(); self.window = window; self.blocks = []; self.thumbnails=QPixmap();self.source=None;self.decoder=None;self.view_start=0.;self.view_seconds=90.
         self.setFixedHeight(238); self.setAccessibleName('Timeline: Ctrl+wheel zoom, wheel scroll')
         self.scroll=QScrollBar(Qt.Horizontal,self);self.scroll.valueChanged.connect(self.scroll_to)
+        self.thumbnail_key=None;self.thumbnail_timer=QTimer(self);self.thumbnail_timer.setSingleShot(True);self.thumbnail_timer.timeout.connect(self.load_thumbnails);self.thumbnail_timeout=QTimer(self);self.thumbnail_timeout.setSingleShot(True);self.thumbnail_timeout.timeout.connect(self.stop_running_decoder)
     def seconds_at(self, x):
         return max(0, min(self.window.project.duration, self.view_start+(x-96)/max(1,self.width()-106)*self.span()))
     def span(self):return min(max(.1,self.window.project.duration),self.view_seconds)
-    def scroll_to(self,value):self.view_start=value/1000;self.position_blocks();self.update()
+    def scroll_to(self,value):self.view_start=value/1000;self.position_blocks();self.update();self.schedule_thumbnails()
     def set_view(self,start):
         self.scroll.setRange(0,round(max(0,self.window.project.duration-self.span())*1000));self.scroll.setPageStep(round(self.span()*1000));self.scroll.setValue(round(max(0,start)*1000))
-        self.view_start=self.scroll.value()/1000;self.position_blocks();self.update()
+        self.view_start=self.scroll.value()/1000;self.position_blocks();self.update();self.schedule_thumbnails()
     def ensure_visible(self,seconds):
         if not self.view_start<=seconds<self.view_start+self.span():self.set_view(seconds-self.span()*.2)
     def wheelEvent(self,event):
@@ -123,33 +136,49 @@ class Timeline(QWidget):
         source=self.window.project.video
         if self.source!=source:
             self.source=source;self.thumbnails=QPixmap();self.view_start=0;self.view_seconds=min(90,max(5,self.window.project.duration))
-            if self.decoder and self.decoder.state()!=QProcess.NotRunning:self.decoder.kill();self.decoder.waitForFinished(1000)
-            if Path(source).is_file():
-                from .services import tool
-                try:
-                    self.decoder=QProcess(self);destination=str(Path(self.window.preview_tmp.name)/'timeline.jpg')
-                    self.decoder.setProgram(tool('ffmpeg'))
-                    self.decoder.setArguments(['-v','error','-y','-skip_frame','nokey','-i',source,'-an','-vf',f'fps={8/max(.1,self.window.project.duration)},scale=160:90,tile=8x1','-frames:v','1',destination])
-                    def loaded(code,status):
-                        if code==0:self.thumbnails=QPixmap(destination);self.update()
-                    self.decoder.finished.connect(loaded);self.decoder.start()
-                    QTimer.singleShot(60000,self.stop_decoder)
-                except Exception as exc:self.window.log('Timeline thumbnails unavailable: '+str(exc))
+            self.stop_running_decoder()
         for b in self.blocks: b.deleteLater()
         self.blocks = []
         for i, cue in enumerate(self.window.project.cues):
-            b = QPushButton(str(i+1), self)
+            b = TimelineBlock(str(i+1), self,striped=cue.speed>1)
             b.setAccessibleName(f'Description {i+1}, {clock(cue.start)} to {clock(cue.end)}, {cue.disposition}')
             b.setToolTip(cue.text)
             b.clicked.connect(lambda checked=False, index=i: self.window.choose(index))
             b.setProperty('role','primary' if cue.disposition=='pause' else 'secondary')
             if cue.disposition=='unresolved':b.setStyleSheet('border:1px dashed palette(text);')
-            elif cue.speed>1:b.setStyleSheet('background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #5980a6,stop:0.5 #b5c8da,stop:1 #5980a6);')
+            elif cue.speed>1:b.setStyleSheet('background:rgba(89,128,166,76);border:1px solid #5980a6;')
             elif cue.disposition=='in-gap':b.setStyleSheet('background:rgba(89,128,166,76);border:1px solid #5980a6;')
             self.blocks.append(b); b.show()
         self.set_view(self.view_start)
+    def schedule_thumbnails(self):
+        key=(self.source,round(self.view_start,3),round(self.span(),3))
+        if key!=self.thumbnail_key and self.source and Path(self.source).is_file():self.thumbnail_timer.start(250)
+    def load_thumbnails(self):
+        from .services import tool
+        self.stop_running_decoder()
+        key=(self.source,round(self.view_start,3),round(self.span(),3))
+        if not self.source or not Path(self.source).is_file():return
+        self.thumbnails=QPixmap();self.thumbnail_key=None
+        try:
+            process=QProcess(self);self.decoder=process;destination=str(Path(self.window.preview_tmp.name)/'timeline.jpg')
+            process.setProgram(tool('ffmpeg'))
+            process.setArguments(['-v','error','-y','-ss',str(key[1]),'-t',str(key[2]),'-i',key[0],'-an','-vf',f'fps={8/key[2]},scale=160:90,tile=8x1','-frames:v','1',destination])
+            def loaded(code,status):
+                if self.decoder is process:
+                    self.thumbnail_timeout.stop()
+                    if code==0 and key==(self.source,round(self.view_start,3),round(self.span(),3)):
+                        self.thumbnails=QPixmap(destination);self.thumbnail_key=key;self.update()
+                process.deleteLater()
+                if self.decoder is process:self.decoder=None
+            process.finished.connect(loaded);process.start();self.thumbnail_timeout.start(60000)
+        except Exception as exc:self.window.log('Timeline thumbnails unavailable: '+str(exc))
+    def stop_running_decoder(self):
+        self.thumbnail_timeout.stop()
+        if self.decoder:
+            process=self.decoder;self.decoder=None
+            if process.state()!=QProcess.NotRunning:process.kill();process.waitForFinished(1000)
     def stop_decoder(self):
-        if self.decoder and self.decoder.state()!=QProcess.NotRunning:self.decoder.kill();self.decoder.waitForFinished(1000)
+        self.thumbnail_timer.stop();self.stop_running_decoder()
     def position_blocks(self):
         duration = self.span(); width = max(1,self.width()-106)
         for b,c in zip(self.blocks,self.window.project.cues):
@@ -167,17 +196,16 @@ class Timeline(QWidget):
         for y in (32,58,112,156,206):p.drawLine(0,y,self.width(),y)
         p.drawLine(96,32,96,206)
         p.save();p.setClipRect(96,26,max(1,self.width()-106),180)
-        if not self.thumbnails.isNull():
-            total=max(.1,self.window.project.duration);count=max(1,round((self.width()-106)/110));cell=(self.width()-106)/count
+        if not self.thumbnails.isNull() and self.thumbnail_key==(self.source,round(self.view_start,3),round(self.span(),3)):
+            count=8;cell=(self.width()-106)/count
             for i in range(count):
-                time=self.view_start+(i+.5)/count*self.span();sample=min(7,int(time/total*8))
-                source=QRectF(sample*self.thumbnails.width()/8,0,self.thumbnails.width()/8,self.thumbnails.height())
+                source=QRectF(i*self.thumbnails.width()/8,0,self.thumbnails.width()/8,self.thumbnails.height())
                 p.drawPixmap(QRectF(96+i*cell,59,cell-1,52),self.thumbnails,source)
         duration=self.span(); width=max(1,self.width()-106)
         # Adapt tick density to the available width; hours-long media stays responsive.
         step=max(10,round(duration/max(1,width/80)/10)*10)
         for t in range(int(self.view_start//step)*step,int(self.view_start+duration)+1,step):
-            x=round(96+(t-self.view_start)/duration*width);p.drawLine(x,32,x,206);p.drawText(x+3,49,clock(t))
+            x=round(96+(t-self.view_start)/duration*width);p.drawLine(x,32,x,206);p.setPen(color);p.drawText(x+3,49,clock(t));p.setPen(muted)
         analysis=self.window.project.analysis
         intervals=analysis.get('protected',[]) if isinstance(analysis,dict) else []
         for interval in intervals:
@@ -221,7 +249,7 @@ class DesktopInterface:
         self.draft_button=button(toolbar,'Draft with AI',self.draft_dialog)
         self.export_button=button(toolbar,'Export',self.export,True)
         self.theme_button=button(bar,'Theme',self.toggle_theme,role='ghost',icon_only=True);button(bar,'Settings',self.edit_settings,role='ghost',icon_only=True)
-        self.pages.currentChanged.connect(lambda index:(self.editor_toolbar.setVisible(index==1),self.project_title.setVisible(index==1)))
+        self.pages.currentChanged.connect(lambda index:(self.editor_toolbar.setVisible(index==1),self.project_title.setVisible(index==1),self.update_status()))
         outer.addWidget(self.pages,1)
         self.start_page=self.make_start();self.pages.addWidget(self.start_page)
         editor=QSplitter();self.pages.addWidget(editor)
@@ -238,7 +266,7 @@ class DesktopInterface:
         self.speech_volume.valueChanged.connect(self.change_speech_volume);transport.addWidget(QLabel('Speech'));transport.addWidget(self.speech_volume)
         self.timeline=Timeline(self);lv.addWidget(self.timeline)
         self.tabs=QTabWidget();editor.addWidget(self.tabs);editor.setSizes([950,440]);self.tabs.setMinimumWidth(440)
-        descriptions=QWidget();dv=QVBoxLayout(descriptions);self.tabs.addTab(descriptions,'Descriptions · 0')
+        descriptions=QWidget();dv=QVBoxLayout(descriptions);dv.setAlignment(Qt.AlignTop);self.tabs.addTab(descriptions,'Descriptions · 0')
         self.job_card=BlueprintFrame();jv=QVBoxLayout(self.job_card);self.job_label=QLabel('Working');jv.addWidget(self.job_label)
         self.job_progress=QProgressBar();self.job_progress.setRange(0,0);jv.addWidget(self.job_progress)
         self.job_note=QLabel('Waiting for engine events.');self.job_note.setWordWrap(True);jv.addWidget(self.job_note)
@@ -255,10 +283,11 @@ class DesktopInterface:
         button(points,'End at playhead',lambda:self.end.setText(str(self.player.position()/1000)))
         iv.addWidget(self.text);self.fit_label=QLabel();self.fit_label.setWordWrap(True);self.fit_label.setMinimumHeight(48);iv.addWidget(self.fit_label);iv.addSpacing(8);self.fit_bar=QProgressBar();self.fit_bar.setTextVisible(False);self.fit_bar.setFixedHeight(6);self.fit_bar.setRange(0,200);iv.addWidget(self.fit_bar);iv.addSpacing(8)
         self.review_note=QLabel();self.review_note.setWordWrap(True);iv.addWidget(self.review_note)
-        actions=QHBoxLayout();iv.addLayout(actions);button(actions,'Mark as checked',self.mark_checked);button(actions,'Delete',self.delete_cue)
-        contextual=QHBoxLayout();iv.addLayout(contextual);button(contextual,'Preview in context',self.preview_context);button(contextual,'Ask about scene',lambda:self.tabs.setCurrentIndex(1))
+        actions=QHBoxLayout();iv.addLayout(actions);self.checked_button=button(actions,'Mark as checked',self.mark_checked);button(actions,'Delete',self.delete_cue);actions.addStretch()
+        contextual=QHBoxLayout();iv.addLayout(contextual);button(contextual,'Preview in context',self.preview_context);button(contextual,'Ask about scene',lambda:self.tabs.setCurrentIndex(1));contextual.addStretch()
+        points.addStretch()
         iv.addWidget(QLabel('Changes apply as you type. Ctrl+Z undoes.'));self.inline.hide()
-        self.empty=QWidget();ev=QVBoxLayout(self.empty);ev.addWidget(QLabel('NO DESCRIPTIONS YET'))
+        self.empty=QWidget();ev=QVBoxLayout(self.empty);ev.setAlignment(Qt.AlignTop|Qt.AlignLeft);ev.setSpacing(8);self.empty.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Maximum);ev.addWidget(QLabel('NO DESCRIPTIONS YET'))
         button(ev,'Draft with AI',self.draft_dialog,True);button(ev,'Import SRT / VTT',self.import_cues);button(ev,'Add at playhead',self.add_at_playhead);dv.addWidget(self.empty)
         self.make_scene();self.make_glossary()
         self.state_label=QLabel();outer.addWidget(self.state_label)
@@ -313,8 +342,21 @@ QTabBar::tab {{padding:12px;border-bottom:1px solid {border};}} QTabBar::tab:sel
 QListWidget::item {{padding:10px;border:0;border-bottom:1px solid {border};border-left:3px solid transparent;}}
 QListWidget::item:selected {{background:rgba(89,128,166,24);color:{fg};border-left:3px solid #5980a6;}}
 QListWidget::item:hover {{background:rgba(89,128,166,15);}}
-QFrame[providerCard="true"] {{border:0;}} QFrame[providerCard="true"][selected="true"] {{border:0;background:rgba(89,128,166,24);}}
+QFrame[providerCard="true"] {{border:0;}} QFrame[providerCard="true"][selected="true"] {{border:0;}}
 QFrame[providerCard="true"] QRadioButton {{background:transparent;}}
+QSlider::groove:horizontal {{height:4px;background:{surface};border:1px solid {border};}}
+QSlider::sub-page:horizontal {{background:#5980a6;}} QSlider::add-page:horizontal {{background:{surface};}}
+QSlider::handle:horizontal {{background:#5980a6;border:1px solid #416180;width:12px;margin:-5px 0;border-radius:0;}}
+QSlider::handle:horizontal:hover {{background:#b5d9fd;}} QSlider::handle:horizontal:disabled {{background:#98989b;}}
+QCheckBox {{spacing:8px;background:transparent;}} QCheckBox::indicator {{width:16px;height:16px;border:1px solid #5980a6;background:{surface};border-radius:0;}}
+QCheckBox::indicator:checked {{background:#5980a6;image:url("{asset_path('icons/ui-check.svg').as_posix()}");}}
+QCheckBox::indicator:indeterminate {{background:#5980a6;}} QRadioButton::indicator {{width:14px;height:14px;border:1px solid #5980a6;border-radius:7px;background:{surface};}}
+QRadioButton::indicator:checked {{background:#5980a6;border:2px solid {'#b5d9fd' if dark else '#416180'};}}
+QScrollBar:horizontal {{height:12px;background:{surface};border:0;margin:0;}}
+QScrollBar:vertical {{width:12px;background:{surface};border:0;margin:0;}}
+QScrollBar::handle:horizontal {{background:#5980a6;min-width:24px;}} QScrollBar::handle:vertical {{background:#5980a6;min-height:24px;}}
+QScrollBar::handle:hover {{background:#416180;}} QScrollBar::add-line,QScrollBar::sub-line {{width:0;height:0;border:0;background:transparent;}}
+QScrollBar::add-page,QScrollBar::sub-page {{background:{surface};}}
 QProgressBar {{height:6px;min-height:6px;max-height:6px;border:0;background:{surface};}} QProgressBar::chunk {{background:#5980a6;}}
 QLabel#brand {{font-family:'Barlow Condensed';font-size:17px;}} QLabel#hero {{font-family:'Barlow Condensed';font-size:56px;}}
 QLabel#dialogTitle {{font-family:'Barlow Condensed';font-weight:600;font-size:24px;}}
@@ -346,7 +388,7 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
         detector=Path(self.settings.data.get('sound_model') or default_root()/'assets'/'yamnet.onnx').is_file()
         for key,value in [('Speech detector',detector),('Ollama',bool(self.settings.data.get('ollama_model'))),('Windows voices',bool(self.speech.availableVoices())),('Gemini key',bool(self.settings.data.get('gemini_key')))]:self.setup_checks[key].setChecked(value);self.setup_actions[key].setVisible(not value)
         self.setup_checks['Ollama'].setToolTip('Exact model configured; use Test connection to verify the server.')
-        self.state_label.setText(f"Speech detector: {'installed' if detector else 'not installed'}  |  {'Working' if running else 'Engine idle'}     In gap {counts['in-gap']} · Pauses {counts['pause']} · Review {counts['unresolved']}     Voice: {self.settings.data.get('playback_voice') or 'System default'}     API: {'running' if self.api_thread and self.api_thread.is_alive() else 'off'}")
+        self.state_label.setText(f"Speech detector: {'installed' if detector else 'not installed'}  |  {'Working' if running else 'Engine idle'}     {('In gap '+str(counts['in-gap'])+' · Pauses '+str(counts['pause'])+' · Review '+str(counts['unresolved'])) if self.pages.currentIndex()==1 else ''}     Voice: {self.settings.data.get('playback_voice') or 'System default'}     API: {'running' if self.api_thread and self.api_thread.is_alive() else 'off'}")
     def presentation_position(self,value):
         cue=next((c for c in self.project.cues if c.start<=value/1000<c.end),None);self.current.setText(cue.text if cue else '')
         self.clock.setText(clock(value/1000)+' / '+clock(self.project.duration));self.timeline.ensure_visible(value/1000);self.timeline.update();self.pause_badge.setVisible(self.pause_active);self.current.setVisible(bool(self.current.text().strip()))
@@ -374,6 +416,7 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
         try:
             slot=seconds(self.end.text())-seconds(self.start.text());speech=len(self.text.toPlainText().split())/2.6
             cue=self._selected_cue
+            self.checked_button.setVisible(bool(cue and cue.disposition=='unresolved'))
             if cue and cue.text==self.text.toPlainText() and cue.speech_seconds:speech=cue.speech_seconds
             ratio=speech/max(.1,slot);verdict='Fits at normal speed' if ratio<=1 else f'Speeds up to {ratio:.2f}×' if ratio<=1.15 else 'Too long: picture will pause'
             self.fit_label.setText(f'≈{speech:.1f} s of speech in a {slot:.1f} s slot\n{verdict}');self.fit_bar.setValue(min(200,round(ratio*100)));self.review_note.setText(cue.uncertainty if cue else '')
@@ -400,10 +443,10 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
         self.settings.data['speech_volume']=value;self.speech.setVolume(value/100);self.settings.save()
     def make_scene(self):
         scene=QWidget();sv=QVBoxLayout(scene);self.tabs.addTab(scene,'Scene');modes=QTabWidget();sv.addWidget(modes)
-        ask=QWidget();av=QVBoxLayout(ask);modes.addTab(ask,'Ask');self.scene_context=QComboBox();self.scene_context.addItems(['±2.5 s','±5 s','±10 s']);av.addWidget(self.scene_context)
-        self.conversation=QPlainTextEdit();self.conversation.setReadOnly(True);self.conversation.setAccessibleName('Scene conversation');av.addWidget(self.conversation)
-        self.question=QLineEdit();self.question.setAccessibleName('Question about scene');av.addWidget(self.question);button(av,'Ask',self.ask,True)
-        self.add_answer_button=button(av,'Add as description',self.insert_answer);self.add_answer_button.setEnabled(False)
+        ask=QWidget();av=QVBoxLayout(ask);modes.addTab(ask,'Ask');self.scene_context=QComboBox();self.scene_context.addItems(['±2.5 s','±5 s','±10 s']);av.addWidget(QLabel('Context'));av.addWidget(self.scene_context)
+        self.conversation=QPlainTextEdit();self.conversation.setReadOnly(True);self.conversation.setPlaceholderText('Ask a question about the current scene. Answers appear here.');self.conversation.setAccessibleName('Scene conversation');av.addWidget(self.conversation)
+        answer_row=QHBoxLayout();av.addLayout(answer_row);self.answer_text=QLabel('No answer yet.');self.answer_text.setWordWrap(True);answer_row.addWidget(self.answer_text,1);self.add_answer_button=button(answer_row,'Add as description',self.insert_answer);self.add_answer_button.setEnabled(False)
+        self.question=QLineEdit();self.question.setPlaceholderText('What would you like to know about this scene?');self.question.setAccessibleName('Question about scene');av.addWidget(self.question);button(av,'Ask',self.ask,True)
         self.scene_note=QLabel('Uses the selected model; cloud/remote requests require confirmation.');self.scene_note.setWordWrap(True);av.addWidget(self.scene_note)
         explore=QWidget();xv=QVBoxLayout(explore);modes.addTab(explore,'Explore layout');button(xv,'Observe current scene',self.explore)
         self.explore_host=QVBoxLayout();xv.addLayout(self.explore_host,1)
@@ -416,15 +459,15 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
         def done(text):
             answer=response_json(text)['answer']
             if not isinstance(answer,str) or not answer.strip():raise ValueError('No scene answer was returned.')
-            self.history.append({'question':question,'answer':answer});self.answer=(answer,position)
+            self.history.append({'question':question,'answer':answer});self.answer=(answer,position);self.answer_text.setText(f'At {clock(position)}\n{answer}')
             self.conversation.setPlainText('\n\n'.join('Q: '+x['question']+'\nA: '+x['answer'] for x in self.history));self.add_answer_button.setEnabled(True)
         self.scene_request(instruction,done,[5,10,20][self.scene_context.currentIndex()])
     def insert_answer(self):
         if hasattr(self,'answer'):self.add_scene_answer(*self.answer,self.add_answer_button)
     def make_glossary(self):
-        page=QWidget();v=QVBoxLayout(page);self.tabs.addTab(page,'Glossary');self.glossary_list=QVBoxLayout();v.addLayout(self.glossary_list);v.addStretch();button(v,'Add character',lambda:self.glossary_card('',''))
+        page=QWidget();v=QVBoxLayout(page);v.setAlignment(Qt.AlignTop);v.setSpacing(10);self.tabs.addTab(page,'Glossary');host=QWidget();host.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Maximum);self.glossary_list=QVBoxLayout(host);self.glossary_list.setContentsMargins(0,0,0,0);self.glossary_list.setAlignment(Qt.AlignTop);self.glossary_list.setSpacing(10);v.addWidget(host);button(v,'Add character',lambda:self.glossary_card('',''));v.addStretch()
     def glossary_card(self,name,description):
-        card=BlueprintFrame();v=QVBoxLayout(card);n=QLineEdit(name);n.setPlaceholderText('Character name');n.setAccessibleName('Character name');d=QPlainTextEdit(description);d.setPlaceholderText('Visible identifying details');d.setMaximumHeight(90);d.setAccessibleName('Character description');v.addWidget(n);v.addWidget(d);self.glossary_list.addWidget(card)
+        card=BlueprintFrame();card.setFixedHeight(166);v=QVBoxLayout(card);v.setContentsMargins(16,16,16,16);v.setSpacing(8);n=QLineEdit(name);n.setPlaceholderText('Character name');n.setAccessibleName('Character name');d=QPlainTextEdit(description);d.setPlaceholderText('Visible identifying details');d.setFixedHeight(80);d.setAccessibleName('Character description');v.addWidget(n);v.addWidget(d);self.glossary_list.addWidget(card)
         def save():
             if self._syncing or self.busy():return
             self.project.glossary='\n'.join(f'{a.text()}: {b.toPlainText()}' for a,b in self.glossary_fields);self._glossary_snapshot=self.project.glossary;self.dirty=True
@@ -466,7 +509,7 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
         v.addWidget(section('1 · PROVIDER'))
         providers=QHBoxLayout();providers.setSpacing(20);v.addLayout(providers);provider_group=QButtonGroup(d)
         for provider,label in [('Ollama','Ollama · LOCAL / CLOUD\nSampled frames, no audio.'),('Gemini','Google Gemini · CLOUD\nUploads video using your key. Can hear audio.')]:
-            card=BlueprintFrame();cv=QVBoxLayout(card);choice=QRadioButton(label);choice.setChecked(self.model_picker.provider.currentText()==provider);provider_group.addButton(choice);cv.addWidget(choice);providers.addWidget(card);card.setProperty('providerCard',True);card.setProperty('selected',choice.isChecked());card.setMinimumHeight(86)
+            card=BlueprintFrame();cv=QVBoxLayout(card);choice=QRadioButton(label);choice.setAccessibleName(provider);choice.setChecked(self.model_picker.provider.currentText()==provider);provider_group.addButton(choice);cv.addWidget(choice);providers.addWidget(card);card.setProperty('providerCard',True);card.setProperty('selected',choice.isChecked());card.setMinimumHeight(86)
             choice.toggled.connect(lambda checked,c=card:(c.setProperty('selected',checked),c.style().unpolish(c),c.style().polish(c),c.update()))
             choice.toggled.connect(lambda checked,p=provider:self.model_picker.provider.setCurrentText(p) if checked else None)
         v.addWidget(section('2 · EXACT MODEL'))
@@ -512,9 +555,7 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
         right=QVBoxLayout();row.addLayout(right);counts={k:sum(c.disposition==k for c in self.project.cues) for k in ('in-gap','pause','unresolved')};right.addWidget(section('COVERAGE'));right.addWidget(QLabel(f"In gap: {sum(c.disposition=='in-gap' and c.speed<=1 for c in self.project.cues)}\nSped up: {sum(c.speed>1 for c in self.project.cues)}\nPauses picture: {counts['pause']}\nNeeds review: {counts['unresolved']}"))
         warning=QLabel('Unresolved visual facts block media exports.');warning.setWordWrap(True);right.addWidget(warning)
         review=button(right,'Review now',lambda:(d.reject(),self.tabs.setCurrentIndex(0),self.cue_filter.setCurrentIndex(1),self.choose(next(i for i,c in enumerate(self.project.cues) if c.disposition=='unresolved'))))
-        voice_label=QLabel('Narration engine');right.addWidget(voice_label)
-        voice=QComboBox();voice.addItems(['Windows','Windows 32-bit','Windows OneCore','OpenAI']);voice.setCurrentText(self.settings.data['voice_engine']);right.addWidget(voice)
-        voice_button=button(right,'Select installed export voice',self.select_windows_voice,role='ghost')
+        voice_picker=ExportVoices(self,d);right.addWidget(voice_picker)
         right.addWidget(QLabel('Save to'));path=QLineEdit();path.setPlaceholderText('Choose an output file…');path.setAccessibleName('Export save path');right.addWidget(path)
         extensions=['mp4','mp3','wav','srt','vtt','txt','json']
         def browse():
@@ -524,12 +565,14 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
         v.addWidget(QLabel('Narration speed stays at or below 1.15×. Media exports include a coverage sidecar.'))
         actions=QDialogButtonBox(QDialogButtonBox.Cancel);go=actions.addButton('Export',QDialogButtonBox.AcceptRole);go.setProperty('role','primary');v.addWidget(actions);actions.accepted.connect(d.accept);actions.rejected.connect(d.reject)
         def state():
-            media=formats.currentRow()<3;blocked=media and bool(counts['unresolved']);warning.setVisible(blocked);review.setVisible(blocked);voice.setVisible(media);voice_label.setVisible(media);voice_button.setVisible(media);go.setEnabled(bool(path.text()) and not blocked)
+            media=formats.currentRow()<3;blocked=media and bool(counts['unresolved']);warning.setVisible(blocked);review.setVisible(blocked);voice_picker.setVisible(media);go.setEnabled(bool(path.text()) and not blocked and (not media or not voice_picker.loading))
         formats.currentRowChanged.connect(lambda _:state());path.textChanged.connect(state);formats.setCurrentRow(0);state()
-        if d.exec():
+        voice_picker.changed.connect(state)
+        accepted=d.exec();voice_picker.shutdown()
+        if accepted:
             ext=extensions[formats.currentRow()]
             if Path(path.text()).suffix.lower()!='.'+ext:self.error('Save path extension must match the selected format.');return
-            self.settings.data['voice_engine']=voice.currentText();self.settings.save();self.job_label.setText('Exporting descriptions');self.export_to(path.text())
+            self.settings.data.update(voice_picker.selection());self.settings.save();self.job_label.setText('Exporting descriptions');self.export_to(path.text())
 
 
 def organize_settings(window,dialog,outer,scroll,content,form,buttons,section=None):
@@ -593,3 +636,62 @@ class LayoutGrid(QWidget):
         x=event.position().x()/self.width()*10;y=event.position().y()/self.height()*10
         o=min(objects,key=lambda o:(float(o.get('x',5))-x)**2+(float(o.get('y',5))-y)**2)
         self.explorer.x=float(o.get('x',5));self.explorer.y=float(o.get('y',5));self.explorer.describe(str(o.get('name','Object'))+': '+str(o.get('description','')));self.update();self.setFocus()
+
+
+class VoiceDiscovery(QObject):
+    done=Signal(object);failed=Signal(str);finished=Signal()
+    def __init__(self,engine,cancel):super().__init__();self.engine=engine;self.cancel=cancel
+    def run(self):
+        try:
+            from .windows_speech import windows_speech
+            self.done.emit(windows_speech(self.engine,cancel=self.cancel,listing=True))
+        except Exception as exc:self.failed.emit(str(exc))
+        finally:self.finished.emit()
+
+
+class ExportVoices(QWidget):
+    changed=Signal()
+    def __init__(self,window,parent):
+        super().__init__(parent);self.window=window;self.thread=None;self.worker=None;self.loading=False;self.closing=False;self.requested='';self.loaded=''
+        layout=QVBoxLayout(self);layout.setContentsMargins(0,0,0,0);layout.setSpacing(8)
+        layout.addWidget(QLabel('Narration engine'));self.engine=QComboBox();self.engine.setAccessibleName('Export narration engine');self.engine.addItems(['Windows','Windows 32-bit','Windows OneCore','OpenAI']);self.engine.setCurrentText(window.settings.data['voice_engine']);layout.addWidget(self.engine)
+        layout.addWidget(QLabel('Narration voice'));self.voice=QComboBox();self.voice.setAccessibleName('Export narration voice');layout.addWidget(self.voice)
+        self.note=QLabel();self.note.setWordWrap(True);layout.addWidget(self.note)
+        self.engine.currentTextChanged.connect(self.request);self.request(self.engine.currentText())
+    def request(self,engine):
+        self.requested=engine
+        if self.thread and self.thread.isRunning():self.cancel.set();return
+        self.start_discovery()
+    def start_discovery(self):
+        import threading
+        engine=self.requested;self.voice.clear();self.loaded=engine
+        if engine=='OpenAI':
+            settings=self.window.settings.data;self.voice.addItem('Base voice · '+settings['voice'],{'voice':settings['voice'],'voice_preset':''})
+            for name,preset in settings['voice_presets'].items():self.voice.addItem(name+' · '+preset['base_voice'],{'voice':preset['base_voice'],'voice_preset':name})
+            index=next((i for i in range(self.voice.count()) if self.voice.itemData(i)['voice_preset']==settings.get('voice_preset')),0);self.voice.setCurrentIndex(index)
+            self.loading=False;self.voice.setEnabled(True);self.note.setText('Description text is sent to OpenAI only after export confirmation.');self.changed.emit();return
+        self.loading=True;self.voice.addItem('Loading installed voices…',None);self.voice.setEnabled(False);self.note.setText('Reading voices installed for this engine.');self.changed.emit()
+        self.cancel=threading.Event();thread=QThread(self.window);worker=VoiceDiscovery(engine,self.cancel);worker.moveToThread(thread);self.thread=thread;self.worker=worker
+        thread.started.connect(worker.run);worker.done.connect(self.discovered);worker.failed.connect(self.failed);worker.finished.connect(thread.quit);worker.finished.connect(worker.deleteLater);thread.finished.connect(self.finished);thread.finished.connect(thread.deleteLater);thread.start()
+    def discovered(self,rows):
+        if self.closing or self.requested!=self.loaded:return
+        self.voice.clear();self.voice.addItem('System default',{'windows_voice':''})
+        for row in rows:self.voice.addItem(row['name'],{'windows_voice':row['id']})
+        selected=self.window.settings.data.get('windows_voice','') if self.loaded==self.window.settings.data['voice_engine'] else ''
+        for i in range(self.voice.count()):
+            if self.voice.itemData(i)['windows_voice']==selected:self.voice.setCurrentIndex(i);break
+        self.voice.setEnabled(True);self.note.setText(f'{len(rows)} installed voices. Selection applies to this export.');self.changed.emit()
+    def failed(self,message):
+        if self.closing:return
+        self.voice.clear();self.voice.addItem('System default',{'windows_voice':''});self.voice.setEnabled(True);self.note.setText('Voice listing unavailable: '+message);self.changed.emit()
+    def finished(self):
+        self.thread=None;self.worker=None;self.loading=False
+        if not self.closing and self.requested!=self.loaded:self.start_discovery()
+        self.changed.emit()
+    def selection(self):
+        result={'voice_engine':self.engine.currentText()};result.update(self.voice.currentData() or {})
+        if result['voice_engine']!='OpenAI':result['voice_preset']=''
+        return result
+    def shutdown(self):
+        self.closing=True
+        if self.thread and self.thread.isRunning():self.cancel.set();self.thread.quit();self.thread.wait(5000)

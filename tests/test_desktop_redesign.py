@@ -111,3 +111,41 @@ def test_visual_hierarchy_start_state_caption_and_fit_spacing():
             assert w.export_button.property('role')=='primary'
             assert w.cue_list.item(0).data(256).text=='Original description.'
         finally:w.dirty=False;w.close();app.processEvents()
+
+
+def test_review_action_start_counts_and_multiline_prompt():
+    from PySide6.QtWidgets import QPlainTextEdit
+    with tempfile.TemporaryDirectory() as tmp:
+        app,w=make_window(tmp)
+        try:
+            w.show();w.choose(0);app.processEvents();assert not w.checked_button.isVisible()
+            w.choose(1);assert w.checked_button.isVisible()
+            w.show_start();w.update_status();assert 'In gap' not in w.state_label.text() and 'Review' not in w.state_label.text()
+            w.pages.setCurrentIndex(1);w.update_status();assert 'Review 1' in w.state_label.text()
+            assert isinstance(w.prompt,QPlainTextEdit)
+            w.prompt.setPlainText('First instruction.\nSecond instruction.');assert '\n' in w.prompt.toPlainText()
+            assert w.question.placeholderText()
+        finally:w.dirty=False;w.close();app.processEvents()
+
+
+def test_export_voice_picker_selects_ids_for_the_correct_engine():
+    import time
+    from unittest.mock import patch
+    from PySide6.QtTest import QTest
+    from describer.desktop import ExportVoices
+    with tempfile.TemporaryDirectory() as tmp:
+        app,w=make_window(tmp)
+        with patch('describer.windows_speech.windows_speech',side_effect=lambda engine,**kwargs:[{'name':engine+' test voice','id':engine+'-id'}]):
+            d=QDialog(w);picker=ExportVoices(w,d)
+            def finish():
+                deadline=time.monotonic()+3
+                while picker.loading and time.monotonic()<deadline:app.processEvents();QTest.qWait(10)
+                assert not picker.loading
+            try:
+                finish();picker.voice.setCurrentIndex(1);assert picker.selection()['windows_voice']=='Windows-id'
+                picker.engine.setCurrentText('Windows OneCore');finish();picker.voice.setCurrentIndex(1)
+                assert picker.selection()=={'voice_engine':'Windows OneCore','windows_voice':'Windows OneCore-id','voice_preset':''}
+                picker.engine.setCurrentText('OpenAI');assert picker.voice.count()>0
+                assert picker.selection()['voice_engine']=='OpenAI'
+                assert w.settings.data['voice_engine']=='Windows'  # Cancel never mutates settings.
+            finally:picker.shutdown();d.close();w.dirty=False;w.close();app.processEvents()

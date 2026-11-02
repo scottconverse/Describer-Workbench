@@ -77,7 +77,7 @@ Open media → draft or import cues → correct the glossary → edit facts and 
 
 Select a description to seek to its start and expand the inline editor. Times accept seconds, `MM:SS` or `HH:MM:SS`; Start and End update independently. Valid edits apply as you type; Ctrl+Z undoes. **Add at playhead** creates and selects a three-second cue. **Ctrl+S** saves the project. Analysis and subtitle import replace descriptions after confirmation; range analysis replaces the cue list. Save a separate `.adproject` copy to preserve comparisons.
 
-The redesigned native PySide6 interface is on `feat/blueprint-desktop-interface`. Public v0.5.0 downloads retain the earlier interface until the next authorized release.
+The main source tree includes the redesigned native PySide6 interface. Public v0.5.0 downloads retain the earlier interface until the next authorized release.
 
 The engine measures synthesized speech and fits it only within the visual event and independently protected soundtrack. Speed is capped at 1.15x; no-fit descriptions pause the source instead of being discarded or moved to an unrelated scene. Complete MP4 exports freeze the video during those descriptions; MP3/WAV exports insert matching audio pauses. Uncertain events remain unresolved and block a complete narrated export. Explicit `in-gap-only` exports are marked incomplete. Script exports retain all events and a coverage sidecar; a subtitle file alone cannot express pause playback. Audio mixes downmix to stereo.
 

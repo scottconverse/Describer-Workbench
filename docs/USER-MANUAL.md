@@ -333,10 +333,14 @@ Report issues at the [GitHub issue tracker](https://github.com/scottconverse/Des
 
 This is newly written reconstruction source, not recovered original source or an original-author-endorsed release. New Workbench code is licensed under Apache-2.0 with no warranty. Third-party dependencies/translations retain their own terms; Apache-2.0 does not relicense those assets. See [third-party notices](../THIRD-PARTY-NOTICES.md).
 
-## Desktop redesign working branch
+## Redesigned desktop interface
 
-The Industry PySide6 interface is implemented on `feat/blueprint-desktop-interface`; these UI instructions describe that source branch. The public v0.5.0 portable remains unchanged until a separately authorized release. New scene answers are marked for review. Use **Mark as checked** only after verifying visual facts; editing invalidates measured narration and the engine replans it at media export. Saved projects and engine protocols remain compatible.
+The main source tree includes the Industry PySide6 interface; these instructions describe the source interface. The public v0.5.0 portable remains unchanged until a separately authorized release. New scene answers are marked for review. **Mark as checked** appears only on Needs review descriptions. Use it only after verifying visual facts; editing invalidates measured narration and the engine replans it at media export. Saved projects and engine protocols remain compatible.
 
 ### Timeline navigation and desktop visual controls
 
-Use Ctrl+mouse-wheel over the timeline to zoom around the pointer, and the mouse wheel or bottom scrollbar to pan. The visible range follows the playhead; selecting a description brings it into view. Picture-lane thumbnails are overview samples from the source. Description tags distinguish In gap, Sped up, Pauses picture and Needs review. Theme and Settings are icon buttons; the editor toolbar is hidden on Start. Model tags can be edited in the model list (double-click or F2), with no duplicate tag field.
+Use Ctrl+mouse-wheel over the timeline to zoom around the pointer, and the mouse wheel or bottom scrollbar to pan. The visible range follows the playhead; selecting a description brings it into view. The picture lane samples eight frames within the visible range and refreshes after zooming or panning; repeated frames can still occur in a static scene. Sped-up description blocks have diagonal stripes. Description tags distinguish In gap, Sped up, Pauses picture and Needs review. Theme and Settings are icon buttons; the editor toolbar and document status counts are hidden on Start. Sliders, checkboxes and scrollbars use the interface accent in both themes. Model tags can be edited in the model list (double-click or F2), with no duplicate tag field.
+
+The Draft dialog accepts multiline editorial instructions and gives both provider cards the same selection treatment. Scene questions have a labeled Context range and an Add as description action beside the latest answer. Glossary cards keep Add character beneath the list.
+
+At export, choose a narration engine and a voice in the dropdowns. Windows voices are read asynchronously for that engine; changing engines refreshes the list. OpenAI lists the configured base voice and saved presets. Selection applies only after accepting export; cancellation preserves settings. Voice listing does not send description text to any provider.

@@ -120,7 +120,7 @@ class Window(DesktopInterface, QMainWindow):
         editrow=QHBoxLayout();el.addLayout(editrow)
         for name,fn in [('Add',self.add_cue),('Apply edit',self.apply_edit),('Delete',self.delete_cue),('Ask about scene',self.ask),('Explore scene',self.explore),('Export',self.export)]:self.button(editrow,name,fn)
         prompts=QHBoxLayout();layout.addLayout(prompts);prompts.addWidget(QLabel('Prompt preset'));self.preset=QComboBox();prompts.addWidget(self.preset)
-        self.button(prompts,'Manage presets',self.presets);self.prompt=QLineEdit();self.prompt.setAccessibleName('Editorial prompt');prompts.addWidget(self.prompt,1)
+        self.button(prompts,'Manage presets',self.presets);self.prompt=QPlainTextEdit();self.prompt.setFixedHeight(74);self.prompt.setAccessibleName('Editorial prompt');prompts.addWidget(self.prompt,1)
         self.preset.currentTextChanged.connect(self.preset_changed);self.reload_presets()
         self.log_view=QPlainTextEdit();self.log_view.setReadOnly(True);self.log_view.setMaximumHeight(95);self.log_view.setAccessibleName('Status and token usage log');layout.addWidget(self.log_view)
         menu=self.menuBar().addMenu('&File')
@@ -383,7 +383,7 @@ class Window(DesktopInterface, QMainWindow):
         if self.busy() or not self.project.video:return
         if self.project.cues and QMessageBox.question(self,'Replace descriptions','Replace existing descriptions with newly generated results?')!=QMessageBox.StandardButton.Yes:return
         if not self.cloud_confirm():return
-        snapshot=copy.deepcopy(self.project);settings=copy.deepcopy(self.settings.data);settings['allow_cloud']=True;prompt=self.prompt.text()
+        snapshot=copy.deepcopy(self.project);settings=copy.deepcopy(self.settings.data);settings['allow_cloud']=True;prompt=self.prompt.toPlainText()
         scope=self.model_picker.scope.currentIndex()
         start_at=self.player.position()/1000 if scope else 0
         duration={1:20,2:60}.get(scope)
@@ -445,7 +445,7 @@ class Window(DesktopInterface, QMainWindow):
             except Exception as e:self.error(str(e))
     def reload_presets(self):
         self.preset.clear();self.preset.addItems(list(self.settings.data['presets'].get(self.settings.data['language'],self.settings.data['presets'].get('English',{'Standard':''}))))
-    def preset_changed(self,name):self.prompt.setText(self.settings.data['presets'].get(self.settings.data['language'],self.settings.data['presets'].get('English',{})).get(name,''))
+    def preset_changed(self,name):self.prompt.setPlainText(self.settings.data['presets'].get(self.settings.data['language'],self.settings.data['presets'].get('English',{})).get(name,''))
     def presets(self):
         action,ok=QInputDialog.getItem(self,'Manage prompt presets','Action',['Add or edit','Delete'],0,False)
         if not ok:return
