@@ -1,6 +1,10 @@
 # Architecture and implementation guide
 
-Describer Workbench **0.5.2**. Shared engine and native Windows portable release. See [release acceptance](V052-ACCEPTANCE.md) for verification scope and limits.
+Describer Workbench **0.6.0**. Shared engine and native Windows workbench. The earlier signed0.5.2 package has its own [historical acceptance record](V052-ACCEPTANCE.md).
+
+Version 0.6.0: [AI connections](AI-CONNECTIONS.md) adds gateway/native subscription and explicit API adapters behind the same service, with no automatic model fallback. Native/gateway routes send up to eight sampled timestamped images without audio. Timed narration retains independently measured WAVs and safe placement; the live-text reader preference does not change that scheduling. Cues record their synthesis volume so live gain and export gain can account for it; older unknown levels require repair. Earlier 0.5.2 packages retain their historical behavior.
+
+The service centralizes provider validation and consent before queueing or resuming. Native tools retain their own authentication and receive an explicit environment allowlist. A shared sampler records actual decoded frame timestamps. Incomplete Gemini responses are durable review artifacts, never completed projects; blocked responses are not recovered. Authored timing, observed event provenance and accepted shortened narration remain separate fields. Structured pipeline/usage records reach both durable jobs and desktop status. Model perception still needs human correction: the accepted reviewed-draft workflow documents remaining factual errors and omissions rather than treating placement coverage as semantic validation.
 
 [User manual](USER-MANUAL.md) · [Developer guide](DEVELOPER-GUIDE.md) · [Repository](https://github.com/scottconverse/Describer-Workbench)
 
@@ -18,7 +22,7 @@ flowchart TD
     MCP[MCP stdio or Streamable HTTP] --> E
     E --> J[Durable serial jobs and checkpoints]
     J --> S[Independent sound and caption protection]
-    J --> V[Ollama or Gemini visual observations]
+    J --> V[Selected analysis provider visual observations]
     S --> P[Event-bounded planner]
     V --> P
     T[Measured narration WAVs] --> P
@@ -38,6 +42,8 @@ flowchart TD
 | `adapters/http.py`, `mcp.py`, `remote.py`, `cli.py` | REST/OpenAPI, 17 MCP tools, HTTP proxy and scriptable CLI. |
 | `app.py`, `desktop.py`, `model_picker.py` | Qt editing/player, durable-engine consumers, explicit cloud consent and model selection. |
 | `services.py`, `models.py` | Media preparation, provider requests, native/cloud speech, DPAPI settings and audio mixing. Low-level adapters do not own an alternate planner. |
+| `providers.py`, `subscriptions.py`, `frames.py` | Validated provider/model selection, gateway/native/API transports, restricted child environments and actual source-time frame sampling. |
+| `engine/progress.py`, `shortening.py` | Durable stage/usage reporting and conservative measured lead-in shortening. |
 | `project.py` | Version-1 project compatibility, cue validation, event metadata and structural normalization. |
 | `windows_speech.py`, `playback_speech.py` | Windows voice hosts, legacy unplanned playback and optional reader routing. |
 | `compatibility.py`, `catalogue.py`, `i18n.py` | Read-only original-data import, presets and translation application. |
@@ -93,11 +99,11 @@ Exact tags `gemma4:12b`, `gemma4:26b` and `qwen3.8:27b-q6_K-vision` keep the exi
 
 Hatch builds a small headless wheel with optional desktop, local-classifier, HTTP, MCP, Gemini and download extras. The Windows PyInstaller folder includes the Qt desktop, `DescriberCLI.exe` and developer transports, sharing one module archive. FFmpeg/FFprobe are separate binaries under retained third-party terms. The pinned YAMNet detector is explicitly provisioned; large vision weights, credentials and user videos are not bundled.
 
-The v0.5.2 tag identifies the first-use and recovery release source. Its GUI and CLI executables are signed as Scott Converse using Azure Trusted Signing with Microsoft timestamps. The initial unsigned 0.5.2 ZIP was replaced with the signed files; the release verification asset records build source, signing provenance and post-signing hashes. Later documentation and test-only changes do not rebuild the signed executables. Earlier version releases retain their historical evidence. The static website renderer produces manual, architecture and developer pages with downloadable Markdown; it does not process videos or host model credentials. See [release acceptance](V052-ACCEPTANCE.md) for observed results and limits.
+Version 0.6.0 adds the bounded original-specification remediation and connection inventory. Its signed executable build source is `ba04cc390eb264093fcbdf185bf03e993d3e2499`; later documentation commits do not rebuild those files. The release tag identifies final source and documentation. The v0.5.2 tag retains the earlier first-use and recovery source. Its GUI and CLI executables are signed as Scott Converse using Azure Trusted Signing with Microsoft timestamps. The initial unsigned 0.5.2 ZIP was replaced with the signed files; the release verification asset records build source, signing provenance and post-signing hashes. Later documentation and test-only changes do not rebuild the signed executables. Earlier version releases retain their historical evidence. The static website renderer produces manual, architecture and developer pages with downloadable Markdown; it does not process videos or host model credentials. See [release acceptance](V060-ACCEPTANCE.md) for observed results and limits.
 
 ## Evidence limits
 
-Automated checks cover structural behavior, real MCP initialization, HTTP boundaries, old-project compatibility, checkpoint reuse and real FFmpeg pause exports. The three native Blender samples exercise the real local vision, classifier and speech pipeline. Neither cue counts nor successful playback establish a percentage visual-accuracy score, WCAG compliance or complete essential-information coverage. Live keyed Gemini/OpenAI/cloud, Linux/macOS native speech, NVDA/JAWS and full-film semantic quality remain outside verified acceptance. Historical audits apply only to their recorded candidates.
+Automated checks cover structural behavior, real MCP initialization, HTTP boundaries, old-project compatibility, checkpoint reuse and real FFmpeg pause exports. The three native Blender samples exercise the real local vision, classifier and speech pipeline. Neither cue counts nor successful playback establish a percentage visual-accuracy score, WCAG compliance or complete essential-information coverage. Bounded native Codex/Claude/Antigravity and gateway Codex/Claude/Gemini requests passed; reported model identities and remaining keyed/local-server testing limits are in [AI connections](AI-CONNECTIONS.md). Linux/macOS native speech, active NVDA/JAWS and full-film semantic quality remain outside verified acceptance. Historical audits apply only to their recorded candidates.
 
 ## Industry desktop presentation
 

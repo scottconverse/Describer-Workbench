@@ -39,25 +39,41 @@ class Cue:
     audio: str = ''
     speech_seconds: float = 0
     speed: float = 1
+    timing_start: float | None = None
+    timing_end: float | None = None
+    audio_volume: float | None = None
+    narration_text: str = ''
+
+    def narration_window(self):
+        """Authored scheduling intent is separate from observed provenance."""
+        return (self.timing_start, self.timing_end) if self.timing_start is not None else (self.event_start, self.event_end)
 
     def edited(self, start, end, text, duration=0):
         """Keep observation/review identity while invalidating changed narration."""
         from dataclasses import replace
         candidate = replace(self, start=start, end=end, text=text).validate(duration)
+        if (candidate.start, candidate.end) != (self.start, self.end):
+            candidate.timing_start, candidate.timing_end = candidate.start, candidate.end
         if (candidate.start, candidate.end, candidate.text) != (self.start, self.end, self.text):
             candidate.audio = ''
             candidate.speech_seconds = 0
             candidate.speed = 1
+            candidate.audio_volume = None
+            candidate.narration_text = ''
             candidate.disposition = 'unresolved' if self.disposition == 'unresolved' or self.uncertainty else 'unplanned'
         return candidate
 
     def validate(self, duration=0):
         self.start, self.end = seconds(self.start), seconds(self.end)
-        for name in ('text', 'event_id', 'kind', 'evidence', 'uncertainty', 'audio'):
+        for name in ('text', 'event_id', 'kind', 'evidence', 'uncertainty', 'audio','narration_text'):
             if not isinstance(getattr(self, name), str):
                 raise ValueError('Description metadata must contain text values.')
         self.speech_seconds = seconds(self.speech_seconds)
         self.speed = float(self.speed)
+        if self.audio_volume is not None:
+            self.audio_volume = float(self.audio_volume)
+            if not math.isfinite(self.audio_volume) or not 0 < self.audio_volume <= 100:
+                raise ValueError('Invalid recorded narration volume.')
         self.text = self.text.strip()
         if self.end <= self.start or not self.text:
             raise ValueError('Description needs text and an end after its start.')
@@ -67,6 +83,12 @@ class Cue:
         self.event_end = self.end if self.event_end is None else seconds(self.event_end)
         if self.event_end <= self.event_start or (duration and self.event_end > duration + .05):
             raise ValueError('Invalid visual event interval.')
+        if (self.timing_start is None) != (self.timing_end is None):
+            raise ValueError('Authored narration timing requires a start and end.')
+        if self.timing_start is not None:
+            self.timing_start, self.timing_end = seconds(self.timing_start), seconds(self.timing_end)
+            if self.timing_end <= self.timing_start or (duration and self.timing_end > duration + .05):
+                raise ValueError('Invalid authored narration interval.')
         if self.disposition not in ('unplanned', 'in-gap', 'pause', 'unresolved'):
             raise ValueError('Invalid description disposition.')
         if not math.isfinite(self.speed) or not 1 <= self.speed <= 1.15:
@@ -119,6 +141,50 @@ def normalize_generated(data,duration,log=lambda _:None):
         if key in seen:log('Removed a duplicate observation of the same event.');continue
         seen.add(key);cues.append(cue)
     return cues
+
+
+def normalize_chunk(data, start, length, log=lambda _:None):
+    """Reconcile clip-relative and unambiguous source-absolute model times.
+
+    A malformed/mixed chunk must be retried, not counted as a complete job
+    after silently losing its rows. Observation provenance is created only
+    after these provider-produced times have been reconciled.
+    """
+    import copy
+    data = response_json(data)
+    rows = data.get('descriptions', data.get('audio_descriptions', data.get('cues', []))) if isinstance(data, dict) else data
+    if not isinstance(rows, list):raise ValueError('Expected a description list.')
+    if not rows:return []
+    values = []
+    for row in rows:
+        try:
+            a = seconds(row.get('start', row.get('start_time_mmss')))
+            b = seconds(row.get('end', row.get('end_time_mmss')))
+            if b <= a or not isinstance(row.get('text', row.get('description_text')), str) or not row.get('text', row.get('description_text', '')).strip():
+                raise ValueError('Invalid description')
+        except (AttributeError, TypeError, ValueError) as exc:
+            raise ValueError('Malformed chunk output; retry the chunk. No partial chunk was accepted as complete.') from exc
+        values.append((a, b))
+    relative = all(0 <= a < b <= length + .05 for a,b in values)
+    absolute = start > 0 and all(start <= a < b <= start + length + .05 for a,b in values)
+    reference = data.get('timestamp_reference') if isinstance(data, dict) else None
+    if reference == 'clip':absolute = False
+    elif reference == 'source':relative = False
+    if relative and absolute:
+        raise ValueError('Ambiguous chunk timestamps; retry with timestamp_reference="clip" or "source". No partial result was accepted.')
+    if not relative and not absolute:
+        raise ValueError('Mixed or out-of-range chunk timestamps; retry the chunk. No partial result was accepted.')
+    adjusted = []
+    for row,(a,b) in zip(rows, values):
+        row = copy.deepcopy(row)
+        row['start'],row['end'] = (a-start,b-start) if absolute else (a,b)
+        # Observation metadata comes from the normalized response, not arbitrary
+        # provider-supplied scheduling/audio fields.
+        for key in ('event_start','event_end','audio','speech_seconds','speed','audio_volume','timing_start','timing_end','narration_text'):
+            row.pop(key, None)
+        adjusted.append(row)
+    if absolute:log('Reconciled source-absolute chunk timestamps.')
+    return normalize_generated(adjusted,length,log)
 
 
 def scene_data(data):

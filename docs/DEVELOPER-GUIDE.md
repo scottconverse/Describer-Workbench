@@ -1,6 +1,18 @@
-# Developer guide — 0.5.2
+# Developer guide — 0.6.0
 
-See [0.5.2 release acceptance](V052-ACCEPTANCE.md) for verification scope and limits. The distributed Windows GUI and CLI are signed as Scott Converse using Azure Trusted Signing with Microsoft timestamps. Source builds require the [release signing procedure](CODE-SIGNING.md) before publication.
+Version 0.6.0: [AI connections](AI-CONNECTIONS.md) documents the new routes and evidence limits. Timed narration is synthesized and measured independently of the live-text screen-reader route. New/repair cues record `audio_volume:100`; target gain is `speech_volume / audio_volume`. The desktop prompts repair for older cues with unknown synthesis level. The shared service prepares narration before media export; the raw exporter rejects unknown recorded levels. User and model text remain unchanged when repairing audio.
+
+Reported usage persists with operation and requested/reported model identity. Automatic glossary generation shares the description request; such records have `components:["description","glossary"]` and explicitly unavailable separate glossary counts. The desktop labels that combined category and never fabricates a split or a subscription dollar cost. Scene requests remain separately attributed; unavailable provider token fields remain unknown.
+
+Candidate status includes `pipeline` stage completion/percentage and available `usage`. Gemini `MAX_TOKENS` produces an error job plus `partial_response` metadata pointing to a separate `partial-response.json` with `complete:false`. Python can inspect it with `service.partial_response(job_id)`; the desktop's recovery dialog provides a read-only view. Configured keys are redacted. Safety-blocked responses are not recovered. Failed jobs have no completed result or export; use a shorter chunk in a new request. Existing upload cleanup and bounded retry behavior remain in force.
+
+New image adapters share a source-time FFmpeg sampler with at most eight640px images. Actual decoded timestamps accompany the images; interval-centred frames are not labeled as interval starts. Native CLI child environments use a process/home/locale/proxy/TLS allowlist and exclude API-credit overrides, ADC authentication overrides and unrelated secrets. Provider-global settings and default model selection are not changed.
+
+`timing_start` / `timing_end` retain authored narration windows separately from `event_start` / `event_end` visual provenance. Conservative shortening is attempted only when measured original speech cannot fit; recognized redundant lead-ins may be removed, the new WAV is measured, and `narration_text` records accepted spoken wording while `text` and evidence retain the original. Other no-fit cues retain pause fallback. The accepted quality disposition requires human review and correction; coverage is a placement account, not a factual-recall metric.
+
+The updater uses the official latest stable GitHub release when the configured feed is blank. It checks the archive digest, requires timestamped Valid Scott Converse signatures on both Windows executables, and rechecks all staged payload hashes before applying. Manual signed-package acceptance: `python -m tests.update_acceptance SIGNED_ARCHIVE NEW_OUTPUT_DIRECTORY`. Real portable relaunch acceptance: `python -m tests.portable_update_acceptance prepare NEW_OUTPUT_DIRECTORY OLD_INSTALL VERIFIED_STAGED_DIRECTORY`, then close only its disposable window and run the same module with `verify NEW_OUTPUT_DIRECTORY`. These scripts write new receipts beside their disposable installation and preserve historical evidence. A requested launch alone does not verify the running application.
+
+See [0.6.0 release acceptance](V060-ACCEPTANCE.md) for verification scope and limits. The distributed Windows GUI and CLI are signed as Scott Converse using Azure Trusted Signing with Microsoft timestamps. Source builds require the [release signing procedure](CODE-SIGNING.md) before publication.
 
 Describer Workbench has one headless engine. The Qt desktop, Python API, CLI,
 REST API and MCP tools call the same `DescriptionService`. No WSL, Docker,
@@ -110,7 +122,7 @@ OpenAPI schema: authenticated `GET /openapi.json`. The API defines:
 | Method | Path | Operation |
 | --- | --- | --- |
 | GET | `/capabilities` | Version, operations, resource limits |
-| POST | `/models` | Ollama discovery; settings JSON body |
+| POST | `/models` | Selected-provider discovery where supported; settings JSON body. Catalog listing is not entitlement or vision proof. |
 | POST | `/jobs` | Submit describe/export/ask/explore/voice-preview/prepare; returns202 |
 | POST | `/jobs/batch` | Batch submission |
 | GET | `/jobs` | List/filter jobs |

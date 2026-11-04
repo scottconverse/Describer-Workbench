@@ -6,7 +6,6 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from pathlib import Path
 
 
 def endpoint(settings):
@@ -45,7 +44,7 @@ def open_request(settings,path,payload=None,timeout=10):
         hint={401:'Check Ollama sign-in or the server API key.',403:'Check Ollama sign-in or account access.',
               404:'The selected model or endpoint was not found. Open Settings > Keys & privacy to check the server address, then Draft > Refresh models. Install your chosen vision model in Ollama if it is absent.',429:'Ollama usage limit reached; try later.'}.get(exc.code,'Check the Ollama server status.')
         raise RuntimeError(f'Ollama HTTP {exc.code}. {hint}') from None
-    except (urllib.error.URLError,TimeoutError,OSError) as exc:
+    except (urllib.error.URLError,TimeoutError,OSError):
         raise RuntimeError('Could not reach Ollama. Start the Ollama application/server. If it is not installed, use https://ollama.com/download/windows. Check Settings > Keys & privacy > Ollama server address, then retry Draft > Refresh models. No model is downloaded automatically.') from None
 
 
@@ -61,9 +60,12 @@ def discover(settings,cancel,log):
         name=row.get('name')
         if not isinstance(name,str) or not name:continue
         caps=row.get('capabilities')
+        error=None
         if not isinstance(caps,list):
-            caps=json_request(settings,'/api/show',{'model':name}).get('capabilities',[])
-        rows.append({'name':name,'vision':'vision' in caps,
+            try:caps=json_request(settings,'/api/show',{'model':name}).get('capabilities')
+            except (OSError,RuntimeError,ValueError):
+                caps=None;error='Capability discovery unavailable; retry this model before analysis.'
+        rows.append({'name':name,'vision':('vision' in caps if isinstance(caps,list) else None), 'error':error,
             'cloud':bool(row.get('remote_host') or name.endswith('-cloud') or name.endswith(':cloud') or not is_loopback(endpoint(settings))),
             'loaded':name in loaded,'digest':row.get('digest','')})
     log(f'Ollama reports {len(rows)} models. Discovery makes no generation requests.')
@@ -126,6 +128,8 @@ def chat(settings,messages,cancel,log,as_json=True):
     if not text:raise ValueError('Ollama returned no description text.')
     log(f'Ollama requested {model}; reported {done.get("model","not reported")}. '
         f'Tokens: input {done.get("prompt_eval_count","unknown")}, output {done.get("eval_count","unknown")}.')
+    from .engine.progress import usage
+    usage(log,'Ollama',model,done.get('model'),done.get('prompt_eval_count'),done.get('eval_count'))
     return text
 
 
@@ -136,7 +140,8 @@ def test_connection(settings,cancel,log):
 
 
 def video_request(video,prompt,settings,cancel,log,as_json=True):
-    from .services import probe,run,tool
+    from .services import probe
+    from .frames import sample
     import tempfile
     settings=dict(settings,_ollama_info=model_info(settings))
     duration=probe(video);interval=float(settings.get('ollama_frame_interval',2))
@@ -144,12 +149,9 @@ def video_request(video,prompt,settings,cancel,log,as_json=True):
     interval=max(interval,duration/8)
     messages=[]
     with tempfile.TemporaryDirectory(prefix='describer-frames-') as tmp:
-        run([tool('ffmpeg'),'-v','error','-y','-i',str(video),'-vf',
-             f'fps=1/{interval}:start_time=0,scale=640:-2','-frames:v','8','-q:v','3',str(Path(tmp)/'%03d.jpg')],cancel)
-        frames=sorted(Path(tmp).glob('*.jpg'))
-        if not frames:raise ValueError('Could not extract video frames.')
-        for i,frame in enumerate(frames):
-            messages.append({'role':'user','content':f'Video frame at {min(i*interval,duration):.2f} seconds in this clip.',
+        frames=sample(video,tmp,interval,cancel)
+        for frame,timestamp in frames:
+            messages.append({'role':'user','content':f'Video frame at {timestamp:.3f} seconds in this clip.',
                 'images':[base64.b64encode(frame.read_bytes()).decode('ascii')]})
         messages.append({'role':'user','content':prompt+'\nThese are sampled frames in chronological order, not continuous video. '
             'No audio is supplied. Do not claim to hear dialogue or sounds, or identify dialogue gaps. '

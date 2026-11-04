@@ -7,11 +7,10 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import threading
 import time
 import urllib.request
 from pathlib import Path
-from .project import Cue, parse_cues, response_json, normalize_generated
+from .project import response_json, normalize_generated
 from .catalogue import PROMPTS,VOICE_PRESETS
 
 CREATE_NO_WINDOW = 0x08000000 if os.name == 'nt' else 0
@@ -30,7 +29,7 @@ def tool(name):
     return found
 
 
-def run(args, cancel=None):
+def run(args, cancel=None, *, return_stderr=False):
     with tempfile.TemporaryFile() as out, tempfile.TemporaryFile() as err:
         p = subprocess.Popen(args, stdout=out, stderr=err, creationflags=CREATE_NO_WINDOW)
         while p.poll() is None:
@@ -44,7 +43,7 @@ def run(args, cancel=None):
         output, error = out.read(), err.read()
         if p.returncode:
             raise RuntimeError(error.decode(errors='replace')[-3000:])
-        return output
+        return error if return_stderr else output
 
 
 def probe(path):
@@ -78,6 +77,9 @@ def dpapi(data, decrypt=False):
 DEFAULTS = {'ui_theme':'light','recent_projects':[], 'model': 'gemini-2.5-flash', 'language': 'English', 'chunk': 300, 'fps': 2,
             'sound_model':'', 'max_speech_speed':1.15, 'allow_cloud':False, 'captions':'',
             'analysis_provider':'Gemini','ollama_url':'http://127.0.0.1:11434','ollama_model':'',
+            'provider_models':{},'connections':{},'connection_id':'','gateway_url':'http://127.0.0.1:8317/v1','gateway_key_file':'',
+            'cli_paths':{},'analysis_timeout':600,'analysis_effort':'','anthropic_key':'',
+            'codex_cli':'','claude_cli':'','gemini_cli':'',
             'ollama_key':'','ollama_timeout':600,'ollama_frame_interval':2,
             'voice_engine': 'Windows', 'voice': 'alloy', 'tts_model': 'gpt-4o-mini-tts',
             'voice_presets': VOICE_PRESETS, 'settings_version': 3,
@@ -97,7 +99,7 @@ class Settings:
             try:
                 j=json.loads(self.path.read_text(encoding='utf-8-sig'))
                 if not isinstance(j,dict):raise ValueError('Expected a settings object.')
-                for k in ['gemini_key','openai_key','ollama_key']:
+                for k in [key for key in j if key.endswith('_key')]:
                     if j.get(k):
                         try:j[k]=dpapi(base64.b64decode(j[k]),True).decode()
                         except Exception:
@@ -117,7 +119,9 @@ class Settings:
                     if not isinstance(preset,dict) or not isinstance(preset.get('base_voice'),str) or not .25<=float(preset.get('speed',1))<=4:raise ValueError('Invalid voice preset.')
                 ranges={'chunk':(15,1800),'fps':(1,30),'duck_db':(-40,0),'speech_rate':(-10,10),'player_volume':(0,100),'speech_volume':(0,100),'temperature':(0,2),'ollama_timeout':(30,1800),'ollama_frame_interval':(1,10)}
                 for key,(low,high) in ranges.items():self.data[key]=max(low,min(high,self.data[key]))
-                if self.data['analysis_provider'] not in ('Gemini','Ollama'):raise ValueError('Unknown analysis provider.')
+                from .providers import provider_name
+                provider_name(self.data)
+                self.data.update({key:value for key,value in j.items() if key.endswith('_key') and isinstance(value,str)})
                 if j.get('settings_version',0)<3:
                     for name,prompt in PROMPTS.items():self.data['presets'].setdefault('English',{}).setdefault(name,prompt)
                     for name,preset in VOICE_PRESETS.items():self.data['voice_presets'].setdefault(name,dict(preset))
@@ -130,10 +134,40 @@ class Settings:
             shutil.copy2(self.path,self.path.with_name(self.path.name+'.recovery-'+str(time.time_ns())))
             self.needs_recovery=False
         j = dict(self.data)
-        for k in ['gemini_key', 'openai_key', 'ollama_key']:
+        for k in [key for key in j if key.endswith('_key')]:
             if j[k]: j[k] = base64.b64encode(dpapi(j[k].encode())).decode()
         self.path.parent.mkdir(parents=True, exist_ok=True)
         temp = self.path.with_suffix('.tmp');temp.write_text(json.dumps(j, indent=2), encoding='utf-8');temp.replace(self.path)
+
+
+class IncompleteResponse(ValueError):
+    """Recoverable text for inspection only; never a completed model result."""
+    def __init__(self, message, partial_text):
+        super().__init__(message)
+        self.partial_text=partial_text[:8*1024*1024] if isinstance(partial_text,str) else ''
+        self.context={}
+
+
+def completed_google_text(response):
+    """Never treat parseable partial output as a completed observation."""
+    def reason(value):
+        return str(getattr(value, 'name', value) or '').rsplit('.', 1)[-1]
+    feedback = getattr(response, 'prompt_feedback', None)
+    block = reason(getattr(feedback, 'block_reason', None))
+    if block not in ('', '0', 'BLOCK_REASON_UNSPECIFIED'):
+        raise ValueError('Gemini blocked the request (' + block + '). Review the provider feedback and selected media; no complete result was accepted.')
+    candidates = getattr(response, 'candidates', None)
+    if not candidates:
+        raise ValueError('Gemini returned no candidates. Review provider feedback or try a shorter segment.')
+    finish = reason(getattr(candidates[0], 'finish_reason', None))
+    if finish == 'MAX_TOKENS':
+        raise IncompleteResponse('Gemini output was cut off (MAX_TOKENS). Use shorter chunks; partial output was not accepted as complete.',response.text)
+    if finish != 'STOP':
+        raise ValueError('Gemini did not complete the response (' + (finish or 'unknown finish reason') + '). Review provider feedback or try a shorter segment.')
+    text = response.text
+    if not isinstance(text, str) or not text.strip():
+        raise ValueError('Gemini returned no text. Review provider feedback or try a shorter segment.')
+    return text
 
 
 def google_request(video, prompt, settings, cancel, log, as_json=True):
@@ -161,8 +195,11 @@ def google_request(video, prompt, settings, cancel, log, as_json=True):
                           ['HARM_CATEGORY_HARASSMENT','HARM_CATEGORY_HATE_SPEECH','HARM_CATEGORY_SEXUALLY_EXPLICIT','HARM_CATEGORY_DANGEROUS_CONTENT']]
                           if settings.get('safety_block_none') else None)))
                 log('Token usage: ' + str(response.usage_metadata))
-                if not response.text: raise ValueError('The model returned no text. Review provider feedback or try a shorter segment.')
-                return response.text
+                from .engine.progress import usage
+                meta=response.usage_metadata
+                usage(log,'Gemini',settings['model'],getattr(response,'model_version',None),
+                      getattr(meta,'prompt_token_count',None),getattr(meta,'candidates_token_count',None),getattr(meta,'total_token_count',None))
+                return completed_google_text(response)
             except Exception as e:
                 if getattr(e, 'code', None) not in [429, 500, 502, 503] or attempt == 3: raise
                 if cancel.wait(2 ** (attempt + 1)): raise InterruptedError('Cancelled.')
@@ -174,49 +211,62 @@ def google_request(video, prompt, settings, cancel, log, as_json=True):
 
 
 def video_request(video,prompt,settings,cancel,log,as_json=True):
-    if settings.get('analysis_provider','Gemini')=='Ollama':
+    from .providers import provider_name
+    provider=provider_name(settings)
+    if provider=='Ollama':
         from .models import video_request as ollama_request
         return ollama_request(video,prompt,settings,cancel,log,as_json)
-    return google_request(video,prompt,settings,cancel,log,as_json)
+    if provider=='Gemini':return google_request(video,prompt,settings,cancel,log,as_json)
+    from .subscriptions import video_request as subscription_request
+    return subscription_request(video,prompt,settings,cancel,log,as_json)
 
 
 def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, checkpoint=None):
     cues=[];glossary=project.glossary
     chunk=max(15,int(settings['chunk'])) if settings.get('chunking',True) else max(1,__import__('math').ceil(project.duration))
-    if settings.get('analysis_provider','Gemini')=='Ollama':
+    if settings.get('analysis_provider','Gemini')!='Gemini':
         chunk=min(chunk,8*int(settings.get('ollama_frame_interval',2)))
         log('Vision receives sampled images; the engine independently measures protected audio.')
     stop=min(project.duration,start_at+duration) if duration is not None else project.duration
+    from .engine.progress import stage
+    total=__import__('math').ceil((stop-start_at)/chunk)
     with tempfile.TemporaryDirectory(prefix='describer-') as tmp:
         start=start_at
         while start<stop:
+            stage(log,'observation',round((start-start_at)/chunk),total)
             if cancel.is_set():raise InterruptedError('Cancelled.')
             length=min(chunk, stop-start)
             if length < .1: break
             log(f'Preparing {start:.0f}–{start+length:.0f} seconds…')
             clip=Path(tmp)/'segment.mp4';segment(project.video, clip, start, length, settings['fps'], cancel, settings.get('silent_upload',False))
-            ollama=settings.get('analysis_provider','Gemini')=='Ollama'
+            ollama=settings.get('analysis_provider','Gemini')!='Gemini'
             instruction=(f'Create concise audio descriptions in {settings["language"]}. Describe visible action, people and settings. '
                 +('Use visible evidence only. No audio is supplied; do not infer speech, sounds or dialogue gaps. Do not invent facts. ' if ollama else 'Use visible evidence and supplied audio; do not repeat dialogue or invent facts. ')+
                 'Return JSON {"descriptions":[{"start":0.0,"end":2.0,"text":"description","kind":"action","evidence":"visible evidence","uncertainty":""}]}. '
                 'Times describe the VISUAL EVENT, not a proposed speech slot. Cover meaningful unspoken printed text, actions, identities and scene changes. '
                 'Use objective visible facts. Quote printed text exactly; state uncertainty instead of inventing unreadable words or actions. '
-                f'Times are numeric seconds relative to this {length:.2f}-second clip and must fit within it. '
+                f'Times are numeric seconds relative to this {length:.2f}-second clip and must fit within it. Set the top-level timestamp_reference field to "clip". '
                 f'Prior character glossary: {glossary}\nEditorial guidance: {prompt}')
             if settings.get("auto_glossary",False):
                 instruction += ' Also return "character_glossary": [{"id":"stable_visual_label","name":null,"description":"visual identity"}]. '+('Keep name=null because no audio is supplied. ' if ollama else 'Use a personal name only if clearly spoken and unambiguously linked; otherwise name=null. ')+'Reuse prior identities; include only visible characters.'
             verbosity={'Short':'Use 1-3 words for each description.','Standard':'Aim for 3-6 words per description.','Detailed':'Aim for 6-12 words per description.'}.get(settings.get('verbosity','Standard'),'')
             instruction += '\n'+verbosity+' Do not omit essential information to meet a timing or verbosity target. The engine schedules narration separately.'+(' Describe visual changes concisely.' if ollama else ' Avoid describing sounds already audible.')
-            def request():return response_json(video_request(clip,instruction,settings,cancel,log))
+            def request():
+                try:return response_json(video_request(clip,instruction,settings,cancel,log))
+                except IncompleteResponse as exc:
+                    exc.context={'clip_start':start,'clip_duration':length,'timestamp_reference':'clip'}
+                    raise
             data=checkpoint(f'observe-{start:.6f}',request) if checkpoint else request()
             if settings.get("auto_glossary",False) and isinstance(data,dict) and "character_glossary" in data:
                 from .compatibility import merge_glossary
                 glossary=merge_glossary(glossary,data["character_glossary"])
-            for cue in normalize_generated(data,length,log):
+            from .project import normalize_chunk
+            for cue in normalize_chunk(data,start,length,log):
                 cue.start+=start;cue.end+=start;cue.event_start+=start;cue.event_end+=start
                 cue.event_id=f'{start:.6f}:{cue.event_start:.6f}:{cue.event_end:.6f}:{len(cues)}'
                 cues.append(cue)
             start+=length
+    stage(log,'observation',total,total)
     from dataclasses import asdict
     cues=normalize_generated([asdict(c) for c in cues],project.duration,log)
     if not cues: raise ValueError('No descriptions were returned.')
@@ -305,7 +355,9 @@ def _mix_planned_audio(project, output, settings, cancel, log):
             rate=c.speed;factors=[]
             if float(j['format']['duration']) / rate > c.end-c.start+.025:
                 raise ValueError('Narration no longer fits its verified slot; re-plan export.')
-            factors.append(f'atempo={rate:.6f}')
+            if c.audio_volume is None:raise ValueError('Narration has no recorded synthesis volume; repair narration before export.')
+            gain=float(settings.get('speech_volume',100))/c.audio_volume
+            factors.extend((f'atempo={rate:.6f}', f'volume={gain:.6f}'))
             timed=tmp/f'timed{i}.wav';run([tool('ffmpeg'),'-v','error','-y','-i',str(wav),'-af',','.join(factors),'-t',str(c.end-c.start),str(timed)],cancel)
             sources.append(timed);windows.append((c.start,c.end))
         audio=tmp/'bed.wav'

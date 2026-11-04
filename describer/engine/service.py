@@ -130,6 +130,9 @@ class DescriptionService:
                     'revision':0, 'prompt':prompt, 'start':start, 'duration':duration,
                     'settings':{k:v for k,v in selected.items() if not k.endswith('_key')},
                     'export_format':export_format, 'mode':mode, 'progress':'queued', 'error':None}
+            from .progress import pipeline
+            data['pipeline']=pipeline(operation,operation=='export' and export_format in ('srt','vtt','txt','json'))
+            data['usage']=[]
             atomic_json(root / 'job.json', data)
             self._secrets[job_id] = selected
             self._schedule(job_id)
@@ -137,17 +140,23 @@ class DescriptionService:
 
     @staticmethod
     def _check_permissions(selected,operation,export_format=None):
+        from ..providers import provider_name
+        provider = provider_name(selected)
         # API callers must explicitly permit remote inference, not inherit a GUI dialog.
-        if selected.get('analysis_provider') == 'Gemini' and operation in ('describe','ask','explore') and not selected.get('allow_cloud', False):
+        if provider == 'Gemini' and operation in ('describe','ask','explore') and not selected.get('allow_cloud', False):
             raise ValueError('Gemini requires allow_cloud=true')
         uses_speech = operation in ('describe','voice-preview','prepare') or (operation == 'export' and export_format in ('mp3','wav','mp4'))
         if uses_speech and selected.get('voice_engine') == 'OpenAI' and not selected.get('allow_cloud', False):
             raise ValueError('OpenAI speech requires allow_cloud=true')
-        if selected.get('analysis_provider') == 'Ollama' and operation in ('describe','ask','explore'):
+        if provider == 'Ollama' and operation in ('describe','ask','explore'):
             from ..models import endpoint, is_cloud, model_info
             endpoint(selected)
             if is_cloud(selected, model_info(selected)) and not selected.get('allow_cloud', False):
                 raise ValueError('Remote/cloud Ollama requires allow_cloud=true')
+        if provider not in ('Gemini','Ollama') and operation in ('describe','ask','explore'):
+            from ..providers import remote
+            if remote(selected) and not selected.get('allow_cloud',False):
+                raise ValueError(provider+' requires allow_cloud=true; prompts/images leave this computer.')
     def submit_batch(self, items):
         if not 1 <= len(items) <= 20:
             raise ValueError('Batch must contain 1..20 jobs')
@@ -169,15 +178,28 @@ class DescriptionService:
         try:
             with self._mutex:
                 check_cancel(cancel)
-                data = self._update(job_id, state='running', error=None)
+                data = self._update(job_id, state='running', error=None,partial_response=None)
             root = self._path(job_id)
             project = Project.load(root / 'input.adproject')
+            from .progress import pipeline
+            if 'pipeline' not in data:
+                data=self._update(job_id,pipeline=pipeline(data['operation'],data['operation']=='export' and data['export_format'] in ('srt','vtt','txt','json')),usage=data.get('usage',[]))
             settings = dict(data['settings'], **self._secrets.get(job_id, {}))
             def log(message):
                 # Avoid storing provider output/keys in public status responses.
                 if cancel.is_set():
                     return
                 self._update(job_id, progress=message)
+            from .progress import advance, stage
+            def update_stage(name, completed=0, total=None):
+                current=self.get_job(job_id)
+                self._update(job_id,pipeline=advance(current['pipeline'],name,completed,total))
+            def update_usage(row):
+                row=dict(row,operation=data['operation'])
+                if data['operation']=='describe' and settings.get('auto_glossary',False):
+                    row.update(components=['description','glossary'],attribution='Combined request; separate glossary token counts are unavailable.')
+                self._update(job_id,usage=self.get_job(job_id).get('usage',[])+[row])
+            log.stage=update_stage;log.usage=update_usage
             stages = root / 'stages'
             if data['operation'] == 'describe':
                 result = core.describe(project, settings, data['prompt'], stages, cancel, log, data['start'], data['duration'])
@@ -188,15 +210,18 @@ class DescriptionService:
             elif data['operation'] == 'export':
                 result = (project if data['export_format'] in ('srt','vtt','txt','json')
                           else core.plan_export(project, settings, stages, cancel, log))
+                stage(log,'export')
                 artifact = exporting.export(result, root / ('export.'+data['export_format']), settings, cancel, log, data['mode'])
                 self._update(job_id, artifact=artifact)
             elif data['operation'] == 'voice-preview':
+                stage(log,'voice-preview')
                 from ..services import synthesize
                 path = root / 'preview.wav'
                 synthesize(data['prompt'], path, settings, cancel)
                 result = project
                 self._update(job_id, artifact={'path':str(path), 'kind':'voice-preview'})
             else:
+                stage(log,'scene')
                 from ..services import segment, video_request
                 from ..project import response_json, scene_data
                 length = min(data['duration'] or 10, project.duration-data['start'])
@@ -204,7 +229,8 @@ class DescriptionService:
                 segment(project.video, clip, data['start'], length, settings['fps'], cancel, settings.get('silent_upload', False))
                 instruction = (f'Return JSON {{"answer":"answer"}}. Answer in {settings["language"]}. Question: {data["prompt"]}'
                                if data['operation'] == 'ask' else
-                               f'In {settings["language"]}, describe spatial layout. Return JSON {{"layout":"summary","objects":[{{"name":"object","description":"visible facts","x":5,"y":5}}]}}. Grid is 0..10. Do not invent hidden objects.')
+                               f'In {settings["language"]}, describe spatial layout. Return JSON {{"layout":"summary","objects":[{{"name":"object","description":"visible facts","x":5,"y":5}}]}}. Grid is 0..10. Do not invent hidden objects. '
+                               f'Character glossary (verify against visible evidence): {project.glossary}\nRequested focus: {data["prompt"]}')
                 answer = response_json(video_request(clip, instruction, settings, cancel, log))
                 if data['operation'] == 'explore':
                     answer = scene_data(answer)
@@ -214,16 +240,33 @@ class DescriptionService:
                 result.analysis['scene_result'] = answer
             with self._mutex:
                 check_cancel(cancel)
+                result.analysis['usage']=copy.deepcopy(project.analysis.get('usage',[])+self.get_job(job_id).get('usage',[]))
                 result.save(root / 'result.adproject')
-                self._update(job_id, state='done', progress='done', revision=data['revision']+1)
+                progress=self.get_job(job_id)['pipeline']
+                progress=advance(progress,progress['stages'][-1]['id'],1,1)
+                self._update(job_id, state='done', progress='done', pipeline=progress,revision=data['revision']+1)
         except InterruptedError as exc:
             self._update(job_id, state='cancelled', progress='cancelled', error=str(exc))
         except Exception as exc:
             message = str(exc)
+            from ..services import IncompleteResponse
+            partial=exc.partial_text if isinstance(exc,IncompleteResponse) else ''
             for key, value in self._secrets.get(job_id, {}).items():
                 if key.endswith('_key') and value:
                     message = message.replace(str(value), '[redacted]')
-            self._update(job_id, state='error', progress='error', error=message)
+                    partial = partial.replace(str(value), '[redacted]')
+            recovery=None
+            if partial.strip():
+                path=self._path(job_id)/'partial-response.json'
+                atomic_json(path,{'complete':False,'reason':'MAX_TOKENS','text':partial,'context':exc.context})
+                recovery={'path':str(path),'complete':False,'reason':'MAX_TOKENS'}
+            self._update(job_id, state='error', progress='error', error=message,partial_response=recovery)
+
+    def partial_response(self,job_id):
+        """Read the owned recovery artifact without treating it as a result."""
+        job=self.get_job(job_id)
+        if not job.get('partial_response'):return None
+        return json.loads((self._path(job_id)/'partial-response.json').read_text('utf-8'))
 
     def cancel(self, job_id):
         with self._mutex:
@@ -278,14 +321,20 @@ class DescriptionService:
             return self.submit(project=self.result(job_id), settings=selected, operation='export', export_format=export_format, mode=mode)
 
     def models(self, settings=None):
-        from ..models import discover
-        return discover(dict(self.settings, **(settings or {})), threading.Event(), lambda _:None)
+        selected=dict(self.settings, **(settings or {}))
+        from ..providers import provider_name
+        if provider_name(selected)=='Ollama':
+            from ..models import discover
+        elif provider_name(selected)=='Gemini':return []
+        else:from ..subscriptions import discover
+        return discover(selected, threading.Event(), lambda _:None)
 
     def capabilities(self):
         from .. import __version__
+        from ..providers import PROVIDERS
         return {'version':__version__, 'operations':['describe','export','ask','explore','voice-preview','prepare'],
                 'exports':['mp4','mp3','wav','srt','vtt','txt','json'],
-                'providers':['Ollama','Gemini'], 'transports':['python','cli','http','mcp-stdio','mcp-streamable-http'],
+                'providers':list(PROVIDERS), 'transports':['python','cli','http','mcp-stdio','mcp-streamable-http'],
                 'single_owner':True, 'max_concurrent_jobs':1, 'telemetry':False}
 
     def edit(self, job_id, revision, cues=None, glossary=None):
@@ -322,12 +371,15 @@ class DescriptionService:
             return self._update(job_id, revision=revision+1)
 
     def wait(self, job_id, cancel=None, log=lambda _:None):
-        previous = None
+        previous = None;previous_snapshot=None
         while True:
             job = self.get_job(job_id)
             if job['progress'] != previous:
                 previous = job['progress']
                 log(previous)
+            snapshot={'pipeline':job.get('pipeline'),'usage':job.get('usage',[])}
+            if snapshot!=previous_snapshot and getattr(log,'snapshot',None):
+                log.snapshot(snapshot);previous_snapshot=snapshot
             if job['state'] in TERMINAL:
                 if job['state'] != 'done':
                     if job['state'] == 'cancelled':

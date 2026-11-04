@@ -34,7 +34,7 @@ def export(project, output, settings, cancel, log, mode='complete'):
         atomic_json(str(target) + '.coverage.json', {'coverage': project.coverage, 'complete': False,
                     'note': 'Text cues are not a narrated track; pause cues use original event times.'})
         return {'path': str(target), 'complete': False, 'kind': 'script'}
-    paused = sorted((c for c in project.cues if c.disposition == 'pause'), key=lambda c: c.event_start)
+    paused = sorted((c for c in project.cues if c.disposition == 'pause'), key=lambda c: c.narration_window()[0])
     included = paused if mode == 'complete' else []
     with tempfile.TemporaryDirectory(prefix='describer-export-') as temporary:
         tmp = Path(temporary)
@@ -62,9 +62,12 @@ def export(project, output, settings, cancel, log, mode='complete'):
 
         for cue in included:
             check_cancel(cancel)
-            at = min(project.duration, max(cursor, cue.event_start))
+            at = min(project.duration, max(cursor, cue.narration_window()[0]))
             part(at)
             dest = tmp / f'part-{len(parts):05}'
+            if cue.audio_volume is None:
+                raise ValueError('Narration has no recorded synthesis volume; repair narration before export.')
+            gain = str(float(settings.get('speech_volume',100))/cue.audio_volume)
             if video:
                 frame = tmp / 'freeze.png'
                 run([tool('ffmpeg'), '-v', 'error', '-y', '-ss', str(min(at, max(0, project.duration-.05))),
@@ -72,10 +75,10 @@ def export(project, output, settings, cancel, log, mode='complete'):
                 dest = dest.with_suffix('.mp4')
                 args = ['-loop', '1', '-i', str(frame), '-i', cue.audio, '-t', str(cue.speech_seconds),
                         '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2,fps=30', '-c:v', 'libx264', '-preset', 'veryfast',
-                        '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-ar', '44100', '-ac', '2']
+                        '-pix_fmt', 'yuv420p', '-af', 'volume='+gain, '-c:a', 'aac', '-ar', '44100', '-ac', '2']
             else:
                 dest = dest.with_suffix('.wav')
-                args = ['-i', cue.audio, '-ar', '44100', '-ac', '2', '-c:a', 'pcm_s16le']
+                args = ['-i', cue.audio, '-af', 'volume='+gain, '-ar', '44100', '-ac', '2', '-c:a', 'pcm_s16le']
             run([tool('ffmpeg'), '-v', 'error', '-y', *args, str(dest)], cancel)
             parts.append(dest)
         part(project.duration)

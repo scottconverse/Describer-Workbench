@@ -17,10 +17,8 @@ ROWS=[
 ]
 TRANSLATIONS={language:dict(zip(KEYS,row.split('|'))) for language,row in zip(LANGUAGES[1:],ROWS)}
 
-import json,sys
-from pathlib import Path
+import json
 from PySide6.QtCore import QEvent
-from PySide6.QtWidgets import QApplication
 CODES=dict(zip(LANGUAGES,['en','es','fr','it','pt','ru','tr','uk','vi','ar']))
 from .services import asset_path
 try:ORIGINAL=json.loads(asset_path('original-translations.json').read_text(encoding='utf8'))

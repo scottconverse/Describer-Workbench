@@ -98,24 +98,25 @@ def test_scene_answer_end_is_explained_without_invalid_cue(tmp_path):
 
 def test_draft_cancel_keeps_disk_and_exact_model_test_snapshot(tmp_path):
     from PySide6.QtCore import QTimer
-    from PySide6.QtWidgets import QApplication,QListWidget,QPushButton,QRadioButton
+    from PySide6.QtWidgets import QApplication,QPushButton,QRadioButton,QLineEdit
     app,w=make_window(tmp_path);w.settings.save();before=w.settings.path.read_bytes();calls=[]
     w.job=lambda task,done:calls.append(task)
     def interact():
         dialog=QApplication.activeModalWidget()
         next(b for b in dialog.findChildren(QRadioButton) if b.accessibleName()=='Ollama').setChecked(True)
-        models=next(x for x in dialog.findChildren(QListWidget) if x.accessibleName()=='Discovered exact models')
-        models.item(0).setText('exact-model:custom-tag')
+        editor=next(x for x in dialog.findChildren(QLineEdit) if x.accessibleName()=='Exact analysis model ID')
+        editor.setText('exact-model:custom-tag');editor.editingFinished.emit()
         next(b for b in dialog.findChildren(QPushButton) if b.text()=='Test connection').click()
         assert w.model_picker.data['ollama_model']=='exact-model:custom-tag'
         assert w.settings.path.read_bytes()==before
         dialog.reject()
     try:
-        QTimer.singleShot(0,interact);w.draft_dialog()
+        observed=[]
+        with patch('describer.model_picker.model_info',side_effect=lambda data:observed.append(data) or {}):
+            QTimer.singleShot(0,interact);w.draft_dialog()
+            calls[0](None,None)
         assert w.settings.path.read_bytes()==before
         assert w.model_picker.data==w.settings.data
-        observed=[]
-        with patch('describer.model_picker.model_info',side_effect=lambda data:observed.append(data) or {}):calls[0](None,None)
         assert observed[0]['ollama_model']=='exact-model:custom-tag'
         w.model_picker.provider.setCurrentText('Gemini');calls.clear()
         w.model_picker.refresh();w.model_picker.test();assert calls==[]
@@ -227,14 +228,14 @@ def test_readiness_does_not_equate_presence_with_verification(tmp_path):
     finally:w.dirty=False;w.close();app.processEvents()
 
 
-def test_missing_update_feed_offers_release_page_without_claiming_current(tmp_path):
-    from PySide6.QtGui import QDesktopServices
-    app,w=make_window(tmp_path);w.settings.data['update_feed']='';messages=[]
+def test_missing_update_feed_checks_official_release(tmp_path):
+    app,w=make_window(tmp_path);w.settings.data['update_feed']='';messages=[];calls=[]
     try:
-        with patch.object(QMessageBox,'question',side_effect=lambda parent,title,message,*args:messages.append(message) or QMessageBox.Yes),patch.object(QDesktopServices,'openUrl') as opened:
-            w.check_updates()
-        assert 'no version check was performed' in messages[0]
-        assert opened.call_args.args[0].toString()=='https://github.com/scottconverse/Describer-Workbench/releases'
+        w.job=lambda task,done:calls.append((task,done));w.log=messages.append
+        with patch('describer.updates.read_feed',return_value={'newer':False}) as read:
+            w.check_updates();calls[0][1](calls[0][0](None,None))
+        read.assert_called_once_with('')
+        assert 'official GitHub release' in messages[0]
     finally:w.dirty=False;w.close();app.processEvents()
 
 
@@ -361,14 +362,15 @@ def test_discovery_registry_prevents_main_close_until_worker_terminal(tmp_path):
 
 
 def test_refresh_keeps_visible_exact_id_even_when_not_discovered(tmp_path):
-    from PySide6.QtCore import QTimer
+    from PySide6.QtCore import QTimer,Qt
     from PySide6.QtWidgets import QApplication,QListWidget
     app,w=make_window(tmp_path);w.model_picker.provider.setCurrentText('Ollama');w.model_picker.store_model('B')
     def interact():
         dialog=QApplication.activeModalWidget();visible=next(x for x in dialog.findChildren(QListWidget) if x.accessibleName()=='Discovered exact models')
         rows=[dict(name=name,cloud=False,vision=True,loaded=False) for name in ('A','B')]
         w.model_picker.discovered(rows)
-        assert visible.currentItem().text()=='B'
+        assert visible.currentItem().data(Qt.UserRole)=='B'
+        assert 'vision' in visible.currentItem().text() and 'local' in visible.currentItem().text()
         w.model_picker.store_model('manual:exact');w.model_picker.discovered(rows)
         assert visible.currentItem().text()=='manual:exact'
         w.model_picker.discovered([])

@@ -36,10 +36,11 @@ class ParityTests(unittest.TestCase):
  def test_update_staging_and_rejections(self):
   with tempfile.TemporaryDirectory() as tmp:
    tmp=Path(tmp);archive=tmp/'portable.zip'
-   with zipfile.ZipFile(archive,'w') as z:z.writestr('DescriberWorkbench/DescriberWorkbench.exe',b'new fixture');z.writestr('DescriberWorkbench/_internal/marker',b'runtime')
+   with zipfile.ZipFile(archive,'w') as z:z.writestr('DescriberWorkbench/DescriberWorkbench.exe',b'new fixture');z.writestr('DescriberWorkbench/DescriberCLI.exe',b'cli fixture');z.writestr('DescriberWorkbench/_internal/marker',b'runtime')
    data={'application':'DescriberWorkbench','version':'9.0.0','url':str(archive),'sha256':hashlib.sha256(archive.read_bytes()).hexdigest()}
    feed=tmp/'feed.json';feed.write_text(json.dumps(data));self.assertTrue(read_feed(str(feed))['newer'])
-   stage=Path(stage_update(data,tmp/'staging',threading.Event(),lambda _:None));self.assertTrue((stage/'update-receipt.json').exists())
+   with patch('describer.updates.verify_signatures') as verify:
+    stage=Path(stage_update(data,tmp/'staging',threading.Event(),lambda _:None));self.assertTrue((stage/'update-receipt.json').exists());verify.assert_called_once()
    with self.assertRaises(ValueError):stage_update(dict(data,sha256='0'*64),tmp/'bad',threading.Event(),lambda _:None)
    with zipfile.ZipFile(archive,'w') as z:z.writestr('../escape.txt',b'bad')
    data['sha256']=hashlib.sha256(archive.read_bytes()).hexdigest()

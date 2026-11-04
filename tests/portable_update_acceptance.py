@@ -1,7 +1,7 @@
 """Disposable real portable update. Prepare, close its owned window, then verify."""
 import hashlib,json,os,shutil,subprocess,sys,time
 from pathlib import Path
-from describer.updates import prepare_apply
+from describer.updates import prepare_apply,verify_staged
 from describer.services import CREATE_NO_WINDOW
 
 def digest(path):
@@ -11,7 +11,9 @@ def main():
  mode=sys.argv[1];root=Path(sys.argv[2]).resolve();state=root/'state.json'
  if mode=='prepare':
   if root.exists():raise ValueError('Choose a fresh disposable test directory.')
-  root.mkdir(parents=True);old=Path('dist/DescriberWorkbench').resolve();new=Path('dist-next/DescriberWorkbench').resolve();install=root/'installed'
+  old=Path(sys.argv[3]).resolve();new=Path(sys.argv[4]).resolve();install=root/'installed'
+  verify_staged(new)
+  root.mkdir(parents=True)
   shutil.copytree(old,install);exe=install/'DescriberWorkbench.exe';env=dict(os.environ,LOCALAPPDATA=str(root/'data'))
   process=subprocess.Popen([str(exe)],env=env);time.sleep(2)
   if process.poll() is not None:raise RuntimeError('Disposable old build exited before update.')
@@ -26,7 +28,7 @@ def main():
   assert digest(Path(data['install'])/'DescriberWorkbench.exe')==data['new_sha256']
   assert digest(Path(applied['backup'])/'DescriberWorkbench.exe')==data['old_sha256']
   result=dict(passed=True,real_portable_swap=True,rollback_hash_verified=True,installed_sha256=data['new_sha256'],old_sha256=data['old_sha256'],helper_receipt=applied,relaunch='Helper requested real executable launch. Running path and UI are independently verified through Computer Use.',production_installation='Untouched during this test')
-  Path('evidence/acceptance-0.3/portable-update.json').write_text(json.dumps(result,indent=2));print(json.dumps(result,indent=2))
+  (root/'portable-update.json').write_text(json.dumps(result,indent=2));print(json.dumps(result,indent=2))
  else:raise ValueError('Expected prepare or verify.')
 
 if __name__=='__main__':main()

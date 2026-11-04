@@ -21,7 +21,7 @@ def create_mcp(service):
 
     @mcp.tool()
     def list_models(settings: dict | None = None) -> list:
-        """Discover Ollama models without downloading or generating."""
+        """Discover the selected provider's models where supported, without generating or downloading weights. A listed model is not entitlement or vision proof."""
         return service.models(settings)
 
     @mcp.tool()
