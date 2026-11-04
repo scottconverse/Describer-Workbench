@@ -1,10 +1,10 @@
 # 0.6.0 candidate acceptance
 
-November4,2026. **Development candidate; not signed, published or installed yet.** The public signed0.5.2 release and its acceptance records remain unchanged. Local evidence described here applies to the development implementation; final artifact provenance, required remote CI, signatures, public downloads and installed acceptance are pending.
+November4,2026. **Signed development candidate; not published or installed yet.** The public signed0.5.2 release and its acceptance records remain unchanged. Candidate source is `ba04cc390eb264093fcbdf185bf03e993d3e2499`. Required [Windows CI41872789830](https://github.com/scottconverse/Describer-Workbench/actions/runs/41872789830) succeeded. The Windows build, both frozen-source comparisons, packaged CLI/HTTP/OpenAPI/MCP checks and native GUI startup/normal close passed. Public downloads and installed acceptance remain pending.
 
 ## Bounded scope
 
-The candidate addresses the22-item original-specification/REA remediation list. Source behavior, executed checks and delivery are distinct. The source has152 passing tests plus3 subtests; required local lint passes. One upstream Starlette deprecation warning remains. Later version/documentation bookkeeping does not change the tested inference, speech or media behavior. Final CI must run on the committed candidate.
+The candidate addresses the22-item original-specification/REA remediation list. Source behavior, executed checks and delivery are distinct. The source has152 passing tests plus3 subtests; required local lint and remote CI pass. One upstream Starlette deprecation warning remains. Later version/documentation bookkeeping does not change the tested inference, speech or media behavior.
 
 | Item | Implemented behavior and acceptance |
 |---|---|
@@ -39,4 +39,11 @@ Gateway Gemini reported a different canonical model ID from the requested high a
 
 ## Delivery still pending
 
-Before this becomes a delivered release: resolve or explicitly disposition the gateway Claude account, complete required remote CI, build the identified Windows candidate, Azure Trusted Sign both executables as Scott Converse, independently verify signatures/timestamps, publish verified assets, update installed app/launcher, and verify downloaded/installed files and all documentation surfaces. A prepared package or launched process is not delivery evidence.
+The exact prebuilt GUI and CLI were signed through the established Azure workflow41873830687. Independent local `signtool verify /pa /v` and Authenticode checks passed for both: Valid, Scott Converse, Microsoft timestamps. Intake/returned hash mappings matched and both post-sign embedded-source comparisons passed. Unsigned backups remain retained.
+
+| Signed candidate file | SHA256 |
+|---|---|
+| `DescriberWorkbench.exe` | `18ff122c0b88d0c55d150bfa5996bd89c8fbf5e5a692cf6a3820ff62db67a011` |
+| `DescriberCLI.exe` | `f882bc67d95a71dba67fb4081415dfbc0ab93682083c0803bf9b1790c121ca19` |
+
+Before this becomes a delivered release: resolve or explicitly disposition the gateway Claude account, finalize release documentation/package contents, publish verified assets after the normal protected merge, update installed app/launcher, and verify downloaded/installed files and all documentation surfaces. A signed candidate or launched process is not delivery evidence. Documentation-only follow-up commits do not change the signed-build identity above.
