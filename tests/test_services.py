@@ -1,7 +1,5 @@
-import tempfile
 import threading
 import unittest
-from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 from describer.project import Project
@@ -13,7 +11,7 @@ class CloudAdapterTests(unittest.TestCase):
         from unittest.mock import MagicMock
         client=MagicMock();file=SimpleNamespace(name='files/test',state=SimpleNamespace(name='ACTIVE'))
         client.files.upload.return_value=file
-        client.models.generate_content.return_value=SimpleNamespace(text='{"descriptions":[]}',usage_metadata='12 tokens')
+        client.models.generate_content.return_value=SimpleNamespace(text='{"descriptions":[]}',usage_metadata='12 tokens', candidates=[SimpleNamespace(finish_reason='STOP')])
         logs=[]
         with patch('google.genai.Client',return_value=client):
             text=google_request('not-uploaded.mp4','test',{'gemini_key':'dummy','model':'test'},threading.Event(),logs.append)

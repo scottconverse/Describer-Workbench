@@ -18,8 +18,8 @@ def test_complete_export_extends_audio_and_video_without_touching_original(tmp_p
     narration=tmp_path/'narration.wav'
     run([tool('ffmpeg'),'-v','error','-y','-f','lavfi','-i','sine=frequency=880:duration=1','-ar','44100','-ac','2',str(narration)])
     project=Project(str(source),4,[
-        Cue(0,1,'First.',event_id='one',event_start=0,event_end=1,disposition='in-gap',audio=str(narration),speech_seconds=1),
-        Cue(2,3,'Second.',event_id='two',event_start=2,event_end=3,disposition='pause',audio=str(narration),speech_seconds=1)])
+        Cue(0,1,'First.',event_id='one',event_start=0,event_end=1,disposition='in-gap',audio=str(narration),speech_seconds=1,audio_volume=100),
+        Cue(2,3,'Second.',event_id='two',event_start=2,event_end=3,disposition='pause',audio=str(narration),speech_seconds=1,audio_volume=100)])
     for cue in project.cues:cue.validate(4)
     for suffix in ('wav','mp4'):
         target=tmp_path/('complete.'+suffix)

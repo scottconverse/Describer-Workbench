@@ -1,6 +1,10 @@
 # Architecture and implementation guide
 
-Describer Workbench **0.5.2**. Shared engine and native Windows portable release. See [release acceptance](V052-ACCEPTANCE.md) for verification scope and limits.
+Describer Workbench **0.6.0 development candidate**. Shared engine and native Windows workbench. The currently published signed0.5.2 package has its own [historical acceptance record](V052-ACCEPTANCE.md).
+
+Unreleased branch changes: [AI connections](AI-CONNECTIONS.md) adds gateway/native subscription and explicit API adapters behind the same service, with no automatic model fallback. Native/gateway routes send up to eight sampled timestamped images without audio. Timed narration retains independently measured WAVs and safe placement; the live-text reader preference does not change that scheduling. Cues record their synthesis volume so live gain and export gain can account for it; older unknown levels require repair. These source changes are not present in the signed0.5.2 package.
+
+The candidate centralizes provider validation and consent before queueing or resuming. Native tools retain their own authentication and receive an explicit environment allowlist. A shared sampler records actual decoded frame timestamps. Incomplete Gemini responses are durable review artifacts, never completed projects; blocked responses are not recovered. Authored timing, observed event provenance and accepted shortened narration remain separate fields. Structured pipeline/usage records reach both durable jobs and desktop status. Model perception still needs human correction: the accepted reviewed-draft workflow documents remaining factual errors and omissions rather than treating placement coverage as semantic validation.
 
 [User manual](USER-MANUAL.md) · [Developer guide](DEVELOPER-GUIDE.md) · [Repository](https://github.com/scottconverse/Describer-Workbench)
 
@@ -18,7 +22,7 @@ flowchart TD
     MCP[MCP stdio or Streamable HTTP] --> E
     E --> J[Durable serial jobs and checkpoints]
     J --> S[Independent sound and caption protection]
-    J --> V[Ollama or Gemini visual observations]
+    J --> V[Selected analysis provider visual observations]
     S --> P[Event-bounded planner]
     V --> P
     T[Measured narration WAVs] --> P
@@ -38,6 +42,8 @@ flowchart TD
 | `adapters/http.py`, `mcp.py`, `remote.py`, `cli.py` | REST/OpenAPI, 17 MCP tools, HTTP proxy and scriptable CLI. |
 | `app.py`, `desktop.py`, `model_picker.py` | Qt editing/player, durable-engine consumers, explicit cloud consent and model selection. |
 | `services.py`, `models.py` | Media preparation, provider requests, native/cloud speech, DPAPI settings and audio mixing. Low-level adapters do not own an alternate planner. |
+| `providers.py`, `subscriptions.py`, `frames.py` | Validated provider/model selection, gateway/native/API transports, restricted child environments and actual source-time frame sampling. |
+| `engine/progress.py`, `shortening.py` | Durable stage/usage reporting and conservative measured lead-in shortening. |
 | `project.py` | Version-1 project compatibility, cue validation, event metadata and structural normalization. |
 | `windows_speech.py`, `playback_speech.py` | Windows voice hosts, legacy unplanned playback and optional reader routing. |
 | `compatibility.py`, `catalogue.py`, `i18n.py` | Read-only original-data import, presets and translation application. |

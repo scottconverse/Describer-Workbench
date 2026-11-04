@@ -20,11 +20,13 @@ from .i18n import LANGUAGES,apply_language
 
 
 class Worker(QObject):
-    done=Signal(object);failed=Signal(str);log=Signal(str);finished=Signal()
+    done=Signal(object);failed=Signal(str);log=Signal(str);snapshot=Signal(object);finished=Signal()
     def __init__(self, fn, cancel): super().__init__();self.fn=fn;self.cancel=cancel
     def run(self):
         try:
-            result=self.fn(self.cancel,self.log.emit)
+            def log(message):self.log.emit(message)
+            log.snapshot=self.snapshot.emit
+            result=self.fn(self.cancel,log)
             if self.cancel.is_set():raise InterruptedError('Operation cancelled.')
             self.done.emit(result)
         except Exception as e: self.failed.emit(f'{type(e).__name__}: {e}')
@@ -89,7 +91,9 @@ class Window(DesktopInterface, QMainWindow):
         self.pause_player.mediaStatusChanged.connect(self.pause_status)
         self.pause_player.errorOccurred.connect(lambda error,message:self.pause_failed(message))
         self.narration=QMediaPlayer(self);self.narration_audio=QAudioOutput(self);self.narration.setAudioOutput(self.narration_audio)
-        self.narration.playbackStateChanged.connect(lambda state:self.audio.setVolume(self.original_volume*10**(self.settings.data['duck_db']/20) if state==QMediaPlayer.PlaybackState.PlayingState else self.original_volume))
+        self._narration_playing=False;self._active_narration=None
+        self.narration.playbackStateChanged.connect(self.narration_state)
+        self.set_speech_volume(self.settings.data['speech_volume'])
         self.preview_tmp=tempfile.TemporaryDirectory(prefix='describer-preview-')
         for v in self.speech.availableVoices():
             if v.name()==self.settings.data.get('playback_voice'):self.speech.setVoice(v)
@@ -116,7 +120,7 @@ class Window(DesktopInterface, QMainWindow):
         form.addWidget(QLabel('Start'));form.addWidget(self.start);form.addWidget(QLabel('End'));form.addWidget(self.end)
         self.start.setAccessibleName('Description start time');self.end.setAccessibleName('Description end time');self.start.editingFinished.connect(self.update_fit)
         self.text=QPlainTextEdit();self.text.setAccessibleName('Description text');self.text.setMaximumHeight(95);el.addWidget(self.text)
-        self.text.textChanged.connect(self.editor_changed);self.start.textChanged.connect(self.editor_changed);self.end.textChanged.connect(self.editor_changed)
+        self.text.textChanged.connect(self.editor_changed);self.start.textChanged.connect(self.start_time_changed);self.end.textChanged.connect(self.editor_changed)
         editrow=QHBoxLayout();el.addLayout(editrow)
         for name,fn in [('Add',self.add_cue),('Apply edit',self.apply_edit),('Delete',self.delete_cue),('Ask about scene',self.ask),('Explore scene',self.explore),('Export',self.export)]:self.button(editrow,name,fn)
         prompts=QHBoxLayout();layout.addLayout(prompts);prompts.addWidget(QLabel('Prompt preset'));self.preset=QComboBox();prompts.addWidget(self.preset)
@@ -131,21 +135,24 @@ class Window(DesktopInterface, QMainWindow):
         glossary=QAction('Character glossary',self);glossary.triggered.connect(self.edit_glossary);menu.addAction(glossary)
         for label,fn in [('Recover interrupted jobs',self.recover_jobs),('Repair narration',self.repair_narration),('Install speech detector',self.install_detector),('Start developer API / MCP',self.start_api),('Stop developer API / MCP',self.stop_api)]:
             action=QAction(label,self);action.triggered.connect(fn);menu.addAction(action)
-        for label,fn in [('Manage voice presets',self.manage_voices),('Test selected export voice',self.test_voice),('Select Windows export voice',self.select_windows_voice),('Import original data',self.import_original),('Check for updates',self.check_updates)]:
+        for label,fn in [('Manage presets',self.presets),('Manage voice presets',self.manage_voices),('Test selected export voice',self.test_voice),('Select Windows export voice',self.select_windows_voice),('Import original data',self.import_original),('Check for updates',self.check_updates)]:
             action=QAction(label,self);action.triggered.connect(fn);menu.addAction(action)
+        connections=QAction('Manage AI connections',self);connections.triggered.connect(self.manage_connections);menu.addAction(connections)
+        login=QAction('Subscription sign-in',self);login.triggered.connect(self.subscription_login);menu.addAction(login)
         apply_language(self,self.settings.data['ui_language'])
         from .i18n import DialogLanguage
         self.dialog_language=DialogLanguage(self);QApplication.instance().installEventFilter(self.dialog_language)
         QTimer.singleShot(0,lambda:self.sound('start'))
         if self.settings.load_warning:self.log(self.settings.load_warning)
-        if self.settings.data.get('auto_update_check') and self.settings.data.get('update_feed'):QTimer.singleShot(1500,self.check_updates)
+        if self.settings.data.get('auto_update_check'):QTimer.singleShot(1500,self.check_updates)
         helpaction=QAction('Help',self);helpaction.setShortcut('F1');helpaction.triggered.connect(self.help);self.menuBar().addAction(helpaction);apply_language(self,self.settings.data['ui_language'])
         self.build_interface()
+        apply_language(self,self.settings.data['ui_language'])
     def button(self,row,text,fn):
         b=QPushButton(text);b.clicked.connect(fn);row.addWidget(b);return b
     def log(self,text,level=logging.INFO):
-        for key in ['gemini_key','openai_key','ollama_key']:
-            if self.settings.data[key]:text=text.replace(self.settings.data[key],'[redacted]')
+        for key,value in self.settings.data.items():
+            if key.endswith('_key') and isinstance(value,str) and value:text=text.replace(value,'[redacted]')
         if level>=logging.INFO:self.log_view.appendPlainText(text)
         if hasattr(self,'job_note') and self.thread is not None:self.job_note.setText(text);self.job_label.setText('Working · '+text[:75])
         self.logger.setLevel(getattr(logging,self.settings.data.get('logging_level','INFO'),logging.INFO));self.logger.log(level,text)
@@ -160,9 +167,17 @@ class Window(DesktopInterface, QMainWindow):
         self.thread=thread;self.worker=worker;self.done_callback=done;self.cancel_button.setEnabled(True)
         if hasattr(self,'job_card'):self.job_card.show();self.job_progress.setRange(0,0)
         self.model_picker.setEnabled(False)
-        thread.started.connect(worker.run);worker.log.connect(self.log);worker.failed.connect(self.error);worker.done.connect(self.on_job_done,Qt.ConnectionType.QueuedConnection)
+        thread.started.connect(worker.run);worker.log.connect(self.log);worker.snapshot.connect(self.job_snapshot);worker.failed.connect(self.error);worker.done.connect(self.on_job_done,Qt.ConnectionType.QueuedConnection)
         worker.finished.connect(thread.quit);worker.finished.connect(worker.deleteLater);thread.finished.connect(self.job_finished);thread.finished.connect(thread.deleteLater)
         thread.start()
+    @Slot(object)
+    def job_snapshot(self,snapshot):
+        progress=snapshot.get('pipeline')
+        if progress:
+            self.job_progress.setRange(0,100);self.job_progress.setValue(progress['percent'])
+            symbols={'done':'✓','current':'→','pending':'○'}
+            self.job_stages.setText('\n'.join(symbols[row['state']]+' '+row['label']+(f' ({row["completed"]}/{row["total"]})' if row['total'] else '') for row in progress['stages']))
+        self.render_usage(self.project.analysis.get('usage',[])+snapshot.get('usage',[]))
     @Slot(object)
     def on_job_done(self,result):
         self.completed(self.done_callback,result)
@@ -180,7 +195,10 @@ class Window(DesktopInterface, QMainWindow):
         if pending and not self.cancel.is_set():QTimer.singleShot(0,pending)
         if getattr(self,'pending_model_test',None):
             settings=self.pending_model_test;self.pending_model_test=None
-            from .models import test_connection
+            if settings['analysis_provider']=='Ollama':
+                from .models import test_connection
+            else:
+                from .subscriptions import test_connection
             QTimer.singleShot(0,lambda:self.job(lambda c,l:test_connection(settings,c,l),self.log))
         if getattr(self,'pending_update',None):
             data,folder=self.pending_update;self.pending_update=None;self.stage_update_job(data,folder)
@@ -194,6 +212,7 @@ class Window(DesktopInterface, QMainWindow):
         self.history=[]
         if hasattr(self,'answer'):del self.answer
         self.conversation.clear();self.answer_text.setText('No answer yet.');self.add_answer_button.setEnabled(False)
+        self.render_scene_history()
         self.question.clear()
         while self.explore_host.count():
             item=self.explore_host.takeAt(0)
@@ -223,7 +242,7 @@ class Window(DesktopInterface, QMainWindow):
     def duration_changed(self,value):self.slider.setRange(0,value)
     def seek(self,value):
         self.pause_active=False;self.pause_player.stop();self.narration.stop();self.playback_speech.stop();self.last_spoken=None
-        self.played_pauses={c.event_id for c in self.project.cues if c.event_start is not None and c.event_start<value/1000}
+        self.played_pauses={c.event_id for c in self.project.cues if c.narration_window()[0] is not None and c.narration_window()[0]<value/1000}
         self.player.setPosition(max(0,value))
     def toggle(self):
         if self.pause_active:
@@ -235,7 +254,7 @@ class Window(DesktopInterface, QMainWindow):
         found=next(((i,c) for i,c in enumerate(self.project.cues) if c.start<=value/1000<c.end),None)
         self.current.setText(found[1].text if found else '')
         if self.speak_check.isChecked() and not self.pause_active and self.player.playbackState()==QMediaPlayer.PlaybackState.PlayingState:
-            pause=next((c for c in self.project.cues if c.disposition=='pause' and c.event_id not in self.played_pauses and c.event_start<=value/1000<c.event_end),None)
+            pause=next((c for c in self.project.cues if c.disposition=='pause' and c.event_id not in self.played_pauses and c.narration_window()[0]<=value/1000<c.narration_window()[1]),None)
             if pause:
                 self.start_pause(pause);return
         if found and found[1].disposition not in ('pause','unresolved') and found[0]!=self.last_spoken and self.player.playbackState()==QMediaPlayer.PlaybackState.PlayingState:
@@ -243,17 +262,19 @@ class Window(DesktopInterface, QMainWindow):
             if self.speak_check.isChecked():
                 cue=found[1]
                 if cue.disposition=='in-gap':
-                    if not Path(cue.audio).is_file():self.player.pause();self.offer_narration_repair();return
+                    if not Path(cue.audio).is_file() or cue.audio_volume is None:self.player.pause();self.offer_narration_repair();return
                     # Media position callbacks and audio startup are not sample-accurate.
                     # If playback arrived late, pause rather than speaking past a safe slot.
                     if cue.speech_seconds/cue.speed+.2>cue.end-value/1000:
                         self.start_pause(cue);return
+                    self._active_narration=cue;self.set_speech_volume(self.settings.data['speech_volume'])
                     self.narration.setPlaybackRate(cue.speed);self.narration.setSource(QUrl.fromLocalFile(cue.audio));self.narration.play()
                 else:self.playback_speech.say(cue.text,self.settings.data['interrupt'])
         if not found:self.last_spoken=None
     def start_pause(self,cue):
-        if not Path(cue.audio).is_file():self.player.pause();self.offer_narration_repair();return
+        if not Path(cue.audio).is_file() or cue.audio_volume is None:self.player.pause();self.offer_narration_repair();return
         self.played_pauses.add(cue.event_id);self.pause_active=True;self.player.pause();self.narration.stop();self.playback_speech.stop()
+        self._active_narration=cue;self.set_speech_volume(self.settings.data['speech_volume'])
         self.current.setText('Pause description: '+cue.text);self.pause_player.setSource(QUrl.fromLocalFile(cue.audio));self.pause_player.play()
     def pause_status(self,status):
         if status==QMediaPlayer.MediaStatus.EndOfMedia and self.pause_active:
@@ -266,7 +287,24 @@ class Window(DesktopInterface, QMainWindow):
         try:self.settings.save()
         except Exception as exc:self.log('Could not save volume: '+str(exc))
     def speech_state(self,state):
-        self.audio.setVolume(self.original_volume*10**(self.settings.data['duck_db']/20) if state==QTextToSpeech.State.Speaking else self.original_volume)
+        self.audio.setVolume(self.original_volume*10**(self.settings.data['duck_db']/20) if state==QTextToSpeech.State.Speaking or getattr(self,'_narration_playing',False) else self.original_volume)
+    def narration_state(self,state):
+        self._narration_playing=state==QMediaPlayer.PlaybackState.PlayingState
+        self.speech_state(self.speech.state())
+    def set_speech_volume(self,value):
+        self.speech.setVolume(value/100)
+        cue=getattr(self,'_active_narration',None)
+        recorded=(cue.audio_volume or 100) if cue else 100
+        gain=min(1,value/recorded)
+        self.narration_audio.setVolume(gain);self.pause_audio.setVolume(gain)
+    def apply_playback_preferences(self):
+        self.playback_speech.settings=self.settings.data
+        for control,key in ((self.volume,'player_volume'),(self.speech_volume,'speech_volume')):
+            control.blockSignals(True)
+            try:control.setValue(self.settings.data[key])
+            finally:control.blockSignals(False)
+        self.original_volume=self.settings.data['player_volume']/100
+        self.set_speech_volume(self.settings.data['speech_volume']);self.speech_state(self.speech.state())
     def refresh(self):
         self.table.blockSignals(True);self.table.setRowCount(len(self.project.cues))
         for i,c in enumerate(self.project.cues):
@@ -274,7 +312,7 @@ class Window(DesktopInterface, QMainWindow):
         self.table.blockSignals(False)
         if hasattr(self,'pages'):
             self.pages.setCurrentIndex(1 if self.project.video else 0)
-            self.render_cues();self.sync_glossary();self.presentation_position(self.player.position())
+            self.render_cues();self.sync_glossary();self.presentation_position(self.player.position());self.render_usage(self.project.analysis.get('usage',[]))
             self.recents.clear()
             self.recent_empty.setVisible(not self.settings.data.get('recent_projects'));self.recents.setVisible(bool(self.settings.data.get('recent_projects')))
             self.editor_toolbar.setVisible(self.pages.currentIndex()==1)
@@ -307,6 +345,12 @@ class Window(DesktopInterface, QMainWindow):
             self.table.blockSignals(True);self.table.setCurrentCell(index,0);self.table.blockSignals(False)
             self._selected_cue=self.project.cues[index];self.update_fit()
         else:self.project.cues=after;self.dirty=True
+    def start_time_changed(self):
+        if getattr(self,'_editor_loading',False) or self.busy():return
+        self.end.blockSignals(True)
+        try:self.shift_end()
+        finally:self.end.blockSignals(False)
+        self.editor_changed()
     def shift_end(self):
         try:
             new=seconds(self.start.text());old=getattr(self,'_old_start',new);self.end.setText(str(max(new+.1,seconds(self.end.text())+new-old)));self._old_start=new
@@ -388,7 +432,9 @@ class Window(DesktopInterface, QMainWindow):
         elif settings.get('analysis_provider','Gemini')=='Ollama':
             from .models import is_cloud
             if is_cloud(settings,info or {}):destinations.append('Sampled video frames and prompts to the selected remote/cloud Ollama server; may use paid allowance.')
-        else:destinations.append('Video segments and prompts to Google Gemini using your key; may include audio and incur charges.')
+        else:
+            from .providers import destination
+            destinations.append(destination(settings)+'. May use subscription allowance or API credit.')
         if narration and settings.get('voice_engine')=='OpenAI':destinations.append('Generated description text to OpenAI for paid speech synthesis.')
         if not destinations:return True
         return QMessageBox.question(self,'Confirm external processing','This operation sends:\n\n'+'\n\n'.join(destinations)+'\n\nContinue?')==QMessageBox.Yes
@@ -415,7 +461,11 @@ class Window(DesktopInterface, QMainWindow):
                 from .models import model_info
                 log('Checking exact Ollama model; request timeout is 10 seconds. Cancel prevents starting inference.')
                 info=model_info(settings)
-            elif vision and not settings.get('gemini_key'):raise ValueError('Enter your Gemini key in Settings > Keys & privacy, then retry Draft or Scene.')
+            elif vision and settings.get('analysis_provider','Gemini')=='Gemini':
+                if not settings.get('gemini_key'):raise ValueError('Enter your Gemini key in Settings > Keys & privacy, then retry Draft or Scene.')
+            elif vision:
+                from .subscriptions import model_info
+                info=model_info(settings)
             check_cancel(cancel)
             return {'info':info}
         def ready(result):
@@ -453,18 +503,22 @@ class Window(DesktopInterface, QMainWindow):
         # Refresh the editor even if row zero was already selected before regeneration.
         # Save commits the selected editor, which must not still contain the old cue.
         if cues:self.table.setCurrentCell(0,0);self.select_cue()
-    def scene_request(self,instruction,done,length=10):
+    def scene_request(self,instruction,done,length=10,operation='ask'):
         if self.busy() or not self.project.video:return
-        self.player.pause();pos=self.player.position()/1000;source=self.project.video;duration=self.project.duration;settings=copy.deepcopy(self.settings.data);settings['allow_cloud']=True
+        self.player.pause();pos=self.player.position()/1000;snapshot=copy.deepcopy(self.project);duration=self.project.duration;settings=copy.deepcopy(self.settings.data);settings['allow_cloud']=True
         def task(cancel,log):
             from .engine import get_service
             service=get_service();start=max(0,pos-length/2)
-            operation='explore' if '"objects"' in instruction else 'ask'
-            job=service.submit(source=source,settings=settings,prompt=instruction,start=start,duration=max(.1,min(length,duration-start)),operation=operation)
+            job=service.submit(project=snapshot,settings=settings,prompt=instruction,start=start,duration=max(.1,min(length,duration-start)),operation=operation)
             service.wait(job['id'],cancel,log)
-            return json.dumps(service.scene_result(job['id']))
+            result=service.result(job['id'])
+            return {'answer':json.dumps(result.analysis['scene_result']),'usage':result.analysis.get('usage',[])}
         identity=self.project
-        self.operation_preflight(copy.deepcopy(self.settings.data),lambda:self.job(task,lambda result:done(result) if self.project is identity else None))
+        def received(result):
+            if self.project is not identity:return
+            self.project.analysis['usage']=result['usage'];self.render_usage(result['usage']);self.dirty=True
+            done(result['answer'])
+        self.operation_preflight(copy.deepcopy(self.settings.data),lambda:self.job(task,received))
     def add_scene_answer(self,answer,position,button=None):
         if self.busy():return
         try:cue=Cue(position,min(position+4,self.project.duration),answer).validate(self.project.duration)
@@ -476,21 +530,23 @@ class Window(DesktopInterface, QMainWindow):
         else:self.project.cues.append(cue);self.changed()
         if button:button.setEnabled(False)
     def explore(self):
-        instruction=f'In {self.settings.data["language"]}, describe spatial layout of the middle frame. Return JSON {{"layout":"summary","objects":[{{"name":"object","x":5,"y":5,"description":"detail"}}]}}. Grid x and y range 0 to 10, left-to-right and top-to-bottom. Avoid duplicate coordinates. Character glossary: {self.project.glossary}'
         def done(text):
             try:
                 explorer=SceneExplorer(response_json(text),self.playback_speech,self)
                 while self.explore_host.count():self.explore_host.takeAt(0).widget().deleteLater()
                 explorer.setWindowFlags(Qt.Widget);self.explore_host.addWidget(explorer);explorer.show()
             except Exception as e:self.error(str(e))
-        self.scene_request(instruction,done,2)
+        self.scene_request(self.explore_focus.text().strip(),done,self.explore_duration.currentData(),'explore')
     def missing_narration(self):
         return [c for c in self.project.cues if c.disposition in ('in-gap','pause') and not Path(c.audio).is_file()]
+    def narration_needing_repair(self):
+        return [c for c in self.project.cues if c.disposition in ('in-gap','pause') and
+                (not Path(c.audio).is_file() or c.audio_volume is None)]
     def offer_narration_repair(self):
-        missing=self.missing_narration()
-        if not missing or self.thread is not None:return
+        affected=self.narration_needing_repair()
+        if not affected or self.thread is not None:return
         self.player.pause()
-        if QMessageBox.question(self,'Narration files are missing',f'{len(missing)} descriptions refer to missing narration. Repair narration using the selected speech engine? Text, evidence and source media are preserved. You can also use File > Repair narration later.',QMessageBox.Yes|QMessageBox.No,QMessageBox.No)==QMessageBox.Yes:self.repair_narration()
+        if QMessageBox.question(self,'Narration needs repair',f'{len(affected)} descriptions have missing audio or older audio without a recorded synthesis volume. Repair narration using the selected speech engine so the Speech slider can control its level reliably? Text, evidence and source media are preserved. You can also use File > Repair narration later.',QMessageBox.Yes|QMessageBox.No,QMessageBox.No)==QMessageBox.Yes:self.repair_narration()
     def repair_narration(self):
         if self.busy() or not self.project.video or not self.project.cues:return
         self.player.pause();snapshot=copy.deepcopy(self.project);settings=copy.deepcopy(self.settings.data);identity=self.project
@@ -522,6 +578,13 @@ class Window(DesktopInterface, QMainWindow):
             selected,ok=QInputDialog.getItem(self,'Recover interrupted jobs','Choose a saved job. Original project and settings are used; current credentials are supplied without changing your saved preferences.',labels,0,False)
             if not ok:return
             job,project=rows[labels.index(selected)]
+            partial=service.partial_response(job['id'])
+            if partial:
+                dialog=QDialog(self);dialog.setWindowTitle('INCOMPLETE provider response — review only');layout=QVBoxLayout(dialog)
+                layout.addWidget(QLabel('This response was cut off. It has not been added to the project. Retry with shorter chunks.'))
+                text=QPlainTextEdit(partial['text']);text.setReadOnly(True);layout.addWidget(text)
+                buttons=QDialogButtonBox(QDialogButtonBox.Close);buttons.rejected.connect(dialog.reject);layout.addWidget(buttons)
+                dialog.resize(720,450);dialog.exec()
             if not Path(project.video).is_file():self.error('The saved job source is missing. Restore it to its original path before resuming; existing checkpoints are preserved.');return
             if QMessageBox.question(self,'Resume saved job',f"Resume {job['operation']} for {project.video}? Completed checkpoints will be reused only when source, settings and implementation match. The result opens as an unsaved recovered project.",QMessageBox.Yes|QMessageBox.Cancel,QMessageBox.Cancel)!=QMessageBox.Yes:return
             settings=dict(job['settings'])
@@ -608,20 +671,41 @@ class Window(DesktopInterface, QMainWindow):
             presets[name]=text
             try:self.settings.save();self.reload_presets();self.preset.setCurrentText(name)
             except Exception as e:self.error(str(e))
+    def manage_connections(self):
+        if self.busy():return
+        from .desktop import manage_connections
+        manage_connections(self)
+    def subscription_login(self):
+        if self.busy():return
+        provider=self.settings.data['analysis_provider']
+        if provider not in ('Codex CLI','Claude CLI','Gemini CLI'):
+            self.log('Select a native subscription CLI in Draft with AI to open its sign-in tool. The shared gateway uses its existing account-management tool. Test connection checks the selected route with a synthetic image; a model list alone does not verify sign-in.')
+            return
+        process=getattr(self,'subscription_login_process',None)
+        if process is not None and process.poll() is None:
+            self.log('The sign-in tool is still open. Complete or close its window, then use Test connection.');return
+        if QMessageBox.question(self,'Subscription sign-in','Open '+provider+' in its own visible window? Complete sign-in there, then close that window and run Test connection in Draft with AI. Describer does not read or copy its credentials. The window remains under your control if you close Describer.',QMessageBox.Yes|QMessageBox.No,QMessageBox.No)!=QMessageBox.Yes:return
+        from .subscriptions import open_native_login
+        from .engine.service import default_root
+        workspace=default_root()/'subscription-sign-in';workspace.mkdir(parents=True,exist_ok=True)
+        try:
+            self.subscription_login_process=open_native_login(copy.deepcopy(self.settings.data),workspace)
+            self.log('Opened '+provider+' sign-in tool. Status: awaiting completion in its window; use Test connection afterward to verify image inference.')
+        except Exception as exc:self.error(str(exc))
     def edit_settings(self, section=None):
         if self.busy():return
         from .desktop import BlueprintDialog
         d=BlueprintDialog(self);d.setWindowTitle('Settings');d.resize(780,720);outer=QVBoxLayout(d);scroll=QScrollArea();scroll.setWidgetResizable(True);content=QWidget();form=QFormLayout(content);scroll.setWidget(content);outer.addWidget(scroll);fields={}
-        for key,label in [('gemini_key','Gemini API key'),('model','Gemini model'),('ollama_url','Ollama server address'),('ollama_key','Ollama server API key (optional)'),('openai_key','OpenAI API key'),('tts_model','OpenAI speech model'),('voice','OpenAI base voice'),('language','Description language'),('update_feed','Update feed (HTTPS URL or local JSON)')]:
+        for key,label in [('gemini_key','Gemini API key'),('model','Gemini model'),('ollama_url','Ollama server address'),('ollama_key','Ollama server API key (optional)'),('gateway_url','Subscription gateway server address'),('gateway_key_file','Existing gateway client-key file'),('anthropic_key','Anthropic API key'),('codex_cli','Codex CLI executable (blank: discover)'),('claude_cli','Claude CLI executable (blank: discover)'),('gemini_cli','agy CLI executable (blank: discover)'),('analysis_effort','Subscription/API reasoning effort (blank: provider default)'),('openai_key','OpenAI API key'),('tts_model','OpenAI speech model'),('voice','OpenAI base voice'),('language','Description language'),('update_feed','Update feed (HTTPS URL or local JSON)')]:
             field=QLineEdit(str(self.settings.data[key]));field.setAccessibleName(label)
             if key.endswith('_key'):field.setEchoMode(QLineEdit.EchoMode.Password)
             form.addRow(label,field);fields[key]=field
-        for key,label,lo,hi in [('chunk','Seconds per analysis chunk',15,1800),('fps','Frames per second (Gemini)',1,30),('ollama_frame_interval','Ollama seconds between frames (max 8 per request)',1,10),('ollama_timeout','Ollama request timeout (seconds)',30,1800),('duck_db','Background ducking (dB)',-40,0),('speech_rate','Windows voice rate',-10,10),('speech_volume','Speech volume',0,100)]:
+        for key,label,lo,hi in [('chunk','Seconds per analysis chunk',15,1800),('fps','Frames per second (Gemini)',1,30),('ollama_frame_interval','Ollama seconds between frames (max 8 per request)',1,10),('ollama_timeout','Ollama request timeout (seconds)',30,1800),('analysis_timeout','Subscription/API timeout (seconds)',30,1800),('duck_db','Background ducking (dB)',-40,0),('speech_rate','Windows voice rate',-10,10),('speech_volume','Speech volume',0,100)]:
             field=QSpinBox();field.setRange(lo,hi);field.setValue(self.settings.data[key]);form.addRow(label,field);fields[key]=field
         engine=QComboBox();engine.addItems(['Windows','Windows 32-bit','Windows OneCore','OpenAI']);engine.setCurrentText(self.settings.data['voice_engine']);form.addRow('Audio export speech engine',engine)
         ui_language=QComboBox();ui_language.addItems(LANGUAGES);ui_language.setCurrentText(self.settings.data['ui_language']);form.addRow('Interface language',ui_language)
         choices={}
-        for key,label,items in [('verbosity','Description verbosity',['Short','Standard','Detailed']),('download_quality','YouTube download quality',['Best','360p','480p','720p','1080p']),('playback_output','Playback speech output',['Windows speech','Screen reader']),('logging_level','Diagnostic logging level',['DEBUG','INFO','WARNING','ERROR','CRITICAL'])]:
+        for key,label,items in [('verbosity','Description verbosity',['Short','Standard','Detailed']),('download_quality','YouTube download quality',['Best','360p','480p','720p','1080p']),('playback_output','Live text playback output',['Windows speech','Screen reader']),('logging_level','Diagnostic logging level',['DEBUG','INFO','WARNING','ERROR','CRITICAL'])]:
             combo=QComboBox();combo.addItems(items);combo.setCurrentText(self.settings.data[key]);form.addRow(label,combo);choices[key]=combo
         voice_preset=QComboBox();voice_preset.addItems(['']+list(self.settings.data['voice_presets']));voice_preset.setCurrentText(self.settings.data['voice_preset']);form.addRow('OpenAI voice preset',voice_preset)
         flags={}
@@ -631,18 +715,25 @@ class Window(DesktopInterface, QMainWindow):
         interrupt=QCheckBox('Allow new descriptions to interrupt speech');interrupt.setChecked(self.settings.data['interrupt']);form.addRow(interrupt)
         voices=QComboBox();available=self.speech.availableVoices();voices.addItems([v.name() for v in available]);voices.setCurrentText(self.settings.data.get('playback_voice',''));form.addRow('Playback Windows voice',voices)
         buttons=QDialogButtonBox(QDialogButtonBox.StandardButton.Ok|QDialogButtonBox.StandardButton.Cancel);buttons.accepted.connect(d.accept);buttons.rejected.connect(d.reject);form.addRow(buttons)
+        draft_voice={'id':self.settings.data['windows_voice']}
+        engine.currentTextChanged.connect(lambda _:draft_voice.update(id=''))
+        def draft_settings():
+            selected=copy.deepcopy(self.settings.data)
+            selected.update({key:field.value() if isinstance(field,(QSpinBox,QDoubleSpinBox)) else field.text().strip() for key,field in fields.items()})
+            selected.update(voice_engine=engine.currentText(),windows_voice=draft_voice['id'],voice_preset=voice_preset.currentText())
+            return selected
         from .desktop import organize_settings
-        organize_settings(self,d,outer,scroll,content,form,buttons,section)
+        organize_settings(self,d,outer,scroll,content,form,buttons,section,draft_settings,lambda voice:draft_voice.update(id=voice))
         if d.exec():
             old=copy.deepcopy(self.settings.data)
             try:
                 for key,field in fields.items():self.settings.data[key]=field.value() if isinstance(field,(QSpinBox,QDoubleSpinBox)) else field.text().strip()
-                if self.settings.data['voice_engine']!=engine.currentText():self.settings.data['windows_voice']=''
+                self.settings.data['windows_voice']=draft_voice['id']
                 self.settings.data['voice_engine']=engine.currentText();self.settings.data['interrupt']=interrupt.isChecked()
                 self.settings.data.update({key:flag.isChecked() for key,flag in flags.items()})
                 self.settings.data.update(ui_language=ui_language.currentText(),voice_preset=voice_preset.currentText(),temperature=temperature.value(),playback_voice=voices.currentText())
                 self.settings.data.update({key:combo.currentText() for key,combo in choices.items()})
-                self.settings.save();self.playback_speech.settings=self.settings.data;self.speech.setVolume(self.settings.data['speech_volume']/100);apply_language(self,self.settings.data['ui_language'])
+                self.settings.save();self.apply_playback_preferences();apply_language(self,self.settings.data['ui_language'])
                 if voices.currentIndex()>=0:self.speech.setVoice(available[voices.currentIndex()])
                 self.reload_presets()
                 self.model_picker.rows=[];self.model_picker.reload()
@@ -659,22 +750,26 @@ class Window(DesktopInterface, QMainWindow):
     def notification_ready(self):
         from PySide6.QtMultimedia import QSoundEffect
         if self.notification.status()==QSoundEffect.Status.Ready:self.notification.play()
-    def select_windows_voice(self):
+    def select_windows_voice(self,settings=None,on_selected=None):
         if self.busy():return
-        engine=self.settings.data['voice_engine']
+        selected=copy.deepcopy(settings if isinstance(settings,dict) else self.settings.data)
+        engine=selected['voice_engine']
         if engine=='OpenAI':self.error('Select a Windows engine in Settings first.');return
         from .windows_speech import windows_speech
         def done(voices):
             if not voices:self.error('No voices are installed for this engine.');return
             labels=[v['name']+' — '+v['id'] for v in voices]
             choice,ok=QInputDialog.getItem(self,'Windows export voice','Installed voices ('+engine+')',labels,0,False)
-            if ok:self.settings.data['windows_voice']=voices[labels.index(choice)]['id'];self.settings.save()
+            if ok:
+                voice=voices[labels.index(choice)]['id']
+                if on_selected:on_selected(voice)
+                else:self.settings.data['windows_voice']=voice;self.settings.save()
         self.job(lambda c,l:windows_speech(engine,cancel=c,listing=True),done)
-    def test_voice(self):
+    def test_voice(self,settings=None):
         if self.busy():return
+        settings=copy.deepcopy(settings if isinstance(settings,dict) else self.settings.data)
         text,ok=QInputDialog.getText(self,'Test selected export voice','Preview text',text='A person walks into the sunlit room.')
         if not ok or not text:return
-        settings=copy.deepcopy(self.settings.data)
         if settings['voice_engine']=='OpenAI' and QMessageBox.question(self,'OpenAI speech','Send preview text to OpenAI for paid synthesis?')!=QMessageBox.StandardButton.Yes:return
         self.preview.stop();self.preview.setSource(QUrl());path=Path(self.preview_tmp.name)/'preview.wav'
         def done(_):self.preview.setSource(QUrl.fromLocalFile(str(path)));self.preview.play();self.log('Voice preview synthesized.')
@@ -727,11 +822,7 @@ class Window(DesktopInterface, QMainWindow):
             elif kind.startswith('Settings'):
                 from .compatibility import read_original_settings
                 data=read_original_settings(path)
-                if QMessageBox.question(self,'Import settings','Apply these settings? '+', '.join(sorted(data)))!=QMessageBox.StandardButton.Yes:return
-                old=copy.deepcopy(self.settings.data)
-                try:self.settings.data.update(data);self.settings.save()
-                except Exception:self.settings.data=old;raise
-                self.reload_presets();self.log('Imported settings without keys. Source file unchanged.')
+                self.preview_original_settings(data)
             else:
                 from .compatibility import import_original_output
                 if not self.project.video:raise ValueError('Open the matching video first.')
@@ -739,17 +830,31 @@ class Window(DesktopInterface, QMainWindow):
                 if self.project.cues and QMessageBox.question(self,'Replace descriptions','Replace the current descriptions and glossary?')!=QMessageBox.StandardButton.Yes:return
                 self.project.cues=project.cues;self.project.glossary=project.glossary;self.changed()
         except Exception as e:self.error(str(e))
+    def preview_original_settings(self,data):
+        draft={**copy.deepcopy(self.settings.data),**data}
+        def check(cancel,log):
+            if 'voice_engine' not in data or draft['voice_engine']=='OpenAI':return ''
+            from .services import narration_preflight
+            try:narration_preflight(draft,cancel)
+            except InterruptedError:raise
+            except Exception as exc:return 'Voice check: '+str(exc)+'\nChoose an installed replacement in Settings before narration.'
+            return 'The selected Windows voice is available.'
+        def done(warning):
+            preview='\n'.join(f'{key}: {value}' for key,value in sorted(data.items()))
+            if 'speech_rate' in data:preview+='\nSpeech rate is the nearest supported setting; voices may differ from the original.'
+            if QMessageBox.question(self,'Import settings',preview+'\n\n'+warning+'\n\nApply these nonsecret settings?',QMessageBox.Yes|QMessageBox.No,QMessageBox.No)!=QMessageBox.Yes:return
+            old=copy.deepcopy(self.settings.data)
+            try:
+                self.settings.data.update(data);self.settings.save()
+            except Exception as exc:self.settings.data=old;self.error(str(exc));return
+            self.reload_presets();self.apply_playback_preferences();apply_language(self,self.settings.data['ui_language']);self.log('Imported settings without keys. Source file unchanged.')
+        self.job(check,done)
     def check_updates(self):
         if self.busy():return
         feed=self.settings.data.get('update_feed','')
-        if not feed:
-            if QMessageBox.question(self,'Update source not configured','No update feed is configured, so no version check was performed. Open the official GitHub releases page to review available downloads?',QMessageBox.Yes|QMessageBox.No,QMessageBox.No)==QMessageBox.Yes:
-                from PySide6.QtGui import QDesktopServices
-                QDesktopServices.openUrl(QUrl('https://github.com/scottconverse/Describer-Workbench/releases'))
-            return
         from .updates import read_feed
         def done(data):
-            if not data['newer']:self.log('No newer version in the configured feed.');return
+            if not data['newer']:self.log('No newer version in '+('the configured feed.' if feed else 'the official GitHub release.'));return
             if QMessageBox.question(self,'Workbench update','Version '+data['version']+' is available. Download and verify a separate portable copy?')!=QMessageBox.StandardButton.Yes:return
             folder=QFileDialog.getExistingDirectory(self,'Stage verified update in')
             # Schedule after the check worker has completed its thread teardown.
@@ -865,5 +970,3 @@ def main():
 
 
 if __name__=='__main__':main()
-
-

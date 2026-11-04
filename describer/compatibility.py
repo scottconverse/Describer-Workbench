@@ -1,6 +1,7 @@
 """Explicit, read-only imports of original JSON/obfuscated settings and output."""
 import base64
 import json
+import math
 from pathlib import Path
 from .project import Project, parse_cues
 
@@ -49,6 +50,33 @@ def read_original_settings(path):
     if 'fps' in result:result['fps']=max(1,min(30,int(result['fps'])))
     if 'chunk' in result:result['chunk']=max(15,min(1800,int(result['chunk'])))
     if 'duck_db' in result:result['duck_db']=max(-40,min(0,int(result['duck_db'])))
+    languages=dict(zip(('en','es','fr','it','pt','ru','tr','uk','vi','ar'),('English','Español','Français','Italiano','Português','Русский','Türkçe','Українська','Tiếng Việt','العربية')))
+    language=data.get('application_language')
+    if language:
+        language=languages.get(language,language)
+        if language not in languages.values():raise ValueError('The original interface language is unsupported; source settings are unchanged.')
+        result['ui_language']=language
+    original_engine=data.get('tts_engine')
+    if original_engine:
+        engines={'sapi5':('Windows','sapi5'),'sapi5_32':('Windows 32-bit','sapi5'),
+                 'sapi5_32bit':('Windows 32-bit','sapi5'),'onecore':('Windows OneCore','onecore'),'openai':('OpenAI','openai')}
+        entry=engines.get(str(original_engine).lower())
+        if entry is None:raise ValueError('The original speech engine is unsupported; select its replacement explicitly.')
+        engine,prefix=entry;result['voice_engine']=engine
+        if engine!='OpenAI':
+            voice=data.get(prefix+'_voice_id')
+            if voice:result['windows_voice']=str(voice)
+            rate=data.get(prefix+'_voice_rate_percent')
+            if rate is not None:
+                # REA defaults are100 percent (normal speed), not zero.
+                ratio=float(rate)/100
+                if not math.isfinite(ratio) or ratio<=0:raise ValueError('Invalid original speech rate; source settings are unchanged.')
+                result['speech_rate']=max(-10,min(10,round(10*math.log2(ratio))))
+            volume=data.get(prefix+'_voice_volume',data.get('sapi5_voice_volume'))
+            if volume is not None:
+                value=float(volume)
+                if not math.isfinite(value):raise ValueError('Invalid original speech volume; source settings are unchanged.')
+                result['speech_volume']=max(0,min(100,round(value*100 if 0<=value<=1 else value)))
     return result
 
 

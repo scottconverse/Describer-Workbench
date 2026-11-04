@@ -1,0 +1,3177 @@
+{
+  "coverage": "Literal control text, form-field labels and static item lists in the maintained desktop modules. Excludes dynamic/interpolated messages, user/model content and unrendered runtime-only text. Not a full-localization claim.",
+  "source_hash_format": "UTF-8 text with LF newlines, without BOM; independent of Git checkout line-ending conversion.",
+  "source_sha256": {
+    "describer\\app.py": "9c9a1e3410645a87d4594f344d9b7adb491b7ac7de5cb5090f930ca0c5d68de5",
+    "describer\\desktop.py": "0bdf15b7f3618c360a1264488f93bfa4419914496aef55f596665563c16c422b",
+    "describer\\model_picker.py": "a44f1fd057eecc20914b795d58c67693d86151733d4e1b1dd84ef0c695de68bc"
+  },
+  "language_fallback_counts": {
+    "Español": 171,
+    "Français": 171,
+    "Italiano": 171,
+    "Português": 171,
+    "Русский": 171,
+    "Türkçe": 170,
+    "Українська": 171,
+    "Tiếng Việt": 171,
+    "العربية": 171
+  },
+  "entries": [
+    {
+      "text": "+",
+      "sources": [
+        "describer/desktop.py:293"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "+10 s",
+      "sources": [
+        "describer/app.py:111",
+        "describer/desktop.py:272"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "00:00.0 / 00:00.0",
+      "sources": [
+        "describer/desktop.py:273"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "00:00:00",
+      "sources": [
+        "describer/app.py:111"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "AI connections",
+      "sources": [
+        "describer/desktop.py:677"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "AI model",
+      "sources": [
+        "describer/desktop.py:258"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "API keys are protected with Windows DPAPI. Cloud use requires confirmation.",
+      "sources": [
+        "describer/desktop.py:761"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Accumulated provider usage",
+      "sources": [
+        "describer/desktop.py:286"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Add as description",
+      "sources": [
+        "describer/desktop.py:486",
+        "describer/desktop.py:522"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Add at playhead",
+      "sources": [
+        "describer/desktop.py:288",
+        "describer/desktop.py:304"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Add character",
+      "sources": [
+        "describer/desktop.py:531"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Add connection",
+      "sources": [
+        "describer/desktop.py:712"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "All",
+      "sources": [
+        "describer/desktop.py:287"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Allow new descriptions to interrupt speech",
+      "sources": [
+        "describer/app.py:715"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "Analysis AI",
+      "sources": [
+        "describer/model_picker.py:14"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Analysis AI provider",
+      "sources": [
+        "describer/model_picker.py:15"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Analysis model",
+      "sources": [
+        "describer/model_picker.py:16"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Analysis model status",
+      "sources": [
+        "describer/model_picker.py:20"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Analysis range",
+      "sources": [
+        "describer/model_picker.py:19"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Anthropic API key",
+      "sources": [
+        "describer/app.py:699"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Arrow keys: move · D: layout · L: objects · Shift+L: jump · Enter: nearest object",
+      "sources": [
+        "describer/app.py:42"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Ask",
+      "sources": [
+        "describer/desktop.py:481",
+        "describer/desktop.py:487"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Ask a question about the current scene. Answers appear here.",
+      "sources": [
+        "describer/desktop.py:512"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Ask about scene",
+      "sources": [
+        "describer/desktop.py:300"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "Audio export speech engine",
+      "sources": [
+        "describer/app.py:705"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Background ducking (dB)",
+      "sources": [
+        "describer/app.py:703"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "Cancel",
+      "sources": [
+        "describer/desktop.py:285"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Cancel operation",
+      "sources": [
+        "describer/app.py:103"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "Changes apply as you type. Ctrl+Z undoes.",
+      "sources": [
+        "describer/desktop.py:302"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Character description",
+      "sources": [
+        "describer/desktop.py:533"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Character glossary",
+      "sources": [
+        "describer/app.py:135"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "Character name",
+      "sources": [
+        "describer/desktop.py:533"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Check configured update feed at startup",
+      "sources": [
+        "describer/app.py:712"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Check now",
+      "sources": [
+        "describer/desktop.py:767"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Choose an output file…",
+      "sources": [
+        "describer/desktop.py:643"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Claude CLI executable (blank: discover)",
+      "sources": [
+        "describer/app.py:699"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Close",
+      "sources": [
+        "describer/desktop.py:307"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "Codex CLI executable (blank: discover)",
+      "sources": [
+        "describer/app.py:699"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Compatible API connections: LM Studio, llama.cpp or remote OpenAI-compatible servers. Save selects this connection; provider/model defaults are preserved.",
+      "sources": [
+        "describer/desktop.py:679"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Configured AI connections",
+      "sources": [
+        "describer/desktop.py:680"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Context",
+      "sources": [
+        "describer/desktop.py:481"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Copy answer",
+      "sources": [
+        "describer/desktop.py:521"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Current description",
+      "sources": [
+        "describer/app.py:115"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "DESCRIBER WORKBENCH",
+      "sources": [
+        "describer/desktop.py:254"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "DRAFT WITH AI",
+      "sources": [
+        "describer/desktop.py:578"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Delete",
+      "sources": [
+        "describer/desktop.py:299"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "Delete connection",
+      "sources": [
+        "describer/desktop.py:712"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Describe what matters on screen. Draft locally or with your own cloud key, then edit and export.",
+      "sources": [
+        "describer/desktop.py:321"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Describer four-bar mark",
+      "sources": [
+        "describer/desktop.py:112"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Description end time",
+      "sources": [
+        "describer/app.py:121"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Description language",
+      "sources": [
+        "describer/app.py:699"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Description start time",
+      "sources": [
+        "describer/app.py:121"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Description text",
+      "sources": [
+        "describer/app.py:122"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Description verbosity",
+      "sources": [
+        "describer/app.py:708"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "Descriptions",
+      "sources": [
+        "describer/desktop.py:289"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Descriptions · 0",
+      "sources": [
+        "describer/desktop.py:280"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Detailed",
+      "sources": [
+        "describer/desktop.py:617"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Diagnostic logging level",
+      "sources": [
+        "describer/app.py:708"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Discovered exact models",
+      "sources": [
+        "describer/desktop.py:587"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Draft with AI",
+      "sources": [
+        "describer/desktop.py:259",
+        "describer/desktop.py:304"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Drafting descriptions",
+      "sources": [
+        "describer/desktop.py:631"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Drop a video or .adproject here",
+      "sources": [
+        "describer/desktop.py:327"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "EXPORT",
+      "sources": [
+        "describer/desktop.py:634"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Editorial prompt",
+      "sources": [
+        "describer/app.py:127",
+        "describer/desktop.py:616"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Enable video chunking",
+      "sources": [
+        "describer/app.py:712"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "Enabled",
+      "sources": [
+        "describer/desktop.py:683"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "End",
+      "sources": [
+        "describer/app.py:120"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "End at playhead",
+      "sources": [
+        "describer/desktop.py:296"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Exact analysis model ID",
+      "sources": [
+        "describer/desktop.py:588"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Existing gateway client-key file",
+      "sources": [
+        "describer/app.py:699"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Explore layout",
+      "sources": [
+        "describer/desktop.py:489"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Export",
+      "sources": [
+        "describer/desktop.py:260"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "Export narration engine",
+      "sources": [
+        "describer/desktop.py:817"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Export narration voice",
+      "sources": [
+        "describer/desktop.py:818"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Export save path",
+      "sources": [
+        "describer/desktop.py:643"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Exporting descriptions",
+      "sources": [
+        "describer/desktop.py:667"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Frames per second (Gemini)",
+      "sources": [
+        "describer/app.py:703"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Gemini API key",
+      "sources": [
+        "describer/app.py:699"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "Gemini model",
+      "sources": [
+        "describer/app.py:699"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "Gemini temperature",
+      "sources": [
+        "describer/app.py:714"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "Gemini uploads video with audio unless removed in Settings. Uses your Google API key.",
+      "sources": [
+        "describer/model_picker.py:57"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Glossary",
+      "sources": [
+        "describer/desktop.py:531"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Help",
+      "sources": [
+        "describer/app.py:148"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "INCOMPLETE provider response — review only",
+      "sources": [
+        "describer/app.py:583"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Import SRT / VTT",
+      "sources": [
+        "describer/desktop.py:304"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "Import cues",
+      "sources": [
+        "describer/desktop.py:257"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Install speech detector",
+      "sources": [
+        "describer/desktop.py:767"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Interface language",
+      "sources": [
+        "describer/app.py:706"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "Leave blank to retain the saved key",
+      "sources": [
+        "describer/desktop.py:682"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Live text playback output",
+      "sources": [
+        "describer/app.py:708"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Manage AI connections",
+      "sources": [
+        "describer/app.py:140"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Manage presets",
+      "sources": [
+        "describer/app.py:127"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "Manage voice presets",
+      "sources": [
+        "describer/desktop.py:765"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "Manual and shortcuts",
+      "sources": [
+        "describer/desktop.py:329"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Mark as checked",
+      "sources": [
+        "describer/desktop.py:299"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "NO DESCRIPTIONS YET",
+      "sources": [
+        "describer/desktop.py:303"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Narration engine",
+      "sources": [
+        "describer/desktop.py:817"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Narration speed stays at or below 1.15×. Media exports include a coverage sidecar.",
+      "sources": [
+        "describer/desktop.py:649"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Narration voice",
+      "sources": [
+        "describer/desktop.py:818"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Needs review",
+      "sources": [
+        "describer/desktop.py:287"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "New project",
+      "sources": [
+        "describer/desktop.py:255"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Next 20 seconds",
+      "sources": [
+        "describer/model_picker.py:19"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Next 60 seconds",
+      "sources": [
+        "describer/model_picker.py:19"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "No answer yet.",
+      "sources": [
+        "describer/app.py:214",
+        "describer/desktop.py:486"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "No recent projects yet.\nOpen a video and save your first project.",
+      "sources": [
+        "describer/desktop.py:331"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Notification sounds",
+      "sources": [
+        "describer/app.py:712"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Observe current scene",
+      "sources": [
+        "describer/desktop.py:494"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Ollama request timeout (seconds)",
+      "sources": [
+        "describer/app.py:703"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Ollama seconds between frames (max 8 per request)",
+      "sources": [
+        "describer/app.py:703"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Ollama server API key (optional)",
+      "sources": [
+        "describer/app.py:699"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Ollama server address",
+      "sources": [
+        "describer/app.py:699"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Open",
+      "sources": [
+        "describer/desktop.py:257"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Open a video to begin.",
+      "sources": [
+        "describer/app.py:104"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "OpenAI",
+      "sources": [
+        "describer/app.py:705",
+        "describer/desktop.py:817"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "OpenAI API key",
+      "sources": [
+        "describer/app.py:699"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "OpenAI base voice",
+      "sources": [
+        "describer/app.py:699"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "OpenAI narration sends description text for paid synthesis. Draft and export ask for consent before sending.",
+      "sources": [
+        "describer/desktop.py:834"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "OpenAI speech model",
+      "sources": [
+        "describer/app.py:699"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "OpenAI voice preset",
+      "sources": [
+        "describer/app.py:710"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Optional focus, such as the sign or doorway",
+      "sources": [
+        "describer/desktop.py:493"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "PICTURE PAUSED FOR DESCRIPTION",
+      "sources": [
+        "describer/desktop.py:268"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Pauses",
+      "sources": [
+        "describer/desktop.py:287"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Pipeline stage checklist",
+      "sources": [
+        "describer/desktop.py:283"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Play / Pause",
+      "sources": [
+        "describer/app.py:110",
+        "describer/desktop.py:272"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "Playback Windows voice",
+      "sources": [
+        "describer/app.py:716"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "Player volume",
+      "sources": [
+        "describer/app.py:113"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Preset",
+      "sources": [
+        "describer/desktop.py:616"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Preview in context",
+      "sources": [
+        "describer/desktop.py:300"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Prompt preset",
+      "sources": [
+        "describer/app.py:126"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "Question about scene",
+      "sources": [
+        "describer/desktop.py:487"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Reading voices installed for this engine.",
+      "sources": [
+        "describer/desktop.py:835"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Recognize characters and update the glossary",
+      "sources": [
+        "describer/desktop.py:618"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Recognize characters during analysis",
+      "sources": [
+        "describer/app.py:712"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "Refresh models",
+      "sources": [
+        "describer/desktop.py:603",
+        "describer/model_picker.py:17"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Remove audio before uploading video",
+      "sources": [
+        "describer/app.py:712"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "Remove saved credential",
+      "sources": [
+        "describer/desktop.py:683"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Request BLOCK_NONE for adjustable Gemini filters (provider core rules still apply)",
+      "sources": [
+        "describer/app.py:712"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Request count depends on range, frame interval and detected visual events.",
+      "sources": [
+        "describer/desktop.py:615"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Retry voice discovery",
+      "sources": [
+        "describer/desktop.py:820"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Review now",
+      "sources": [
+        "describer/desktop.py:641"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "START WITH A VIDEO.",
+      "sources": [
+        "describer/desktop.py:320"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Save",
+      "sources": [
+        "describer/desktop.py:777"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Save to",
+      "sources": [
+        "describer/desktop.py:643"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Save to…",
+      "sources": [
+        "describer/desktop.py:648"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Scene",
+      "sources": [
+        "describer/desktop.py:480"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Scene Explorer",
+      "sources": [
+        "describer/app.py:38"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "Scene conversation",
+      "sources": [
+        "describer/desktop.py:483"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Scene exploration duration",
+      "sources": [
+        "describer/desktop.py:490"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Scene exploration focus",
+      "sources": [
+        "describer/desktop.py:493"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Scene layout grid: arrows move, Enter nearest object, D speaks layout",
+      "sources": [
+        "describer/desktop.py:782"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Screen reader and timed narration policy",
+      "sources": [
+        "describer/desktop.py:763"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Seconds per analysis chunk",
+      "sources": [
+        "describer/app.py:703"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "Select Windows voice",
+      "sources": [
+        "describer/desktop.py:765"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Set up",
+      "sources": [
+        "describer/desktop.py:335"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Settings",
+      "sources": [
+        "describer/app.py:698",
+        "describer/desktop.py:261"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "Settings sections",
+      "sources": [
+        "describer/desktop.py:754"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Short",
+      "sources": [
+        "describer/desktop.py:617"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Speak answer",
+      "sources": [
+        "describer/desktop.py:520"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Speak descriptions",
+      "sources": [
+        "describer/app.py:114"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "Speech",
+      "sources": [
+        "describer/desktop.py:277"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Speech volume",
+      "sources": [
+        "describer/app.py:703",
+        "describer/desktop.py:276"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Standard",
+      "sources": [
+        "describer/desktop.py:617"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Start",
+      "sources": [
+        "describer/app.py:120",
+        "describer/desktop.py:774"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "Start at playhead",
+      "sources": [
+        "describer/desktop.py:295"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Status and token usage log",
+      "sources": [
+        "describer/app.py:129"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Stop",
+      "sources": [
+        "describer/desktop.py:774"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Subscription gateway server address",
+      "sources": [
+        "describer/app.py:699"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Subscription sign-in",
+      "sources": [
+        "describer/app.py:141"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Subscription/API reasoning effort (blank: provider default)",
+      "sources": [
+        "describer/app.py:699"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Subscription/API timeout (seconds)",
+      "sources": [
+        "describer/app.py:703"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Test connection",
+      "sources": [
+        "describer/desktop.py:603",
+        "describer/model_picker.py:18"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Test voice",
+      "sources": [
+        "describer/desktop.py:765"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Theme",
+      "sources": [
+        "describer/desktop.py:261"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "This response was cut off. It has not been added to the project. Retry with shorter chunks.",
+      "sources": [
+        "describer/app.py:584"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Timed descriptions use measured narration audio (Windows by default). The Screen reader preference applies to live text and Scene answers; it does not replace timed narration.",
+      "sources": [
+        "describer/desktop.py:274"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Timed in-gap and pause cues use measured narration audio from the export voice (Windows by default), so playback can resume safely. Screen reader applies to live text and Scene answers. If no reader is active, live text uses Windows speech. Reader volume/rate remain controlled by the reader.",
+      "sources": [
+        "describer/desktop.py:763"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Timeline: Ctrl+wheel zoom, wheel scroll",
+      "sources": [
+        "describer/desktop.py:122"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Unresolved visual facts block media exports.",
+      "sources": [
+        "describer/desktop.py:640"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Update feed (HTTPS URL or local JSON)",
+      "sources": [
+        "describer/app.py:699"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Usage: not reported",
+      "sources": [
+        "describer/desktop.py:286"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Uses the selected model; cloud/remote requests require confirmation.",
+      "sources": [
+        "describer/desktop.py:488"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Verbosity",
+      "sources": [
+        "describer/desktop.py:617"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Verification is for this server/model in this session. Draft checks again before inference.",
+      "sources": [
+        "describer/desktop.py:411"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Video",
+      "sources": [
+        "describer/desktop.py:275"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Video duration to explore",
+      "sources": [
+        "describer/desktop.py:492"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Video position",
+      "sources": [
+        "describer/app.py:112"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Visible identifying details",
+      "sources": [
+        "describer/desktop.py:533"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Voice preset",
+      "sources": [
+        "describer/app.py:800"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "Volume",
+      "sources": [
+        "describer/app.py:113"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Waiting for engine events.",
+      "sources": [
+        "describer/desktop.py:284"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "What would you like to know about this scene?",
+      "sources": [
+        "describer/desktop.py:487"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Whole video",
+      "sources": [
+        "describer/model_picker.py:19"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Windows",
+      "sources": [
+        "describer/app.py:705",
+        "describer/desktop.py:817"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Windows 32-bit",
+      "sources": [
+        "describer/app.py:705",
+        "describer/desktop.py:817"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Windows OneCore",
+      "sources": [
+        "describer/app.py:705",
+        "describer/desktop.py:817"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Windows voice rate",
+      "sources": [
+        "describer/app.py:703"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Working",
+      "sources": [
+        "describer/desktop.py:281"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "YouTube download quality",
+      "sources": [
+        "describer/app.py:708"
+      ],
+      "english_fallback_languages": []
+    },
+    {
+      "text": "agy CLI executable (blank: discover)",
+      "sources": [
+        "describer/app.py:699"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "±10 s",
+      "sources": [
+        "describer/desktop.py:481"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "±2.5 s",
+      "sources": [
+        "describer/desktop.py:481"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "±5 s",
+      "sources": [
+        "describer/desktop.py:481"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "−",
+      "sources": [
+        "describer/desktop.py:293"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "−10 s",
+      "sources": [
+        "describer/app.py:110",
+        "describer/desktop.py:271"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    }
+  ]
+}

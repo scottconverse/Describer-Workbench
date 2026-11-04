@@ -11,6 +11,7 @@ from pathlib import Path
 from ..project import import_subtitles
 from .assets import speech_model
 from .planning import gaps, intervals, place
+from .progress import stage
 
 
 def sha(path):
@@ -77,8 +78,9 @@ def identity(project, settings, prompt, start, duration, model_required=True):
     from ..services import run, tool
     # Secrets never enter checkpoints. Their values are not generation identity.
     safe_settings = {k: v for k, v in settings.items() if not k.endswith('_key')}
-    provider = settings.get('analysis_provider', 'Gemini')
-    model = settings.get('ollama_model') if provider == 'Ollama' else settings.get('model')
+    from ..providers import provider_name, model_id
+    provider = provider_name(settings)
+    model = model_id(settings)
     model_digest = None
     if provider == 'Ollama' and model_required:
         from ..models import model_info, json_request, is_cloud
@@ -108,15 +110,19 @@ def identity(project, settings, prompt, start, duration, model_required=True):
 def prepare(project, settings, root, cancel, log, checkpoint):
     """Validate audio, synthesize, then place. Never trust AI speech-slot guesses."""
     from ..services import run, tool, synthesize
+    stage(log,'protected-audio')
     safety = checkpoint.stage('protected-audio', lambda: protected_audio(project, settings, cancel, log))
+    stage(log,'protected-audio',1,1)
     occupied, coverage = [], []
     for i, cue in enumerate(project.cues):
+        stage(log,'narration',i,len(project.cues))
         check_cancel(cancel)
         cue.validate(project.duration)
         ident = cue.event_id or f'authored-{i}'
         cue.event_id = ident
         row = {'event_id': ident, 'text': cue.text, 'kind': cue.kind,
                'event_start': cue.event_start, 'event_end': cue.event_end,
+               'timing_start': cue.timing_start, 'timing_end': cue.timing_end,
                'evidence': cue.evidence, 'uncertainty': cue.uncertainty}
         if cue.uncertainty or cue.disposition == 'unresolved':
             cue.disposition = 'unresolved'
@@ -124,16 +130,28 @@ def prepare(project, settings, root, cancel, log, checkpoint):
             coverage.append(row)
             continue
 
-        def speak():
-            path = Path(root) / f'narration-{i:05}.wav'
-            synthesize(cue.text, path, settings, cancel)
+        def speak(text=cue.text,suffix=''):
+            path = Path(root) / f'narration-{i:05}{suffix}.wav'
+            synthesize(text, path, dict(settings, speech_volume=100), cancel)
             measured = json.loads(run([tool('ffprobe'), '-v', 'error', '-show_format', '-of', 'json', str(path)], cancel))
             return {'audio': str(path.resolve()), 'seconds': float(measured['format']['duration'])}
 
         audio = checkpoint.stage(f'speech-{i:05}', speak)
-        placement = place(cue.event_start, cue.event_end, audio['seconds'], safety['safe_gaps'], occupied,
+        window_start, window_end = cue.narration_window()
+        placement = place(window_start, window_end, audio['seconds'], safety['safe_gaps'], occupied,
                           float(settings.get('max_speech_speed', 1.15)))
-        cue.audio, cue.speech_seconds = audio['audio'], audio['seconds']
+        cue.narration_text=''
+        if placement.disposition=='pause':
+            from .shortening import concise
+            shortened=concise(cue.text)
+            if shortened!=cue.text:
+                candidate=checkpoint.stage(f'short-speech-{i:05}',lambda:speak(shortened,'-short'))
+                fitted=place(window_start,window_end,candidate['seconds'],safety['safe_gaps'],occupied,
+                             float(settings.get('max_speech_speed',1.15)))
+                if fitted.disposition=='in-gap':
+                    audio,placement=candidate,fitted;cue.narration_text=shortened
+                    log('Removed a redundant visual lead-in; original description and evidence retained.')
+        cue.audio, cue.speech_seconds, cue.audio_volume = audio['audio'], audio['seconds'], 100
         cue.disposition, cue.speed = placement.disposition, placement.speed
         if placement.disposition == 'in-gap':
             cue.start, cue.end = placement.start, placement.end
@@ -141,10 +159,12 @@ def prepare(project, settings, root, cancel, log, checkpoint):
         else:
             # Preserve the original event interval for subtitles/editor; pause playback
             # uses event_start and the measured audio, never this subtitle end.
-            cue.start, cue.end = cue.event_start, cue.event_end
+            cue.start, cue.end = window_start, window_end
         row.update(disposition=cue.disposition, start=cue.start, end=cue.end,
-                   speech_seconds=cue.speech_seconds, speed=cue.speed, reason=placement.reason)
+                   speech_seconds=cue.speech_seconds, speed=cue.speed, reason=placement.reason,
+                   narration_text=cue.narration_text or cue.text)
         coverage.append(row)
+    stage(log,'narration',len(project.cues),len(project.cues))
     project.coverage = coverage
     project.analysis.update(protected=safety['protected'], safe_gaps=safety['safe_gaps'],
                             limitations=['Coverage accounts for observed events, not a guarantee that vision found every essential event.',
@@ -158,7 +178,9 @@ def describe(project, settings, prompt, root, cancel, log, start=0, duration=Non
     checkpoint = Checkpoints(root, identity(project, settings, prompt, start, duration))
     check_cancel(cancel)
     # Audio preflight before expensive inference. No unsafe fallback on missing assets.
+    stage(log,'protected-audio')
     checkpoint.stage('protected-audio', lambda: protected_audio(project, settings, cancel, log))
+    stage(log,'protected-audio',1,1)
     project.cues = observe(project, settings, prompt, cancel, log, start, duration, checkpoint.stage)
     return prepare(project, settings, root, cancel, log, checkpoint)
 

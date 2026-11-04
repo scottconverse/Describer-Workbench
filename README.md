@@ -2,11 +2,9 @@
 
 **One audio-description engine for a Windows workbench, Python, CLI, REST/OpenAPI and MCP.**
 
-Version **0.5.2** fixes first-use setup, review preservation, export safety, narration repair and interrupted-job recovery. See [release acceptance](docs/V052-ACCEPTANCE.md) for the verified scope and limitations.
+**0.6.0 development candidate — not yet published.** It adds subscription/native CLI and compatible API connections, authored cue timing, measured Windows narration policy, original-settings mapping, progress/usage, source-time frame sampling and the remaining finite redesign controls. See [connection setup and verification limits](docs/AI-CONNECTIONS.md). The current public download remains signed **0.5.2**; it does not contain these changes. Its [acceptance record](docs/V052-ACCEPTANCE.md) remains historical release evidence.
 
-Version **0.5.2** combines the Windows workbench and developer interfaces in one shared engine. Download the portable Windows package or build the tagged source.
-
-Open a video, draft timed descriptions with a local Ollama vision model or Google Gemini, edit every cue, listen alongside the video, and export subtitles or a narrated audio mix. Manual editing, subtitle import and Windows speech work without an AI API key.
+Open a video, draft descriptions through the selected analysis connection, edit every cue, listen alongside the video, and export subtitles or a narrated audio mix. The candidate supports Gemini, Ollama, the existing subscription gateway, native Codex/Claude/Antigravity tools and explicit API profiles. Manual editing, subtitle import and Windows speech work without an AI API key. These are reviewed drafts: correct visual facts, missing events, readable text and timing before final export.
 
 [Windows 0.5.2](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.5.2) · [Website](https://describer-workbench.sconverse.chatgpt.site) · [User manual](docs/USER-MANUAL.md) · [Architecture](docs/ARCHITECTURE.md) · [Developer guide](docs/DEVELOPER-GUIDE.md) · [Issues](https://github.com/scottconverse/Describer-Workbench/issues)
 
@@ -17,11 +15,11 @@ Open a video, draft timed descriptions with a local Ollama vision model or Googl
 | Task | Behavior |
 | --- | --- |
 | Open media | Local MP4, MKV, MOV, AVI and WebM; All files selector for other supported inputs. Download direct video or YouTube URLs through yt-dlp. |
-| Draft descriptions | Gemini video uploads or local/remote Ollama vision requests. Whole video, Next 20 seconds or Next 60 seconds. Sequential chunks with character glossary continuity. |
-| Choose models | Editable exact ID, Ollama discovery, vision/local/cloud labels, loaded status and a text connection test. No silent fallback. |
+| Draft descriptions | Gemini video uploads, Ollama vision, subscription gateway/native CLIs or compatible API requests. Whole video, Next 20 seconds or Next 60 seconds. Sequential chunks with character glossary continuity. |
+| Choose models | Exact IDs retained per route/profile; catalog metadata where available and manual ID entry. Image test on new routes; Ollama retains its labeled text test. No silent fallback. |
 | Edit and save | Start/end/text cue editor, glossary, `.adproject` persistence, SRT/VTT import. |
-| Explore scenes | Ask about scene, add answers as cues, keyboard exploration of an AI-generated spatial layout. |
-| Hear descriptions | Windows speech during playback, audio ducking, player/speech volume, interruption or queue behavior; optional active screen-reader output. |
+| Explore scenes | Per-answer Speak/Copy/Add controls;2/5/10/20-second Explore ranges with optional focus/glossary; keyboard exploration of an AI-generated spatial layout. |
+| Hear descriptions | Timed cues use measured export-voice audio, Windows by default. Optional active screen-reader output applies to live text/Scene answers. Gain and ducking follow player/speech controls. |
 | Export | MP4 with pause extensions, narrated MP3/WAV, SRT, VTT, TXT and project JSON. Coverage sidecars explain in-gap, pause and unresolved events. Windows SAPI, 32-bit SAPI, OneCore or optional OpenAI speech. |
 | Developer integration | Same serial, durable engine through Python, CLI, authenticated loopback REST/OpenAPI and MCP stdio/Streamable HTTP. Submit, batch, poll, cancel/resume, page/time-filter results, edit, ask/explore, preview voices and export. |
 | Timing | Independently measured speech/vocal protection; event-bounded slots; acceleration capped at 1.15x. Descriptions that cannot fit become explicit pause narration, without deleting genuine repeated events. |
@@ -53,7 +51,7 @@ Get-FileHash .\DescriberWorkbench-0.5.2-windows-x64.zip -Algorithm SHA256
 | Gemini analysis, Ask and Explore | Gemini key and accessible model | Video with audio unless silent upload is selected; confirmation required |
 | OpenAI speech export/preview | OpenAI key and accessible speech model | Description text after confirmation |
 
-The analysis picker has **Gemini and Ollama**. OpenAI is a speech/export engine, not an analysis provider. Direct Claude and generic OpenAI-compatible analysis adapters are not implemented. Additional Ollama hosted tags must report vision support and satisfy the request format; appearing in the picker does not prove compatibility. Workbench contains no OAuth flow. Choosing a model does not download it or sign in.
+The0.6.0 candidate includes the finite [connection inventory](docs/AI-CONNECTIONS.md). Native tools and the gateway retain their own sign-in; File > Subscription sign-in opens the selected native tool. API-credit routes remain separate from subscriptions. Installing a CLI or listing a model does not prove login, entitlement or vision. The public0.5.2 app has Gemini/Ollama analysis and optional OpenAI speech only.
 
 ## Ollama quick start
 
@@ -100,7 +98,7 @@ Python/PySide6 provides the editor; every consumer uses `DescriptionService` and
 - Diagnostics: rotated logs beside settings. Configured keys are redacted; paths, text and provider errors can remain. Inspect before sharing.
 - Gemini: upload deletion is attempted in `finally`; provider retention applies if cleanup fails. Cancellation cannot undo an upload or charge.
 - Ollama: loopback requests go to the configured local server. Cloud/remote use prompts before sending frames and text; Ollama controls further routing.
-- Updates: no public update feed is configured. Download releases manually. The optional trusted-feed updater verifies SHA256 and retains rollback folders; integrity verification is separate from signing.
+- Candidate updates: blank feed checks the official latest stable GitHub release; staging requires matching hashes and timestamped Scott Converse signatures on both executables, then rechecks payload hashes before swapping. Rollback folders are retained. The public0.5.2 app still needs manual downloads unless a trusted feed is configured.
 
 See [privacy and recovery](docs/USER-MANUAL.md#12-privacy-storage-and-recovery) for details.
 
