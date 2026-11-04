@@ -1,14 +1,14 @@
 # Describer Workbench user manual
 
-For the **0.6.0 development candidate** · November4,2026 (America/Denver). The current signed download remains0.5.2; its [acceptance record](V052-ACCEPTANCE.md) is historical evidence.
+For **0.6.0** · November 4, 2026 (America/Denver). See [release acceptance](V060-ACCEPTANCE.md) for executed checks and delivery boundaries.
 
-Development branch notice: this guide describes the unreleased candidate and the [AI connections listed here](AI-CONNECTIONS.md). **Live text playback output** applies to live text and Scene answers. Timed in-gap and pause cues use measured export-voice audio, with Windows as the default, as explicitly chosen by Scott on November4. A screen reader controls its own live-text rate and volume; unavailable reader output falls back to Windows speech. The Speech slider scales measured WAV playback and exported narration. Older WAVs without synthesis-volume metadata need **File > Repair narration** before timed playback; repair preserves source media, descriptions and evidence, asks for applicable cloud consent, and must be saved to retain new audio references. These changes have not yet been delivered in the signed app.
+This guide describes version 0.6.0 and its [AI connections](AI-CONNECTIONS.md). **Live text playback output** applies to live text and Scene answers. Timed in-gap and pause cues use measured export-voice audio, with Windows as the default, as explicitly chosen by Scott on November4. A screen reader controls its own live-text rate and volume; unavailable reader output falls back to Windows speech. The Speech slider scales measured WAV playback and exported narration. Older WAVs without synthesis-volume metadata need **File > Repair narration** before timed playback; repair preserves source media, descriptions and evidence, asks for applicable cloud consent, and must be saved to retain new audio references.
 
-[Windows 0.5.2 download](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.5.2) · [Project](https://github.com/scottconverse/Describer-Workbench) · [Architecture guide](ARCHITECTURE.md)
+[Windows 0.6.0 download](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.6.0) · [Project](https://github.com/scottconverse/Describer-Workbench) · [Architecture guide](ARCHITECTURE.md)
 
-## Development changes awaiting signed delivery
+## Changes in 0.6.0
 
-The following controls belong to the development candidate and are described in this guide. They are not included in the public0.5.2 download.
+Version 0.6.0 includes the following controls.
 
 - **AI connections:** gateway subscriptions, native Codex/Claude/Antigravity tools, named OpenAI-compatible profiles and the separate Anthropic API route. Follow [connection setup](AI-CONNECTIONS.md); catalog entries do not establish image support or account entitlement. No route automatically falls back to another model.
 - **Editing and Scene:** changing Start preserves cue duration; authored timing remains separate from the original visual event. Scene answers have individual Speak, Copy and Add actions. Explore supports2/5/10/20-second ranges and optional focus, with glossary context passed to the request.
@@ -26,7 +26,7 @@ Describer Workbench helps you write short spoken descriptions of a video's visua
 
 The outputs are an editable project; SRT, VTT, plain text or project JSON; narrated MP3/WAV; or a described MP4. Complete media exports include no-fit descriptions by pausing the source. MP4 freezes the picture at the original event while narration plays, then resumes. This extends the timeline; it does not create an embedded selectable alternate track.
 
-The 0.5.2 Windows portable package contains both the desktop app and `DescriberCLI.exe`, including REST and MCP access. Older 0.4.2 downloads do not contain the shared engine or transports.
+The 0.6.0 Windows portable package contains both the desktop app and `DescriberCLI.exe`, including REST and MCP access. Older 0.4.2 downloads do not contain the shared engine or transports.
 
 AI descriptions need editorial review. In particular, the Ollama path sees still images sampled from the video and receives no audio. It cannot know when someone is speaking or confirm a spoken name. The new engine measures speech/vocal protection separately with local YAMNet; it never asks vision to invent safe dialogue gaps. Review still matters for missed speech and visual facts.
 
@@ -86,7 +86,7 @@ Draft preflights the selected speech detector. If missing or corrupt, it offers 
 
 Choose an installed vision entry. To change a tag, double-click the model row or press F2, enter the exact model ID without display annotations, and commit the edit. The model list is the editable control; there is no separate tag field. **Test connection** first checks capability and then sends a short text prompt; a successful reply does not prove visual understanding. Refresh itself makes metadata requests, not inference requests or downloads.
 
-If the server is elsewhere, set its root address and optional key in Settings. Local default: `http://127.0.0.1:11434`. Remote addresses require HTTPS. For cloud tags, sign in using Ollama itself. Workbench has no OAuth flow. Remote/cloud inference asks permission before sending sampled frames/prompts and may use paid allowance. Local server selection alone does not guarantee private inference if Ollama routes the chosen tag to its cloud.
+If the server is elsewhere, set its root address and optional key in Settings. Local default: `http://127.0.0.1:11434`. Remote addresses require HTTPS. For cloud tags, sign in using Ollama itself. Ollama uses its own sign-in. Subscription tools and the shared gateway use the separate sign-in paths in AI connections. Remote/cloud inference asks permission before sending sampled frames/prompts and may use paid allowance. Local server selection alone does not guarantee private inference if Ollama routes the chosen tag to its cloud.
 
 ### Gemini
 
@@ -229,7 +229,7 @@ No analytics or application telemetry is configured. The engine disables ONNX te
 
 **Cancel operation** stops owned FFmpeg work and prevents subsequent chunks. It is cooperative around network streaming; an idle read may delay completion. It cannot retract already transmitted media or cancel a provider charge. Closing during a job requests cancellation and keeps the app open until the job ends. Save before long operations.
 
-For manual updates, close Workbench and extract the new portable build separately; retain the old folder and projects until the new version works. Settings remain under LocalAppData. With a blank feed the candidate checks the official latest stable GitHub release. Staging verifies the archive digest and timestamped Valid Scott Converse signatures on GUI and CLI, then installation rechecks every staged payload hash. It swaps sibling directories after the exact running process exits and retains the previous folder; receipts go under LocalAppData's `updates` directory. To roll back, close the app and restore the retained folder. Startup checking is opt-in. A custom feed is trusted input; a matching hash alone is insufficient.
+For manual updates, close Workbench and extract the new portable build separately; retain the old folder and projects until the new version works. Settings remain under LocalAppData. With a blank feed the app checks the official latest stable GitHub release. Staging verifies the archive digest and timestamped Valid Scott Converse signatures on GUI and CLI, then installation rechecks every staged payload hash. It swaps sibling directories after the exact running process exits and retains the previous folder; receipts go under LocalAppData's `updates` directory. To roll back, close the app and restore the retained folder. Startup checking is opt-in. A custom feed is trusted input; a matching hash alone is insufficient.
 
 ## 13. Troubleshooting
 
@@ -314,7 +314,7 @@ Optional update-feed shape (example only; no service is supplied):
 ```json
 {
   "application": "DescriberWorkbench",
-  "version": "0.5.2",
+  "version": "0.6.0",
   "url": "https://example.org/DescriberWorkbench.zip",
   "sha256": "REPLACE_WITH_THE_ACTUAL_64_HEXADECIMAL_CHARACTER_DIGEST"
 }
@@ -333,11 +333,11 @@ Run the standard suite on Windows:
 
 The optional second command opens an owned window, makes a short clip, tests editing/seeking/playback, DPAPI, native speech and MP3. It writes local artifacts and is not a cloud test. Additional acceptance scripts in `tests/` exercise library formats, audio mixing and update staging/rollback; read their inputs before running. `verify_payload.py` compares frozen source code fingerprints to the executable and checks reader dependencies. It does not prove human usability or visual accuracy.
 
-The v0.5.1 suite passes 51 tests and 3 subtests. The earlier v0.5.0 suite passed 43 tests and 3 subtests. Real native vision/classifier/speech checks covered three 120-second samples, and packaged GUI/CLI/HTTP/MCP startup passed. These are historical results. See the [current 0.5.2 release acceptance record](V052-ACCEPTANCE.md), [historical desktop acceptance](V051-ACCEPTANCE.md) and [historical engine acceptance](V050-ACCEPTANCE.md) for scope and limits. These results are functional evidence, not a visual-accuracy percentage.
+The v0.5.1 suite passes 51 tests and 3 subtests. The earlier v0.5.0 suite passed 43 tests and 3 subtests. Real native vision/classifier/speech checks covered three 120-second samples, and packaged GUI/CLI/HTTP/MCP startup passed. These are historical results. See the [0.6.0 release acceptance record](V060-ACCEPTANCE.md), [historical desktop acceptance](V051-ACCEPTANCE.md) and [historical engine acceptance](V050-ACCEPTANCE.md) for scope and limits. These results are functional evidence, not a visual-accuracy percentage.
 
 Historical 0.4.2 evidence: its suite passed 28 tests. Actual GUI Bunny seconds 62–122 with Gemma 26B and Qwen Q6 completed four requests per model with a clean initial glossary. The eight requests carried the requested off/32K/64K settings, runner contexts were 64K and no thinking output or truncation occurred. Projects matched responses; cue counts (29/25) are not quality scores. The release verification asset pins the executable and source identity. Raw local receipts are excluded from Git/public downloads because they include images and paths.
 
-Still unverified: live Gemini/OpenAI/keyed-cloud operation, full-film analysis/AD quality, NVDA/JAWS user acceptance, native-speaker translations, third-party legacy voices, live public YouTube extraction and a real production update cycle. Fixtures validate adapter/format behavior without proving live provider acceptance. Documentation-only publication does not rebuild or change an accepted executable.
+Still unverified: live Gemini/OpenAI/keyed-cloud operation, full-film analysis/AD quality, NVDA/JAWS user acceptance, native-speaker translations, third-party legacy voices, live public YouTube extraction ; production update evidence is recorded in the release verification asset. Fixtures validate adapter/format behavior without proving live provider acceptance. Documentation-only publication does not rebuild or change an accepted executable.
 
 When extending a provider, trace selection → saved exact tag → capability/preflight → confirmation → request → normalized response → GUI/project. Preserve cancellation and existing cue data on failure. Add focused affected tests and document real transmission/compatibility limits. Do not claim another provider is supported solely because it is named by a discovery endpoint.
 
@@ -349,7 +349,7 @@ This is newly written reconstruction source, not recovered original source or an
 
 ## Redesigned desktop interface
 
-The 0.5.2 Windows portable and source tree include the Industry PySide6 interface described here. New scene answers are marked for review. **Mark as checked** appears only on Needs review descriptions. Use it only after verifying visual facts; editing invalidates measured narration and the engine replans it at media export. Saved projects and engine protocols remain compatible.
+The 0.6.0 Windows portable and source tree include the Industry PySide6 interface described here. New scene answers are marked for review. **Mark as checked** appears only on Needs review descriptions. Use it only after verifying visual facts; editing invalidates measured narration and the engine replans it at media export. Saved projects and engine protocols remain compatible.
 
 ### Timeline navigation and desktop visual controls
 
@@ -362,7 +362,7 @@ At export, choose a narration engine and a voice in the dropdowns. Windows voice
 
 ## Setup and recovery changes (0.5.2)
 
-These controls are included in 0.5.2. [Release acceptance](V052-ACCEPTANCE.md) records the checks and remaining verification limits.
+These recovery controls were introduced in 0.5.2 and retained in 0.6.0. [Current release acceptance](V060-ACCEPTANCE.md) records checks and verification limits.
 
 - Draft provider/model edits are committed by Start; Cancel preserves saved settings. Ollama Refresh and Test operate on the exact displayed ID. Gemini does not expose an Ollama-backed test. Slow preflight runs in the background; Cancel prevents continuation. Install/start Ollama separately and install your chosen vision model, then use Draft > Refresh models. No automatic model selection or download occurs.
 - Setup distinguishes missing, configured, verified and error. A configured Gemini key is not an account-access test. Detector verification is cached and invalidated by file changes. Voice readiness concerns the selected export engine, not playback voices.
@@ -371,4 +371,4 @@ These controls are included in 0.5.2. [Release acceptance](V052-ACCEPTANCE.md) r
 - **File > Repair narration** regenerates missing narration and placement through the shared engine without repeating vision. Missing referenced audio is also reported on load/playback. Consent precedes cloud speech. Save the repaired project to retain its new audio references.
 - **File > Recover interrupted jobs** lists readable failed/cancelled/interrupted jobs with original source and operation. Resume uses original saved settings plus current keys, and opens the result as an unsaved recovered project. Checkpoints are reused only when source, model, settings and implementation identity match. An older release's checkpoints may be incompatible with this version; rejection preserves them. Damaged job records are reported and left unchanged; restore them from a backup rather than deleting the engine workspace.
 - The developer API announces readiness only after startup. A busy port is reported; no conflicting process is terminated. Stop/retry once the conflict is resolved.
-- URL failures offer connection/account/extractor guidance and a local-file fallback. The app does not import browser cookies or bypass bot challenges. In the candidate, Check for updates with a blank feed queries the official latest stable GitHub release; the older0.5.2 behavior only offered the releases page.
+- URL failures offer connection/account/extractor guidance and a local-file fallback. The app does not import browser cookies or bypass bot challenges. In 0.6.0, Check for updates with a blank feed queries the official latest stable GitHub release; the older0.5.2 behavior only offered the releases page.

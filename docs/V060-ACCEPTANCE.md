@@ -1,10 +1,10 @@
-# 0.6.0 candidate acceptance
+# 0.6.0 acceptance
 
-November4,2026. **Signed development candidate; not published or installed yet.** The public signed0.5.2 release and its acceptance records remain unchanged. Candidate source is `ba04cc390eb264093fcbdf185bf03e993d3e2499`. Required [Windows CI41872789830](https://github.com/scottconverse/Describer-Workbench/actions/runs/41872789830) succeeded. The Windows build, both frozen-source comparisons, packaged CLI/HTTP/OpenAPI/MCP checks and native GUI startup/normal close passed. Public downloads and installed acceptance remain pending.
+November 4, 2026. The GUI and CLI are signed as Scott Converse. Earlier0.5.2 acceptance records remain historical. Signed executable build source is `ba04cc390eb264093fcbdf185bf03e993d3e2499`. Required [Windows CI41872789830](https://github.com/scottconverse/Describer-Workbench/actions/runs/41872789830) succeeded. The Windows build, both frozen-source comparisons, packaged CLI/HTTP/OpenAPI/MCP checks and native GUI startup/normal close passed. The release verification asset records final publication, downloaded hashes and installed acceptance separately from these build checks.
 
 ## Bounded scope
 
-The candidate addresses the22-item original-specification/REA remediation list. Source behavior, executed checks and delivery are distinct. The source has152 passing tests plus3 subtests; required local lint and remote CI pass. One upstream Starlette deprecation warning remains. Later version/documentation bookkeeping does not change the tested inference, speech or media behavior.
+Version0.6.0 addresses the22-item original-specification/REA remediation list. Source behavior, executed checks and delivery are distinct. The source has152 passing tests plus3 subtests; required local lint and remote CI pass. One upstream Starlette deprecation warning remains. Later version/documentation bookkeeping does not change the tested inference, speech or media behavior.
 
 | Item | Implemented behavior and acceptance |
 |---|---|
@@ -12,7 +12,7 @@ The candidate addresses the22-item original-specification/REA remediation list. 
 | D02 | Authored timing separated from observed event provenance; Start edits preserve duration, undo/replan/export retain intent. Regression checks pass. |
 | D03 | Gemini finish/block/no-candidate classification; cut-off text retained separately as incomplete review material, not a result. Service/reopen/redaction regressions pass. Blocked text is not recovered. |
 | D04 | Explicit Explore operation retains focus and project glossary through desktop/shared service. Persistence/usage regression passes. |
-| D05 | Native Codex/Claude/Antigravity and existing gateway transports implemented. Native routes and gateway Codex/Gemini have actual image-backed requests and common-engine description/Scene evidence. **Gateway Claude remains open pending account reauthentication and successful inference.** See [connections](AI-CONNECTIONS.md). |
+| D05 | Native Codex/Claude/Antigravity and existing gateway transports implemented. Native routes and gateway Codex/Gemini have actual image-backed requests and common-engine description/Scene evidence. Gateway Claude recovered through its existing account workflow and passed a fresh blue-image check plus16s description/Scene jobs; both reported `claude-sonnet-5-5`. See [connections](AI-CONNECTIONS.md). |
 | D06 | Three120-second materials compared against source-time images; sampling defect corrected. Scott explicitly accepted reviewed drafts with documented factual/recall limits. Wrong bedroom identity, short object omission and uncertain text remain failed inference examples, not hidden passes. |
 | D07 | Recognized redundant lead-ins shortened only when measured original speech cannot fit; shortened WAV remeasured. Actual Windows speech fit and original text/evidence/reopen checks pass; otherwise pause fallback remains. |
 | D08 | Prompt manager reachable in File; existing per-language CRUD retained. UI regression passes. |
@@ -25,7 +25,7 @@ The candidate addresses the22-item original-specification/REA remediation list. 
 | D15 | Rich available metadata, exact manual IDs and per-entry catalog failure isolation. Regression checks pass; missing metadata stays unknown. |
 | D16 | Available usage persists by operation/requested/reported identity. Description/glossary combined counts explicitly attributed; Scene separate; unavailable counts/cost unknown. Persistence/display checks and actual provider job records pass. |
 | D17 | Final startup language application restored.204 literal strings inventoried,171 English fallbacks per non-English language except Turkish170. Dynamic/model/user strings excluded. Native-speaker/full translation acceptance not claimed. |
-| D18 | Blank feed uses official stable GitHub release; digest, timestamped Scott Converse signatures on both executables and staged-file hashes required. Actual existing signed-package stage/disposable swap/backup/settings/tamper rejection pass. New production installed update/relaunch remains pending delivery. |
+| D18 | Blank feed uses official stable GitHub release; digest, timestamped Scott Converse signatures on both executables and staged-file hashes required. Actual existing signed-package stage/disposable swap/backup/settings/tamper rejection pass. Production update/relaunch results are recorded in the release verification asset. |
 | D19 | Explore2/5/10/20 seconds and optional focus restored; end-to-end shared-service check passes. |
 | D20 | Native Windows screenshots/control checks cover Scene actions/focus, actual model/counts, four-bar mark, dialogue hatch, diamond playhead, visible range, toast and runtime developer paths. Settings Cancel preserves bytes. No active-reader usability certification. |
 | D21 | Native Qt event loop decoded/sought/played measured in-gap and pause narration for bounded MP4/MKV/MOV/AVI/WebM fixtures. No arbitrary-codec or every-file guarantee. |
@@ -37,7 +37,7 @@ Descriptions are reviewed drafts. Human correction of visual facts, omitted even
 
 Gateway Gemini reported a different canonical model ID from the requested high alias. Native Codex/Antigravity did not report actual model identity. These limits are exposed rather than substituting another route or claiming every model entitlement. Existing Gemini/OpenAI keyed speech/analysis, third-party legacy voices, public YouTube extraction, full native-speaker translation and active-reader sessions retain their previous live-testing limits.
 
-## Delivery still pending
+## Signed build and delivery verification
 
 The exact prebuilt GUI and CLI were signed through the established Azure workflow41873830687. Independent local `signtool verify /pa /v` and Authenticode checks passed for both: Valid, Scott Converse, Microsoft timestamps. Intake/returned hash mappings matched and both post-sign embedded-source comparisons passed. Unsigned backups remain retained.
 
@@ -46,4 +46,4 @@ The exact prebuilt GUI and CLI were signed through the established Azure workflo
 | `DescriberWorkbench.exe` | `18ff122c0b88d0c55d150bfa5996bd89c8fbf5e5a692cf6a3820ff62db67a011` |
 | `DescriberCLI.exe` | `f882bc67d95a71dba67fb4081415dfbc0ab93682083c0803bf9b1790c121ca19` |
 
-Before this becomes a delivered release: resolve or explicitly disposition the gateway Claude account, finalize release documentation/package contents, publish verified assets after the normal protected merge, update installed app/launcher, and verify downloaded/installed files and all documentation surfaces. A signed candidate or launched process is not delivery evidence. Documentation-only follow-up commits do not change the signed-build identity above.
+Delivery requires final documentation/package contents, the normal expected-head PR merge, verified published assets, installed app/launcher acceptance, and downloaded/installed signature and documentation checks. See the release verification asset for the executed delivery results and final source identity. A signed build or launched process alone is not delivery evidence. Documentation-only follow-up commits do not change the signed-build identity above.

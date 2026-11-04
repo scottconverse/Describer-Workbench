@@ -2,11 +2,11 @@
 
 **One audio-description engine for a Windows workbench, Python, CLI, REST/OpenAPI and MCP.**
 
-**0.6.0 development candidate — not yet published.** It adds subscription/native CLI and compatible API connections, authored cue timing, measured Windows narration policy, original-settings mapping, progress/usage, source-time frame sampling and the remaining finite redesign controls. See [connection setup and verification limits](docs/AI-CONNECTIONS.md). The current public download remains signed **0.5.2**; it does not contain these changes. Its [acceptance record](docs/V052-ACCEPTANCE.md) remains historical release evidence.
+**Version 0.6.0** adds subscription/native CLI and compatible API connections, authored cue timing, measured Windows narration policy, original-settings mapping, progress/usage, source-time frame sampling and the remaining finite redesign controls. See [connection setup and verification limits](docs/AI-CONNECTIONS.md). The Windows GUI and CLI are Azure Trusted Signed as Scott Converse. See [0.6.0 acceptance](docs/V060-ACCEPTANCE.md) for executed checks and delivery boundaries; the [0.5.2 record](docs/V052-ACCEPTANCE.md) remains historical evidence.
 
-Open a video, draft descriptions through the selected analysis connection, edit every cue, listen alongside the video, and export subtitles or a narrated audio mix. The candidate supports Gemini, Ollama, the existing subscription gateway, native Codex/Claude/Antigravity tools and explicit API profiles. Manual editing, subtitle import and Windows speech work without an AI API key. These are reviewed drafts: correct visual facts, missing events, readable text and timing before final export.
+Open a video, draft descriptions through the selected analysis connection, edit every cue, listen alongside the video, and export subtitles or a narrated audio mix. Version 0.6.0 supports Gemini, Ollama, the existing subscription gateway, native Codex/Claude/Antigravity tools and explicit API profiles. Manual editing, subtitle import and Windows speech work without an AI API key. These are reviewed drafts: correct visual facts, missing events, readable text and timing before final export.
 
-[Windows 0.5.2](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.5.2) · [Website](https://describer-workbench.sconverse.chatgpt.site) · [User manual](docs/USER-MANUAL.md) · [Architecture](docs/ARCHITECTURE.md) · [Developer guide](docs/DEVELOPER-GUIDE.md) · [Issues](https://github.com/scottconverse/Describer-Workbench/issues)
+[Windows 0.6.0](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.6.0) · [Website](https://describer-workbench.sconverse.chatgpt.site) · [User manual](docs/USER-MANUAL.md) · [Architecture](docs/ARCHITECTURE.md) · [Developer guide](docs/DEVELOPER-GUIDE.md) · [Issues](https://github.com/scottconverse/Describer-Workbench/issues)
 
 > AI output is a draft. Review visual facts, character identities, timing and overlap with dialogue. Ollama receives sampled images **without audio**, so it cannot determine dialogue gaps or audible names. The shared engine measures speech/vocal protection independently with a pinned local YAMNet classifier. This reduces timing conflicts; it does not establish visual accuracy or legal compliance.
 
@@ -27,7 +27,7 @@ Open a video, draft descriptions through the selected analysis connection, edit 
 
 ## Install and start
 
-1. Download `DescriberWorkbench-0.5.2-windows-x64.zip` from the [release](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.5.2).
+1. Download `DescriberWorkbench-0.6.0-windows-x64.zip` from the [release](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.6.0).
 2. Extract the complete ZIP to a writable folder. Open `DescriberWorkbench/DescriberWorkbench.exe`; keep `_internal` beside it. Python, Qt, FFmpeg and FFprobe are bundled.
 3. Select **Open video** and choose your video. Open it before importing subtitle cues. Standalone audio is not a documented input workflow.
 4. Choose an analysis provider/model and a short range, or add cues manually. Follow the [first-project walkthrough](docs/USER-MANUAL.md#3-your-first-project).
@@ -38,7 +38,7 @@ The binary targets 64-bit Windows and has GUI and CLI executables **signed as Sc
 Compare your download with the release's `SHA256SUMS.txt`:
 
 ```powershell
-Get-FileHash .\DescriberWorkbench-0.5.2-windows-x64.zip -Algorithm SHA256
+Get-FileHash .\DescriberWorkbench-0.6.0-windows-x64.zip -Algorithm SHA256
 ```
 
 ## Does it need an API key?
@@ -51,7 +51,7 @@ Get-FileHash .\DescriberWorkbench-0.5.2-windows-x64.zip -Algorithm SHA256
 | Gemini analysis, Ask and Explore | Gemini key and accessible model | Video with audio unless silent upload is selected; confirmation required |
 | OpenAI speech export/preview | OpenAI key and accessible speech model | Description text after confirmation |
 
-The0.6.0 candidate includes the finite [connection inventory](docs/AI-CONNECTIONS.md). Native tools and the gateway retain their own sign-in; File > Subscription sign-in opens the selected native tool. API-credit routes remain separate from subscriptions. Installing a CLI or listing a model does not prove login, entitlement or vision. The public0.5.2 app has Gemini/Ollama analysis and optional OpenAI speech only.
+Version 0.6.0 includes the finite [connection inventory](docs/AI-CONNECTIONS.md). Native tools and the gateway retain their own sign-in; File > Subscription sign-in opens the selected native tool. API-credit routes remain separate from subscriptions. Installing a CLI or listing a model does not prove login, entitlement or vision.
 
 ## Ollama quick start
 
@@ -77,7 +77,7 @@ Open media → draft or import cues → correct the glossary → edit facts and 
 
 Select a description to seek to its start and expand the inline editor. Times accept seconds, `MM:SS` or `HH:MM:SS`; Start and End update independently. Valid edits apply as you type; Ctrl+Z undoes. **Add at playhead** creates and selects a three-second cue. **Ctrl+S** saves the project. Analysis and subtitle import replace descriptions after confirmation; range analysis replaces the cue list. Save a separate `.adproject` copy to preserve comparisons.
 
-Version 0.5.2 includes the redesigned native PySide6 interface in source and the Windows portable download.
+Version 0.6.0 includes the redesigned native PySide6 interface in source and the Windows portable download.
 
 The engine measures synthesized speech and fits it only within the visual event and independently protected soundtrack. Speed is capped at 1.15x; no-fit descriptions pause the source instead of being discarded or moved to an unrelated scene. Complete MP4 exports freeze the video during those descriptions; MP3/WAV exports insert matching audio pauses. Uncertain events remain unresolved and block a complete narrated export. Explicit `in-gap-only` exports are marked incomplete. Script exports retain all events and a coverage sidecar; a subtitle file alone cannot express pause playback. Audio mixes downmix to stereo.
 
@@ -85,7 +85,7 @@ Draft checks the selected detector and offers explicit install/repair before inf
 
 ## Architecture
 
-![Architecture: Qt desktop editor routes projects through media tools, Ollama or Gemini, and speech/export services.](docs/diagrams/system.svg)
+![Architecture: Qt desktop editor routes projects through media tools, selected AI connections, and speech/export services.](docs/diagrams/system.svg)
 
 Python/PySide6 provides the editor; every consumer uses `DescriptionService` and one serial queue. The headless engine owns jobs, checkpoints, independent sound protection, observation, synthesis, placement and export. FFmpeg prepares media and mixes audio. Existing version-1 projects still load; new fields preserve event intervals, coverage and placement. Keys remain outside job/project files. See the [architecture guide](docs/ARCHITECTURE.md) for module responsibilities, request sequences and trust boundaries.
 
@@ -98,7 +98,7 @@ Python/PySide6 provides the editor; every consumer uses `DescriptionService` and
 - Diagnostics: rotated logs beside settings. Configured keys are redacted; paths, text and provider errors can remain. Inspect before sharing.
 - Gemini: upload deletion is attempted in `finally`; provider retention applies if cleanup fails. Cancellation cannot undo an upload or charge.
 - Ollama: loopback requests go to the configured local server. Cloud/remote use prompts before sending frames and text; Ollama controls further routing.
-- Candidate updates: blank feed checks the official latest stable GitHub release; staging requires matching hashes and timestamped Scott Converse signatures on both executables, then rechecks payload hashes before swapping. Rollback folders are retained. The public0.5.2 app still needs manual downloads unless a trusted feed is configured.
+- Updates: blank feed checks the official latest stable GitHub release; staging requires matching hashes and timestamped Scott Converse signatures on both executables, then rechecks payload hashes before swapping. Rollback folders are retained. Startup checking is opt-in.
 
 See [privacy and recovery](docs/USER-MANUAL.md#12-privacy-storage-and-recovery) for details.
 
@@ -120,7 +120,7 @@ The build script installs the desktop, local-model and developer transport extra
 
 ## Verification
 
-For 0.5.2, see the [current release acceptance record](docs/V052-ACCEPTANCE.md) and the release verification asset for source identity, signed artifact hashes, CI results and remaining limits. The [0.5.1 acceptance record](docs/V051-ACCEPTANCE.md) preserves earlier results. Historical 0.4.2 evidence below applies only to that release. The new protocol tests initialize real MCP clients over stdio and HTTP; media tests check actual FFmpeg output. No percentage visual-accuracy claim is made.
+For 0.6.0, see the [release acceptance record](docs/V060-ACCEPTANCE.md) and the release verification asset for source identity, signed artifact hashes, CI results and remaining limits. The [0.5.1 acceptance record](docs/V051-ACCEPTANCE.md) preserves earlier results. Historical 0.4.2 evidence below applies only to that release. The new protocol tests initialize real MCP clients over stdio and HTTP; media tests check actual FFmpeg output. No percentage visual-accuracy claim is made.
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -q
@@ -136,7 +136,7 @@ For 0.5.2, see the [current release acceptance record](docs/V052-ACCEPTANCE.md) 
 | Artifact | All 13 frozen app modules matched source; installed launch/playback accepted. Published ZIP and downloaded copies verified by SHA256. |
 | Earlier media samples | Nine sampled video exports, 40 subtitle files and three audio layouts passed; not full-film coverage. |
 
-The [v0.5.2 release](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.5.2) includes sanitized verification JSON and checksums. The table above is historical 0.4.2 evidence; the current [acceptance record](docs/V052-ACCEPTANCE.md) covers 0.5.2. Raw receipts stay local because they contain frames/machine paths. Live Gemini, OpenAI and cloud acceptance remain unverified without keys. NVDA/JAWS end-to-end use, native-speaker translation review, public YouTube extractor compatibility and full-film AD quality remain unverified. Windows GitHub CI runs the suite, lint, documentation rendering and Python package build. Its media tests use generated fixtures; the separate native acceptance record covers the actual vision/speech pipeline and portable executables. [AUDIT.md](AUDIT.md) records original parity work and historical results; read them in their version context.
+The [v0.6.0 release](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.6.0) includes sanitized verification JSON and checksums. The table above is historical 0.4.2 evidence; the [0.6.0 acceptance record](docs/V060-ACCEPTANCE.md) covers the current release. Raw receipts stay local because they contain frames/machine paths. Native Codex/Claude/Antigravity and gateway Codex/Claude/Gemini have bounded image-backed description/Scene evidence. Gateway Gemini reported a different canonical model from its requested high alias; native Codex/Antigravity did not report model identity. Separate keyed Gemini/OpenAI/Anthropic and LM Studio/llama.cpp services retain their live-testing limits. NVDA/JAWS end-to-end use, native-speaker translation review, public YouTube extractor compatibility and full-film AD quality remain unverified. Windows GitHub CI runs the suite, lint, documentation rendering and Python package build. Its media tests use generated fixtures; the separate native acceptance record covers the actual vision/speech pipeline and portable executables. [AUDIT.md](AUDIT.md) records original parity work and historical results; read them in their version context.
 
 ## Documentation and development
 
