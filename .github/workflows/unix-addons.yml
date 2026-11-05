@@ -10,7 +10,7 @@ on:
         description: Native platform to execute
       test_scope:
         type: choice
-        options: [full, frames]
+        options: [full, frames, media-export]
         default: full
         description: Use frames only when unchanged suite evidence is already recorded
       candidate_run:
@@ -87,7 +87,14 @@ jobs:
       - name: Mac native tests
         if: runner.os == 'macOS'
         timeout-minutes: 8
-        run: python -m pytest -vv -o faulthandler_timeout=45 --junitxml="$RUNNER_TEMP/native-tests.xml"
+        env:
+          TEST_SCOPE: ${{ inputs.test_scope || 'full' }}
+        run: |
+          if [ "$TEST_SCOPE" = media-export ]; then
+            python -m pytest -vv tests/test_media_exports.py --junitxml="$RUNNER_TEMP/native-tests.xml"
+          else
+            python -m pytest -vv -o faulthandler_timeout=45 --junitxml="$RUNNER_TEMP/native-tests.xml"
+          fi
       - name: Freeze platform add-on
         run: python -m PyInstaller --noconfirm --distpath dist-unix --workpath build-unix/frozen DescriberUnix.spec
       - name: Package installers

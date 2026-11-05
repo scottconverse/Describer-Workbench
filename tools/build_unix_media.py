@@ -34,7 +34,7 @@ def main():
     run(['./configure','--prefix='+str(prefix),'--disable-shared','--enable-static','--disable-frontend','--disable-decoder','--disable-dependency-tracking','--with-pic','CFLAGS=-O2 -std=gnu99 -Wno-error=implicit-function-declaration'],lame)
     run(['make','-j'+jobs],lame);run(['make','install'],lame)
     ffmpeg=extracted[SOURCES[0][0]]
-    arguments=['./configure','--prefix='+str(prefix),'--enable-gpl','--enable-libx264','--enable-libmp3lame','--pkg-config-flags=--static','--extra-cflags=-I'+str(prefix/'include'),'--extra-ldflags=-L'+str(prefix/'lib'),'--disable-autodetect','--disable-doc','--disable-debug','--disable-ffplay','--disable-x86asm','--disable-network','--disable-shared','--enable-static']
+    arguments=['./configure','--prefix='+str(prefix),'--enable-gpl','--enable-libx264','--enable-libmp3lame','--enable-zlib','--pkg-config-flags=--static','--extra-cflags=-I'+str(prefix/'include'),'--extra-ldflags=-L'+str(prefix/'lib'),'--disable-autodetect','--disable-doc','--disable-debug','--disable-ffplay','--disable-x86asm','--disable-network','--disable-shared','--enable-static']
     run(arguments,ffmpeg);run(['make','-j'+jobs],ffmpeg);run(['make','install'],ffmpeg)
     license_dir=prefix/'licenses';license_dir.mkdir(exist_ok=True)
     for name,path in [('FFmpeg-GPLv2.txt',ffmpeg/'COPYING.GPLv2'),('x264-GPLv2.txt',x264/'COPYING'),('LAME-LGPL.txt',lame/'COPYING')]:
