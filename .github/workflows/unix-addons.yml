@@ -2,24 +2,40 @@ name: macOS and Linux add-ons
 
 on:
   workflow_dispatch:
+    inputs:
+      target:
+        type: choice
+        options: [all, linux-x64, macos-arm64, macos-x64]
+        default: all
+        description: Native platform to execute
+      test_scope:
+        type: choice
+        options: [full, frames]
+        default: full
+        description: Use frames only when unchanged suite evidence is already recorded
+      candidate_run:
+        type: string
+        description: Existing artifact run ID for acceptance only (no rebuild)
+      candidate_sha:
+        type: string
+        description: Existing artifact source SHA (required with candidate_run)
   pull_request:
     paths: ['describer/**', 'tests/**', 'tools/**', 'DescriberUnix.spec', 'pyproject.toml', '.github/workflows/unix-addons.yml']
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   native:
+    if: inputs.candidate_run == ''
     name: ${{ matrix.target }} native install and acceptance
     timeout-minutes: 65
     strategy:
       fail-fast: false
       max-parallel: 1
       matrix:
-        include:
-          - {target: linux-x64, runner: ubuntu-24.04}
-          - {target: macos-arm64, runner: macos-15}
-          - {target: macos-x64, runner: macos-15-intel}
+        include: ${{ fromJSON(inputs.target == 'linux-x64' && '[{"target":"linux-x64","runner":"ubuntu-24.04"}]' || inputs.target == 'macos-arm64' && '[{"target":"macos-arm64","runner":"macos-15"}]' || inputs.target == 'macos-x64' && '[{"target":"macos-x64","runner":"macos-15-intel"}]' || '[{"target":"linux-x64","runner":"ubuntu-24.04"},{"target":"macos-arm64","runner":"macos-15"},{"target":"macos-x64","runner":"macos-15-intel"}]') }}
     runs-on: ${{ matrix.runner }}
     env:
       HF_HUB_DISABLE_TELEMETRY: '1'
@@ -59,13 +75,15 @@ jobs:
       - name: Diagnose Linux native Qt loader
         if: runner.os == 'Linux'
         run: xvfb-run -a python tools/verify_linux_qt.py
-      # Recovery pass: reuse the unchanged 139 passing tests from run41990536002.
-      # Recheck the two frame failures and the remaining/changed test files.
-      # Restore the full-suite command after this bounded recovery, without rebuilding accepted packages.
-      - name: Linux remaining and failed tests
+      - name: Linux native tests
         if: runner.os == 'Linux'
         timeout-minutes: 8
-        run: xvfb-run -a dbus-run-session -- sh -c 'printf "ci-only" | gnome-keyring-daemon --unlock --components=secrets; python -m pytest -vv -o faulthandler_timeout=45 tests/test_frames.py tests/test_recovery.py tests/test_services.py tests/test_subscriptions.py tests/test_updates.py --junitxml="$RUNNER_TEMP/native-tests.xml"'
+        env:
+          TEST_SCOPE: ${{ inputs.test_scope || 'full' }}
+        run: |
+          # Variables intentionally expand inside the dbus session's shell.
+          # shellcheck disable=SC2016
+          xvfb-run -a dbus-run-session -- sh -c 'printf "ci-only" | gnome-keyring-daemon --unlock --components=secrets; if [ "$TEST_SCOPE" = frames ]; then set -- tests/test_frames.py; else set --; fi; python -m pytest -vv -o faulthandler_timeout=45 "$@" --junitxml="$RUNNER_TEMP/native-tests.xml"'
       - name: Mac native tests
         if: runner.os == 'macOS'
         timeout-minutes: 8
@@ -89,6 +107,7 @@ jobs:
           if-no-files-found: warn
 
   acceptance:
+    if: ${{ always() && (needs.native.result == 'success' || inputs.candidate_run != '') }}
     name: ${{ matrix.target }} installed acceptance
     needs: native
     timeout-minutes: 25
@@ -96,10 +115,7 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        include:
-          - {target: linux-x64, runner: ubuntu-24.04}
-          - {target: macos-arm64, runner: macos-15}
-          - {target: macos-x64, runner: macos-15-intel}
+        include: ${{ fromJSON(inputs.target == 'linux-x64' && '[{"target":"linux-x64","runner":"ubuntu-24.04"}]' || inputs.target == 'macos-arm64' && '[{"target":"macos-arm64","runner":"macos-15"}]' || inputs.target == 'macos-x64' && '[{"target":"macos-x64","runner":"macos-15-intel"}]' || '[{"target":"linux-x64","runner":"ubuntu-24.04"},{"target":"macos-arm64","runner":"macos-15"},{"target":"macos-x64","runner":"macos-15-intel"}]') }}
     runs-on: ${{ matrix.runner }}
     env:
       HF_HUB_DISABLE_TELEMETRY: '1'
@@ -114,7 +130,9 @@ jobs:
           cache: pip
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          name: unix-${{ matrix.target }}-${{ github.sha }}
+          name: unix-${{ matrix.target }}-${{ inputs.candidate_sha || github.sha }}
+          run-id: ${{ inputs.candidate_run || github.run_id }}
+          github-token: ${{ github.token }}
           path: candidate
       - name: Linux desktop dependencies
         if: runner.os == 'Linux'
@@ -141,6 +159,8 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get install -y ./unix-packages/*.deb
+          # Variables intentionally expand inside the dbus session's shell.
+          # shellcheck disable=SC2016
           xvfb-run -a dbus-run-session -- sh -c 'printf "ci-only" | gnome-keyring-daemon --unlock --components=secrets; openbox > "$RUNNER_TEMP/openbox.log" 2>&1 & python tools/verify_unix.py --payload /opt/describer-workbench --output "$RUNNER_TEMP/unix-acceptance" --source-install'
           sudo apt-get remove -y describer-workbench
           test ! -e /usr/bin/describer-workbench

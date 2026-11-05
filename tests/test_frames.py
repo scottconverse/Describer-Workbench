@@ -16,6 +16,13 @@ def test_exact_source_frames_and_nonintegral_timestamps(tmp_path,interval,expect
     assert [time for _,time in frames]==pytest.approx(expected,abs=.0001)
     for (path,time) in frames:
         raw=run([tool('ffmpeg'),'-v','error','-i',str(path),'-vf','scale=2:2','-pix_fmt','rgb24','-f','rawvideo','-'])
-        # Lossy JPEG may move a channel by a few levels. The old sampler picked
-        # frame29 for its purported0s image, rather than frame0.
-        assert abs(raw[0]-round(time*30))<=3
+        # Compare against the exact source frame through the same JPEG path.
+        # FFmpeg versions differ in RGB/YUV range conversion (Ubuntu's black
+        # fixture decodes as 4), so a fixed RGB tolerance measures the codec,
+        # not frame identity. The old sampler's frame29 still differs from 0.
+        reference=tmp_path/f'reference-{round(time*30)}.jpg'
+        run([tool('ffmpeg'),'-v','error','-y','-i',str(source),
+             '-vf',f'select=eq(n\\,{round(time*30)}),scale=640:-2',
+             '-frames:v','1','-q:v','3',str(reference)])
+        expected_raw=run([tool('ffmpeg'),'-v','error','-i',str(reference),'-vf','scale=2:2','-pix_fmt','rgb24','-f','rawvideo','-'])
+        assert raw==expected_raw
