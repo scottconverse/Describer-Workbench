@@ -111,7 +111,9 @@ application's live-text output through the active NVDA adapter. The native Qt
 workflow navigated cues, edited text, used undo/redo and saved the actual project.
 The saved file and normal application exit were verified. These are speech
 pipeline and interaction observations; human listening/blind-user usability,
-JAWS, VoiceOver and Orca remain unverified. Temporary reader was quit afterward.
+JAWS, VoiceOver and Orca remain unverified. Temporary reader was quit afterward. Local checks passed 22 tests (4 platform
+skips) plus 3 documentation tests. Native Linux/macOS source/Qt checks passed
+at `f1532a3` in run `42099782482`; Package 3 is accepted and pushed.
 Initial test-window visibility was delayed and a duplicate fixture window was
 closed normally; intermittent CUA foreground/geometry errors were recovered by
 fresh observations, without changing the app. No full CI or build restart.
