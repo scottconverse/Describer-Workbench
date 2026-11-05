@@ -1,4 +1,6 @@
-# Developer guide — 0.6.1
+# Technical user and developer guide — 0.6.1
+
+Windows, macOS and Linux · documentation updated November 5, 2026. [Nontechnical quick start](QUICK-START.md) · [Complete user manual](USER-MANUAL.md).
 
 For the separate macOS/Linux packages, native dependencies, repository installer and build commands, see [the platform installation guide](UNIX-INSTALL.md). The existing Windows spec, signed artifacts, installation and default stable release remain unchanged. Unix builds have separate source/package/acceptance identities and no publisher certificate. The `macOS and Linux add-ons` workflow performs native tests and package installation on Ubuntu 24.04 x64 and macOS 15 arm64/Intel; its receipts state which behaviors were actually exercised.
 
@@ -14,7 +16,7 @@ New image adapters share a source-time FFmpeg sampler with at most eight640px im
 
 The Windows updater uses the official latest stable GitHub release when the configured feed is blank. It checks the archive digest, requires timestamped Valid Scott Converse signatures on both Windows executables, and rechecks all staged payload hashes before applying. Manual signed-package acceptance: `python -m tests.update_acceptance SIGNED_ARCHIVE NEW_OUTPUT_DIRECTORY`. Real portable relaunch acceptance: `python -m tests.portable_update_acceptance prepare NEW_OUTPUT_DIRECTORY OLD_INSTALL VERIFIED_STAGED_DIRECTORY`, then close only its disposable window and run the same module with `verify NEW_OUTPUT_DIRECTORY`. These scripts write new receipts beside their disposable installation and preserve historical evidence. A requested launch alone does not verify the running application.
 
-See [0.6.1 release acceptance](V061-ACCEPTANCE.md) for verification scope and limits. The distributed Windows GUI and CLI are signed as Scott Converse using Azure Trusted Signing with Microsoft timestamps. Source builds require the [release signing procedure](CODE-SIGNING.md) before publication.
+See [0.6.1 release acceptance](V061-ACCEPTANCE.md) for verification scope and limits. The distributed Windows GUI and CLI are signed as Scott Converse using Azure Trusted Signing with Microsoft timestamps. Windows source builds require the [release signing procedure](CODE-SIGNING.md) before publication; the explicitly authorized Mac/Linux distributions use the separate integrity policy below.
 
 Describer Workbench has one headless engine. The Qt desktop, Python API, CLI,
 REST API and MCP tools call the same `DescriptionService`. No WSL, Docker,
@@ -46,6 +48,20 @@ describer assets provision
 New code is Apache-2.0. See LICENSE, NOTICE and third-party notices. Attributed
 original translations and dependencies retain their own licenses.
 
+## Host configuration and installed commands
+
+| Host | Desktop / CLI | Native narration | Credential backend |
+| --- | --- | --- | --- |
+| Windows ZIP | `DescriberWorkbench.exe` / `DescriberCLI.exe` | `Windows`, `Windows 32-bit`, `Windows OneCore` | Current-user DPAPI |
+| macOS DMG | `/Applications/Describer Workbench.app` / `Contents/MacOS/DescriberCLI` inside it | `macOS` | macOS Keychain |
+| Linux DEB | `describer-workbench` / `describer` | `eSpeak NG` | Desktop Secret Service |
+| Linux tar | `DescriberWorkbench` / `DescriberCLI` in the extracted directory | `eSpeak NG` | Desktop Secret Service |
+| Source environment | `describer-workbench` / `describer` in that environment | Host native engine | Host backend |
+
+Default data folders are Windows `%LOCALAPPDATA%/DescriberWorkbench`, Mac `~/Library/Application Support/DescriberWorkbench`, and Linux `${XDG_DATA_HOME:-~/.local/share}/DescriberWorkbench`. Desktop settings/logs are there; durable jobs default to `engine` below it, overridden by `DESCRIBER_HOME/engine`. An explicit service/CLI workspace is independent. Unix keyrings must be available/unlocked; settings retain opaque references and have no plaintext fallback. Request JSON can contain raw credentials: protect it separately and do not confuse it with the desktop's protected settings file.
+
+On Mac/Linux, install native dependencies then run `python3 tools/install_unix.py` from the repository for a per-user environment and launcher. The installer prints its paths; use that environment's CLI, not an unrelated Python. For a custom environment, use `python3 -m venv .venv`, activate it and install the extras above. Intel Mac source installation may require Rust, OpenSSL/pkg-config and Xcode tools; DMGs require none of that build toolchain. The [platform guide](UNIX-INSTALL.md) has complete prerequisites and removal instructions.
+
 ## Python API
 
 ```python
@@ -54,7 +70,7 @@ from describer.engine import DescriptionService
 with_settings = {
     "analysis_provider": "Ollama",
     "ollama_model": "gemma4:12b",  # exact installed vision tag
-    "voice_engine": "Windows",
+    "voice_engine": "Windows",  # use "macOS" or "eSpeak NG" on those hosts
 }
 service = DescriptionService(r"C:\work\describer-jobs", with_settings)
 try:
@@ -69,6 +85,8 @@ try:
 finally:
     service.close()
 ```
+
+The example uses Windows paths. On Mac/Linux use absolute POSIX paths such as `~/Movies/meeting.mp4` expanded with `Path(...).expanduser()` and a writable workspace; select that host’s engine string from the table. Do not reuse Windows voice IDs or copied encrypted credentials.
 
 `submit(project=...)` accepts an existing `Project`, an `.adproject` path or
 project JSON. Original media is read-only. Result edits use `edit(job_id,
@@ -93,7 +111,7 @@ workspaces are independent installations, not a cluster.
 
 The Python console entry point is `describer`; `describer-workbench` opens the desktop. The Windows portable folder also contains `DescriberCLI.exe` with the same arguments, including `mcp` and `serve`; no Python installation is needed for that build.
 Use `describer --help` and subcommand help for actual argument names. Settings
-files are ordinary request JSON, not the DPAPI-encrypted desktop settings file.
+files are ordinary request JSON, not the host-protected desktop settings file. Avoid persisting raw keys; supply only credentials needed for the request through the supported service/environment route.
 
 ```powershell
 describer --workspace C:\work\jobs --settings local.json describe C:\media\meeting.mp4
@@ -118,7 +136,7 @@ The default bind is loopback port8796. Every HTTP request, including documentati
 and MCP, requires `Authorization: Bearer TOKEN`. Do not put the token in a URL.
 Use a TLS/auth gateway for a deployment outside the machine; that deployment is
 separate from the local server. Cross-origin requests and non-loopback Host
-headers are refused. The API can read files available to its Windows account;
+headers are refused. The API can read files available to its operating-system account;
 granting its token grants that capability. Do not give it to untrusted websites.
 
 OpenAPI schema: authenticated `GET /openapi.json`. The API defines:
@@ -158,7 +176,7 @@ Stop it using **File → Stop developer API / MCP**; the same controls are in Se
 
 ## MCP
 
-Standalone stdio configuration for a harness (replace absolute paths):
+Standalone stdio configuration for a harness (Windows example; replace absolute paths):
 
 ```json
 {
@@ -170,6 +188,8 @@ Standalone stdio configuration for a harness (replace absolute paths):
   }
 }
 ```
+
+On Mac/Linux, a source install can use its absolute environment Python path and POSIX workspace. A native package can use its absolute CLI executable; the shared global form is `DescriberCLI --workspace /absolute/jobs mcp`. In JSON use `"args": ["--workspace", "/absolute/jobs", "mcp"]`. No Windows Python path is portable.
 
 To share an already running desktop/server engine, replace `--workspace ...`
 with `--server-url http://127.0.0.1:8796` and provide `DESCRIBER_API_TOKEN` in
@@ -210,6 +230,12 @@ track; their sidecar retains pause/coverage information and original event times
 Coverage accounts for observed events. It does not establish that the model
 found every essential visual fact or that its statements are true. This version
 does not certify legal accessibility compliance or claim99% visual accuracy.
+
+## Packaging, updates and documentation identity
+
+Windows retains its published Azure Trusted Signed GUI/CLI and portable layout. macOS 15+ DMGs are separate arm64/x64 bundles with ad-hoc integrity signatures only, without Apple publisher signing/notarization. Linux x64 DEB/tar use package-managed media and speech. `DescriberUnix.spec`, `tools/build_unix_media.py` and `tools/package_unix.py` own native add-on packaging; they do not replace `DescriberWorkbench.spec` or `build.ps1`. See [build commands](UNIX-INSTALL.md#install-from-the-repository) and [signing policy](CODE-SIGNING.md).
+
+Unix updates open the add-on release page and are installed manually. Windows alone uses signature-gated ZIP staging/rollback. Never send a DMG/DEB through that Windows updater. Current guides may be refreshed separately from application code. A documentation manifest records source and guide hashes; historical application receipts retain their original source/test/artifact identities. A Mac documentation refresh must reseal the resource envelope and verify ad-hoc integrity; it does not establish Apple publisher identity. No application acceptance is invented by regenerating docs.
 
 ## Shared architecture
 

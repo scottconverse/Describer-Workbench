@@ -6,7 +6,7 @@ macOS and Linux are additional native distributions of 0.6.1 under the separate 
 
 **Version 0.6.1** fixes whole-chunk metadata validation and retry, visible subscription connection tests and disclosure, settings recovery, model metadata display, workflow instructions, optional-hours VTT import and prompt-preset rename. See [connection setup and verification limits](docs/AI-CONNECTIONS.md) and [0.6.1 acceptance](docs/V061-ACCEPTANCE.md). Windows releases require Scott Converse Azure Trusted Signing; the release verification asset records the executed signing and delivery results. The [0.6.0 record](docs/V060-ACCEPTANCE.md) remains historical evidence.
 
-Open a video, draft descriptions through the selected analysis connection, edit every cue, listen alongside the video, and export subtitles or a narrated audio mix. Version 0.6.1 supports Gemini, Ollama, the existing subscription gateway, native Codex/Claude/Antigravity tools and explicit API profiles. Manual editing, subtitle import and Windows speech work without an AI API key. These are reviewed drafts: correct visual facts, missing events, readable text and timing before final export.
+Open a video, draft descriptions through the selected analysis connection, edit every cue, listen alongside the video, and export subtitles or a narrated audio mix. Version 0.6.1 supports Gemini, Ollama, the existing subscription gateway, native Codex/Claude/Antigravity tools and explicit API profiles. Manual editing, subtitle import and native speech work without an AI API key. These are reviewed drafts: correct visual facts, missing events, readable text and timing before final export.
 
 [Windows 0.6.1](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.6.1) · [Website](https://describer-workbench.sconverse.chatgpt.site) · [User manual](docs/USER-MANUAL.md) · [Architecture](docs/ARCHITECTURE.md) · [Developer guide](docs/DEVELOPER-GUIDE.md) · [Issues](https://github.com/scottconverse/Describer-Workbench/issues)
 
@@ -21,13 +21,25 @@ Open a video, draft descriptions through the selected analysis connection, edit 
 | Choose models | Exact IDs retained per route/profile; catalog metadata where available and manual ID entry. Image test on new routes; Ollama retains its labeled text test. No silent fallback. |
 | Edit and save | Start/end/text cue editor, glossary, `.adproject` persistence, SRT/VTT import. |
 | Explore scenes | Per-answer Speak/Copy/Add controls;2/5/10/20-second Explore ranges with optional focus/glossary; keyboard exploration of an AI-generated spatial layout. |
-| Hear descriptions | Timed cues use measured export-voice audio, Windows by default. Optional active screen-reader output applies to live text/Scene answers. Gain and ducking follow player/speech controls. |
-| Export | MP4 with pause extensions, narrated MP3/WAV, SRT, VTT, TXT and project JSON. Coverage sidecars explain in-gap, pause and unresolved events. Windows SAPI, 32-bit SAPI, OneCore or optional OpenAI speech. |
+| Hear descriptions | Timed cues use measured export-voice audio, the host native engine by default. Optional active screen-reader output applies to live text/Scene answers. Gain and ducking follow player/speech controls. |
+| Export | MP4 with pause extensions, narrated MP3/WAV, SRT, VTT, TXT and project JSON. Coverage sidecars explain in-gap, pause and unresolved events. Windows SAPI/OneCore, macOS voices, Linux eSpeak NG or optional OpenAI speech. |
 | Developer integration | Same serial, durable engine through Python, CLI, authenticated loopback REST/OpenAPI and MCP stdio/Streamable HTTP. Submit, batch, poll, cancel/resume, page/time-filter results, edit, ask/explore, preview voices and export. |
 | Timing | Independently measured speech/vocal protection; event-bounded slots; acceleration capped at 1.15x. Descriptions that cannot fit become explicit pause narration, without deleting genuine repeated events. |
 | Customize | Language-specific prompt presets, voice personalities, verbosity, interface language, sounds and diagnostic level. |
 
 ## Install and start
+
+| Computer | Download | Install and start | Publisher signing |
+| --- | --- | --- | --- |
+| Windows x64 (Windows 11 tested) | [Portable ZIP](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.6.1/DescriberWorkbench-0.6.1-windows-x64.zip) | Extract everything; open `DescriberWorkbench/DescriberWorkbench.exe`. Keep `_internal` beside it. | Scott Converse, Azure Trusted Signing with Microsoft timestamps |
+| Mac, Apple Silicon, macOS 15+ | [arm64 DMG](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.6.1-unix.1/DescriberWorkbench-0.6.1-macos-arm64.dmg) | Open DMG; drag the app to Applications. | No Apple publisher certificate or notarization; ad-hoc integrity only |
+| Mac, Intel, macOS 15+ | [x64 DMG](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.6.1-unix.1/DescriberWorkbench-0.6.1-macos-x64.dmg) | Open DMG; drag the app to Applications. | No Apple publisher certificate or notarization; ad-hoc integrity only |
+| Ubuntu 24.04 / compatible Debian desktop, x86-64 | [DEB installer](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.6.1-unix.1/DescriberWorkbench-0.6.1-linux-x64.deb) | `sudo apt install ./DescriberWorkbench-0.6.1-linux-x64.deb`; open Describer Workbench from the applications menu. | Unsigned |
+| Other Linux x86-64 desktops | [Portable tar](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.6.1-unix.1/DescriberWorkbench-0.6.1-linux-x64.tar.gz) | Extract; run `DescriberWorkbench/DescriberWorkbench` after installing native dependencies. | Unsigned; other distributions not acceptance-tested |
+
+[Start here: a first project without programming](docs/QUICK-START.md) · [macOS/Linux dependencies, repository installer and removal](docs/UNIX-INSTALL.md). Compare each download with **its own release** `SHA256SUMS.txt`. On Mac, use the normal Privacy & Security approval when required; do not disable Gatekeeper globally.
+
+The following extraction steps apply to **Windows**; Mac and Linux start from the platform row above.
 
 1. Download `DescriberWorkbench-0.6.1-windows-x64.zip` from the [release](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.6.1).
 2. Extract the complete ZIP to a writable folder. Open `DescriberWorkbench/DescriberWorkbench.exe`; keep `_internal` beside it. Python, Qt, FFmpeg and FFprobe are bundled.
@@ -47,10 +59,13 @@ Get-FileHash .\DescriberWorkbench-0.6.1-windows-x64.zip -Algorithm SHA256
 
 | Workflow | Key / account | Data sent |
 | --- | --- | --- |
-| Manual cues, subtitle import, playback, Windows speech/MP3 | No AI key | Local processing |
+| Manual cues, subtitle import, playback, native speech/MP3 | No AI key | Local processing |
 | Ollama model on this computer | No provider key for the default loopback server | Frames/prompts to local Ollama |
 | Ollama cloud / remote server | Access configured in Ollama or the server's optional key | Sampled frames/prompts leave the computer after confirmation |
 | Gemini analysis, Ask and Explore | Gemini key and accessible model | Video with audio unless silent upload is selected; confirmation required |
+| Native Codex / Claude / Antigravity | Existing CLI subscription login | Sampled frames/prompts after confirmation; install the CLI on this computer |
+| Subscription gateway | Existing gateway client-key file | Sampled frames through the selected gateway account; gateway must be reachable |
+| OpenAI-compatible / Anthropic API | Profile/API key where required | Sampled frames to the selected endpoint |
 | OpenAI speech export/preview | OpenAI key and accessible speech model | Description text after confirmation |
 
 Version 0.6.1 includes the finite [connection inventory](docs/AI-CONNECTIONS.md). Native tools and the gateway retain their own sign-in; File > Subscription sign-in opens the selected native tool. API-credit routes remain separate from subscriptions. Installing a CLI or listing a model does not prove login, entitlement or vision.
@@ -79,7 +94,7 @@ Open media → draft or import cues → correct the glossary → edit facts and 
 
 Select a description to seek to its start and expand the inline editor. Times accept seconds, `MM:SS` or `HH:MM:SS`. Changing Start shifts End to preserve cue duration; changing End adjusts only End. Valid edits apply as you type; Ctrl+Z undoes. **Add at playhead** creates and selects a three-second cue. **Ctrl+S** saves the project. Analysis and subtitle import replace descriptions after confirmation; range analysis replaces the cue list. Save a separate `.adproject` copy to preserve comparisons.
 
-Version 0.6.1 includes the redesigned native PySide6 interface in source and the Windows portable download.
+Version 0.6.1 includes the redesigned native PySide6 interface in source and all three native platform downloads.
 
 The engine measures synthesized speech and fits it only within the visual event and independently protected soundtrack. Speed is capped at 1.15x; no-fit descriptions pause the source instead of being discarded or moved to an unrelated scene. Complete MP4 exports freeze the video during those descriptions; MP3/WAV exports insert matching audio pauses. Uncertain events remain unresolved and block a complete narrated export. Explicit `in-gap-only` exports are marked incomplete. Script exports retain all events and a coverage sidecar; a subtitle file alone cannot express pause playback. Audio mixes downmix to stereo.
 
@@ -93,20 +108,20 @@ Python/PySide6 provides the editor; every consumer uses `DescriptionService` and
 
 ## Privacy, storage and updates
 
-- Settings: `%LOCALAPPDATA%/DescriberWorkbench/settings.json`. Keys use Windows DPAPI for the current account; settings are not a portable key vault.
+- Settings: `settings.json` under the host data folder: Windows `%LOCALAPPDATA%/DescriberWorkbench`, Mac `~/Library/Application Support/DescriberWorkbench`, Linux `${XDG_DATA_HOME:-~/.local/share}/DescriberWorkbench`. Keys use Windows DPAPI, macOS Keychain or Linux Secret Service. Unix stores opaque references and refuses plaintext fallback; unlock the keyring before saving. Re-enter keys on another machine.
 - Projects: `.adproject` JSON contains an absolute media path, duration, cues, glossary, event/placement metadata, coverage and analysis. It does not embed video or API keys. Keep media separately.
-- Durable workspace: `%LOCALAPPDATA%/DescriberWorkbench/engine` (or `DESCRIBER_HOME/engine`) retains job snapshots, checkpoints and narration WAVs for explicit resume. Keep this directory with projects that refer to its audio. No automatic retention/deletion policy is applied. One process owns a workspace; attach other consumers over HTTP.
+- Durable workspace: `engine` under that host data folder (or `DESCRIBER_HOME/engine`) retains job snapshots, checkpoints and narration WAVs for explicit resume. Keep this directory with projects that refer to its audio. No automatic retention/deletion policy is applied. One process owns a workspace; attach other consumers over HTTP.
 - Telemetry: no application analytics; Hugging Face/OTEL telemetry defaults and ONNX Runtime telemetry are disabled. HTTP explicitly disables FastAPI tracing, metrics, telemetry logs and auto-export setup. Explicit provider/download requests are separate, documented transmissions.
 - Diagnostics: rotated logs beside settings. Configured keys are redacted; paths, text and provider errors can remain. Inspect before sharing.
 - Gemini: upload deletion is attempted in `finally`; provider retention applies if cleanup fails. Cancellation cannot undo an upload or charge.
 - Ollama: loopback requests go to the configured local server. Cloud/remote use prompts before sending frames and text; Ollama controls further routing.
-- Updates: blank feed checks the official latest stable GitHub release; staging requires matching hashes and timestamped Scott Converse signatures on both executables, then rechecks payload hashes before swapping. Rollback folders are retained. Startup checking is opt-in.
+- Windows updates: blank feed checks the official latest stable GitHub release; staging requires matching hashes and timestamped Scott Converse signatures on both executables, then rechecks payload hashes before swapping. Rollback folders are retained. Startup checking is opt-in. Mac/Linux Check for updates opens the add-on release page; quit and replace the matching app/package manually, retaining the previous copy.
 
 See [privacy and recovery](docs/USER-MANUAL.md#12-privacy-storage-and-recovery) for details.
 
 ## Run and build from source
 
-Tested with Windows and Python 3.13. Install FFmpeg/FFprobe on PATH or place their executables in `bin/`.
+Native packages were checked on Windows 11, Ubuntu 24.04 x64 and macOS 15 arm64/Intel. Python source requires 3.11+; acceptance used 3.13. For Mac/Linux, install prerequisites then run `python3 tools/install_unix.py` from the checkout; it creates a per-user environment and launcher. See [the platform guide](docs/UNIX-INSTALL.md) for toolchain requirements and native packaging. The following build commands are **Windows-specific**. Install FFmpeg/FFprobe on PATH or place their executables in `bin/`.
 
 ```powershell
 git clone https://github.com/scottconverse/Describer-Workbench.git
@@ -122,7 +137,9 @@ The build script installs the desktop, local-model and developer transport extra
 
 ## Verification
 
-For 0.6.1, see the [release acceptance record](docs/V061-ACCEPTANCE.md) and the release verification asset for source identity, signed artifact hashes, CI results and remaining limits. The [0.5.1 acceptance record](docs/V051-ACCEPTANCE.md) preserves earlier results. Historical 0.4.2 evidence below applies only to that release. The new protocol tests initialize real MCP clients over stdio and HTTP; media tests check actual FFmpeg output. No percentage visual-accuracy claim is made.
+For Mac/Linux, [the separate verification receipt](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.6.1-unix.1/release-verification.json) records native secure storage, measured speech, MP4/MP3, packaged GUI/CLI/HTTP/MCP and repository-launcher checks. Intel acceptance is cumulative across the retained package check and focused source-installer repair, not a claim that every historical workflow succeeded. Human listening, VoiceOver/Orca and live destination subscription entitlements remain unverified.
+
+For Windows 0.6.1, see the [release acceptance record](docs/V061-ACCEPTANCE.md) and the release verification asset for source identity, signed artifact hashes, CI results and remaining limits. The [0.5.1 acceptance record](docs/V051-ACCEPTANCE.md) preserves earlier results. Historical 0.4.2 evidence below applies only to that release. The new protocol tests initialize real MCP clients over stdio and HTTP; media tests check actual FFmpeg output. No percentage visual-accuracy claim is made.
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -q
@@ -142,13 +159,16 @@ The [v0.6.1 release](https://github.com/scottconverse/Describer-Workbench/releas
 
 ## Documentation and development
 
+- [Quick start](docs/QUICK-START.md): platform download and a no-programming first project.
 - [User manual](docs/USER-MANUAL.md): nontechnical walkthrough, reference, troubleshooting and technical user section.
 - [Architecture](docs/ARCHITECTURE.md): components, sequences and data boundaries.
+- [Platform installation](docs/UNIX-INSTALL.md): Mac/Linux downloads, repository installs, credentials, dependencies, updates and removal.
+- [AI connections](docs/AI-CONNECTIONS.md): subscription/CLI/API setup and tested boundaries.
 - [Developer guide](docs/DEVELOPER-GUIDE.md): install extras, Python/CLI/REST/MCP contracts, authentication, jobs and export modes.
 - [Public documentation audit](docs/PUBLIC-AUDIT.md): corrections, code tracing, download checks and verification limits.
 - [Parity](PARITY.md), [audit](AUDIT.md) and [third-party notices](THIRD-PARTY-NOTICES.md).
 
-For an issue include the app/Windows version, exact provider/model, reproduction steps, expected result and redacted logs. Never post keys, private video, complete settings or unsanitized projects. Describe the scope actually tested.
+For an issue include the app/operating-system version and CPU architecture, exact provider/model, reproduction steps, expected result and redacted logs. Never post keys, private video, complete settings or unsanitized projects. Describe the scope actually tested.
 
 The landing page is in `website/`. The [GitHub Pages site](https://scottconverse.github.io/Describer-Workbench/) mirrors the landing page, manuals and diagrams through `.github/workflows/pages.yml` on documentation changes to `main`. The existing [website](https://describer-workbench.sconverse.chatgpt.site) remains available and is the canonical address in generated metadata. Both use the same renderer and relative HTML navigation; no analytics are added.
 
@@ -159,7 +179,7 @@ Render the manual/site with a documentation-only dependency:
 .\.venv\Scripts\python.exe tools/build_site.py --output "C:\work\workbench-site"
 ```
 
-The output includes the landing page, HTML guides, architecture drawings and downloadable Markdown. Downloaded Markdown uses absolute web links so navigation survives saving it outside the repository. Hosting is separate from the desktop app; docs publication does not rebuild the executable. The immutable 0.4.2 ZIPs retain their historical documentation. The immutable 0.5.1 portable contains the guides as packaged at release time; subsequent corrections are maintained in this README and the online/downloadable manuals. The 0.5.2 ZIP was corrected to include Scott Converse signatures and refreshed documentation; its release verification asset records the correction. Documentation updates can refresh packaged guides and checksums while preserving signed executable bytes.
+The output includes the landing page, HTML guides, architecture drawings and downloadable Markdown. Downloaded Markdown uses absolute web links so navigation survives saving it outside the repository. Hosting is separate from the desktop app; docs publication does not rebuild the executable. Current 0.6.1 distributions can receive a documented documentation-only refresh: package hashes change, application code is preserved, Windows signed executables remain byte-identical, and Mac bundles are resealed with ad-hoc integrity signatures only. A documentation manifest records guide hashes and source identity separately from historical application acceptance. The immutable 0.4.2 ZIPs retain their historical documentation. The immutable 0.5.1 portable contains the guides as packaged at release time; subsequent corrections are maintained in this README and the online/downloadable manuals. The 0.5.2 ZIP was corrected to include Scott Converse signatures and refreshed documentation; its release verification asset records the correction. Documentation updates can refresh packaged guides and checksums while preserving signed executable bytes.
 
 ## Provenance and licensing
 

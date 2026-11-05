@@ -1,0 +1,56 @@
+name: Refresh accepted package documentation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    name: ${{ matrix.target }} documentation only
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include:
+          - target: linux-x64
+            runner: ubuntu-24.04
+          - target: macos-arm64
+            runner: macos-15
+          - target: macos-x64
+            runner: macos-15-intel
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.13'
+      - name: Record headroom and fetch accepted packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET: ${{ matrix.target }}
+        run: |
+          df -h
+          mkdir intake
+          gh release download v0.6.1-unix.1 --pattern "DescriberWorkbench-0.6.1-${TARGET}.*" --dir intake
+          gh release download v0.6.1-unix.1 --pattern SHA256SUMS.txt --dir intake
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          expected={line.split('  ',1)[1]:line.split('  ',1)[0] for line in Path('intake/SHA256SUMS.txt').read_text().splitlines()}
+          for p in Path('intake').glob('DescriberWorkbench*'):
+              assert hashlib.file_digest(p.open('rb'),'sha256').hexdigest()==expected[p.name],p
+          PY
+      - name: Refresh external manuals and verify unchanged application content
+        shell: bash
+        run: |
+          for package in intake/DescriberWorkbench*; do
+            python tools/refresh_packaged_docs.py --input "$package" --output refreshed
+          done
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: documentation-${{ matrix.target }}-${{ github.sha }}
+          path: refreshed/*
+          if-no-files-found: error

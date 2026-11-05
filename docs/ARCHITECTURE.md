@@ -1,6 +1,6 @@
 # Architecture and implementation guide
 
-Describer Workbench **0.6.1**. Shared engine and native desktop workbench. The earlier signed0.5.2 package has its own [historical acceptance record](V052-ACCEPTANCE.md).
+Describer Workbench **0.6.1** · documentation updated November 5, 2026. Shared engine and native desktop workbench for Windows, macOS and Linux. The earlier signed0.5.2 package has its own [historical acceptance record](V052-ACCEPTANCE.md).
 
 The separate [macOS/Linux add-ons](UNIX-INSTALL.md) retain the existing Windows release. `platforms.py` chooses host data folders, narration choices and explicit macOS Keychain/Linux Secret Service storage; settings retain only opaque keyring references, with no plaintext fallback. `unix_speech.py` synthesizes through macOS `say` or eSpeak NG into measured WAVs. `DescriberUnix.spec` and Unix install/package helpers are separate from the unchanged Windows build spec. Unix updates are manual; they do not enter Windows Authenticode staging. Existing providers, consent and native CLI authentication ownership remain shared.
 
@@ -32,6 +32,25 @@ flowchart TD
     O --> X[Editor and complete media or script exports]
 ```
 
+## Platform adapters and distribution boundaries
+
+![Host-specific paths, secure storage, measured speech and separate release/update paths.](diagrams/platforms.svg)
+
+| Concern | Windows | macOS 15+ | Linux x86-64 |
+| --- | --- | --- | --- |
+| Native desktop | PySide6, portable ZIP | PySide6, arm64/x64 `.app` in DMG | PySide6, DEB or portable tar |
+| Measured narration | SAPI / 32-bit SAPI / OneCore | `say` to audio, FFmpeg to WAV | eSpeak NG to measured WAV |
+| Live-text fallback | Qt system speech | Qt system speech | Qt system speech, dependent on available speech plugin/session |
+| Settings folder | `%LOCALAPPDATA%/DescriberWorkbench` | `~/Library/Application Support/DescriberWorkbench` | `${XDG_DATA_HOME:-~/.local/share}/DescriberWorkbench` |
+| API-secret persistence | Current-user DPAPI | Keychain reference | Secret Service reference |
+| Media tools | Bundled FFmpeg/FFprobe | Bundled architecture-matched FFmpeg/FFprobe; GPL/LGPL source/notices | System FFmpeg/FFprobe |
+| Updates | Hash + timestamped Scott Converse signature gate, staged swap/rollback | Download and manual replacement | Download and manual package/archive installation |
+| Publisher signing | Azure Trusted Signing, Scott Converse | None; ad-hoc integrity only, no notarization | None |
+
+`platforms.data_directory()` owns settings/log locations. The default durable engine is below that folder; `DESCRIBER_HOME` redirects the engine/assets workspace, not the settings file. `platforms.narration_engines()` restricts choices to native host engines plus optional OpenAI. Native subscription tools retain their own authentication; keyring references do not move that authentication or make copied Windows keys usable on Unix. Linux frozen subprocesses restore the original library environment before invoking system media/speech tools.
+
+The repository installer creates an isolated per-user environment and host launcher. Native package code is shared, while packaging and update trust are separate. A docs-only refresh changes guide/package hashes and may reseal the Mac resource envelope, without changing the accepted app logic or claiming new publisher signing. Exact application and documentation source identities are recorded separately.
+
 ## Source map
 
 | Module | Responsibility |
@@ -43,14 +62,16 @@ flowchart TD
 | `engine/exporting.py` | Complete MP4/MP3/WAV, pause insertions, script formats and coverage receipts. |
 | `adapters/http.py`, `mcp.py`, `remote.py`, `cli.py` | REST/OpenAPI, 17 MCP tools, HTTP proxy and scriptable CLI. |
 | `app.py`, `desktop.py`, `model_picker.py` | Qt editing/player, durable-engine consumers, explicit cloud consent and model selection. |
-| `services.py`, `models.py` | Media preparation, provider requests, native/cloud speech, DPAPI settings and audio mixing. Low-level adapters do not own an alternate planner. |
+| `services.py`, `models.py` | Media preparation, provider requests, native/cloud speech, host-protected settings and audio mixing. Low-level adapters do not own an alternate planner. |
 | `providers.py`, `subscriptions.py`, `frames.py` | Validated provider/model selection, gateway/native/API transports, restricted child environments and actual source-time frame sampling. |
 | `engine/progress.py`, `shortening.py` | Durable stage/usage reporting and conservative measured lead-in shortening. |
 | `project.py` | Version-1 project compatibility, cue validation, event metadata and structural normalization. |
+| `platforms.py`, `unix_speech.py` | Host folders, native engine choices, Keychain/Secret Service and measured macOS/eSpeak audio. |
 | `windows_speech.py`, `playback_speech.py` | Windows voice hosts, legacy unplanned playback and optional reader routing. |
 | `compatibility.py`, `catalogue.py`, `i18n.py` | Read-only original-data import, presets and translation application. |
-| `diagnostics.py`, `updates.py` | Redacted rotating logs and separately authorized update staging/rollback. |
+| `diagnostics.py`, `updates.py` | Redacted rotating logs and Windows signed update staging/rollback and Unix manual-download routing. |
 | `pyproject.toml`, `DescriberWorkbench.spec`, `build.ps1` | Headless/optional packaging and Windows portable build. |
+| `DescriberUnix.spec`, `tools/install_unix.py`, `tools/package_unix.py`, `tools/build_unix_media.py` | Independent Unix freezing, per-user source launcher, native packages and pinned Mac media build/source retention. |
 | `docs`, `website`, `tools/build_site.py` | Static documentation, with no inference or analytics service. |
 
 ## Analysis lifecycle
@@ -101,7 +122,7 @@ Exact tags `gemma4:12b`, `gemma4:26b` and `qwen3.8:27b-q6_K-vision` keep the exi
 
 Hatch builds a small headless wheel with optional desktop, local-classifier, HTTP, MCP, Gemini and download extras. The Windows PyInstaller folder includes the Qt desktop, `DescriberCLI.exe` and developer transports, sharing one module archive. FFmpeg/FFprobe are separate binaries under retained third-party terms. The pinned YAMNet detector is explicitly provisioned; large vision weights, credentials and user videos are not bundled.
 
-Version 0.6.1 retains the 0.6.0 engine and connection inventory and fixes the eight audit findings. The release verification asset records the exact signed-build source, signing provenance and executable hashes; the release tag identifies final source and documentation. Documentation-only follow-ups preserve that signed executable identity. Earlier releases retain their original acceptance records. The static website renderer produces manual, architecture and developer pages with downloadable Markdown; it does not process videos or host model credentials. See [release acceptance](V061-ACCEPTANCE.md) for observed results and limits.
+Version 0.6.1 retains the 0.6.0 engine and connection inventory and fixes the eight audit findings. The release verification asset records the exact signed-build source, signing provenance and executable hashes; the release tag identifies final source and documentation. Documentation-only follow-ups preserve that signed executable identity. Earlier releases retain their original acceptance records. The static website renderer produces quick-start, user, technical/developer, platform-installation, AI-connection, signing and architecture pages with downloadable Markdown and accessible SVG drawings; it does not process videos or host model credentials. See [release acceptance](V061-ACCEPTANCE.md) for observed results and limits.
 
 ## Evidence limits
 
