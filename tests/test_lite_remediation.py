@@ -44,7 +44,7 @@ def media_boundaries():
     return stack
 
 
-@pytest.mark.parametrize('invalid',[row('A sign.',uncertainty=None),{'start':1,'end':99,'text':'Out of bounds.'}])
+@pytest.mark.parametrize('invalid',[row('A sign.',uncertainty=None),{'start':40,'end':42,'text':'Out of bounds.'}])
 def test_failed_chunk_retries_after_reopen_without_repeating_good_chunk(tmp_path,invalid):
     source=tmp_path/'source.mp4';source.write_bytes(b'unchanged source')
     settings=dict(DEFAULTS,allow_cloud=True,auto_glossary=False,chunk=15)

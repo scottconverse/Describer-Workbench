@@ -188,8 +188,10 @@ def normalize_chunk(data, start, length, log=lambda _:None):
         except (AttributeError, TypeError, ValueError) as exc:
             raise ValueError('Malformed chunk output; retry the chunk. No partial chunk was accepted as complete.') from exc
         values.append((a, b))
-    relative = all(0 <= a < b <= length + .05 for a,b in values)
-    absolute = start > 0 and all(start <= a < b <= start + length + .05 for a,b in values)
+    # Only the event start must fall inside the chunk. An end that runs past
+    # a short (final) chunk is clamped to the chunk end, not rejected.
+    relative = all(0 <= a < length for a,b in values)
+    absolute = start > 0 and all(start <= a < start + length for a,b in values)
     reference = data.get('timestamp_reference') if isinstance(data, dict) else None
     if reference == 'clip':absolute = False
     elif reference == 'source':relative = False
@@ -200,7 +202,7 @@ def normalize_chunk(data, start, length, log=lambda _:None):
     adjusted = []
     for row,(a,b) in zip(rows, values):
         row = copy.deepcopy(row)
-        row['start'],row['end'] = (a-start,b-start) if absolute else (a,b)
+        row['start'],row['end'] = (a-start,min(b,start+length)-start) if absolute else (a,min(b,length))
         # Observation metadata comes from the normalized response, not arbitrary
         # provider-supplied scheduling/audio fields.
         for key in ('event_start','event_end','audio','speech_seconds','speed','audio_volume','timing_start','timing_end','narration_text', 'cue_id', 'origin', 'manually_edited', 'review_status', 'review_history'):

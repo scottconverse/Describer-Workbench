@@ -268,12 +268,16 @@ def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, c
     stop=min(project.duration,start_at+duration) if duration is not None else project.duration
     from .engine.progress import stage
     total=__import__('math').ceil((stop-start_at)/chunk)
+    if total>1 and (stop-start_at)-(total-1)*chunk<4:total-=1
     with tempfile.TemporaryDirectory(prefix='describer-') as tmp:
         start=start_at
         while start<stop:
             stage(log,'observation',round((start-start_at)/chunk),total)
             if cancel.is_set():raise InterruptedError('Cancelled.')
             length=min(chunk, stop-start)
+            # Fold a short remainder into this chunk rather than sending a clip
+            # too short to describe (DW-13).
+            if 0 < stop-start-length < 4: length=stop-start
             if length < .1: break
             log(f'Preparing {start:.0f}–{start+length:.0f} seconds…')
             clip=Path(tmp)/'segment.mp4';segment(project.video, clip, start, length, settings['fps'], cancel, settings.get('silent_upload',False))
