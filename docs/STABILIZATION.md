@@ -167,7 +167,9 @@ passed, including provider consent/routing and model/recovery regressions.
 Rendered native Qt simple/advanced layouts were inspected; final screen-height
 and empty-model-list refinements are covered by affected checks. One atomic
 patch missed an existing timer.stop clause, changed no files and was corrected
-from actual source. No full suite/build/CI restart. Native source checks pending.
+from actual source. No full suite/build/CI restart. Five final draft/documentation checks passed.
+Native Linux/macOS source checks passed at `74c3364` in run `42104653513`.
+Package 6 is accepted and pushed.
 
 Native reader acceptance must identify exactly which
 reader/platform combination was exercised; simulated events are not that proof.
