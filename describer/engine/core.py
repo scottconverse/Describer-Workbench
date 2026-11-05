@@ -180,6 +180,11 @@ def prepare(project, settings, root, cancel, log, checkpoint):
                    narration_text=cue.narration_text or cue.text)
         coverage.append(row)
     stage(log,'narration',len(project.cues),len(project.cues))
+    for gap in project.analysis.get('failed_chunks', []):
+        # A chunk the model never answered properly: show the hole, never hide it.
+        coverage.append({'event_id': f'failed-{gap["start"]:.6f}', 'cue_id': None, 'text': '', 'kind': 'gap',
+                         'event_start': gap['start'], 'event_end': gap['end'],
+                         'disposition': 'failed_chunk', 'reason': gap['error']})
     project.coverage = coverage
     project.analysis.update(protected=safety['protected'], safe_gaps=safety['safe_gaps'], requires_replan=False,
                             limitations=['Coverage accounts for observed events, not a guarantee that vision found every essential event.',

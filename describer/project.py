@@ -175,6 +175,9 @@ def normalize_chunk(data, start, length, log=lambda _:None):
     """
     import copy
     data = response_json(data)
+    if isinstance(data, dict) and not any(key in data for key in ('descriptions', 'audio_descriptions', 'cues')):
+        # A reply with only a glossary is a failed chunk, not "nothing happened".
+        raise ValueError('Malformed chunk output; retry the chunk. The reply had no descriptions list.')
     rows = data.get('descriptions', data.get('audio_descriptions', data.get('cues', []))) if isinstance(data, dict) else data
     if not isinstance(rows, list):raise ValueError('Expected a description list.')
     if not rows:return []

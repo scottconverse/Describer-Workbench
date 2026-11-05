@@ -49,20 +49,21 @@ def test_failed_chunk_retries_after_reopen_without_repeating_good_chunk(tmp_path
     source=tmp_path/'source.mp4';source.write_bytes(b'unchanged source')
     settings=dict(DEFAULTS,allow_cloud=True,auto_glossary=False,chunk=15)
     workspace=tmp_path/'engine'
-    with media_boundaries(),patch('describer.services.video_request',side_effect=[response(row()),response(row(),invalid)]) as provider:
+    # F6: a bad chunk is retried twice in the job, then recorded as a gap (not a silent hole, not a dead job).
+    with media_boundaries(),patch('describer.services.video_request',side_effect=[response(row())]+[response(row(),invalid)]*3) as provider:
         service=DescriptionService(workspace,settings)
         try:
             job=service.submit(project=Project(str(source),30))
-            with pytest.raises(RuntimeError,match='chunk'):service.wait(job['id'])
-            assert provider.call_count==2 and service.get_job(job['id'])['state']=='error'
-            with pytest.raises(ValueError,match='not done'):service.result(job['id'])
+            service.wait(job['id'])
+            assert provider.call_count==4 and service.get_job(job['id'])['state']=='done_with_gaps'
+            assert [r['disposition'] for r in service.result(job['id']).coverage][-1]=='failed_chunk'
             stages=service._path(job['id'])/'stages'
             assert (stages/'observe-0.000000.json').exists()
             assert not (stages/'observe-15.000000.json').exists()
             rejected=list(stages.glob('rejected-*.json'))
-            assert len(rejected)==1
-            assert json.loads(rejected[0].read_text())['stage']=='observe-15.000000'
-            evidence=rejected[0].read_bytes()
+            assert len(rejected)==3
+            assert {json.loads(r.read_text())['stage'] for r in rejected}=={'observe-15.000000'}
+            evidence=[r.read_bytes() for r in rejected]
         finally:service.close()
     with media_boundaries(),patch('describer.services.video_request',return_value=response(row(),row('A sign.'))) as provider:
         service=DescriptionService(workspace,settings)
@@ -72,7 +73,7 @@ def test_failed_chunk_retries_after_reopen_without_repeating_good_chunk(tmp_path
             assert service.get_job(job['id'])['state']=='done'
             assert len(result.cues)==len(result.coverage)==3
             assert result.cues[-1].event_start==16
-            assert rejected[0].read_bytes()==evidence
+            assert [r.read_bytes() for r in rejected]==evidence
             assert source.read_bytes()==b'unchanged source'
         finally:service.close()
 
