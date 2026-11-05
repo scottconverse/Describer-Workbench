@@ -24,6 +24,7 @@ def downloadable_markdown(source):
                'CODE-SIGNING.md': ORIGIN+'/signing.html',
                'AI-CONNECTIONS.md': ORIGIN+'/connections.html',
                'V052-ACCEPTANCE.md': REPO+'/blob/main/docs/V052-ACCEPTANCE.md',
+               'V070-ACCEPTANCE.md': REPO+'/blob/main/docs/V070-ACCEPTANCE.md',
                'V061-ACCEPTANCE.md': REPO+'/blob/main/docs/V061-ACCEPTANCE.md',
                'V060-ACCEPTANCE.md': REPO+'/blob/main/docs/V060-ACCEPTANCE.md',
                'V051-ACCEPTANCE.md': REPO+'/blob/main/docs/V051-ACCEPTANCE.md',
@@ -43,6 +44,7 @@ def render(source, title, filename):
     body = md.convert(source)
     body=body.replace('href="AI-CONNECTIONS.md','href="connections.html')
     body=body.replace('href="UNIX-INSTALL.md','href="unix.html')
+    body=body.replace('href="V070-ACCEPTANCE.md','href="'+REPO+'/blob/main/docs/V070-ACCEPTANCE.md')
     body=body.replace('href="V061-ACCEPTANCE.md','href="'+REPO+'/blob/main/docs/V061-ACCEPTANCE.md')
     body=body.replace('href="V060-ACCEPTANCE.md','href="'+REPO+'/blob/main/docs/V060-ACCEPTANCE.md')
     for old,new in [('QUICK-START.md','quick-start.html'),('USER-MANUAL.md','manual.html'),('ARCHITECTURE.md','architecture.html'),('DEVELOPER-GUIDE.md','developer.html'),('CODE-SIGNING.md','signing.html'),('V052-ACCEPTANCE.md',REPO+'/blob/main/docs/V052-ACCEPTANCE.md'),('V051-ACCEPTANCE.md',REPO+'/blob/main/docs/V051-ACCEPTANCE.md'),('V050-ACCEPTANCE.md',REPO+'/blob/main/docs/V050-ACCEPTANCE.md'),('../THIRD-PARTY-NOTICES.md',REPO+'/blob/main/THIRD-PARTY-NOTICES.md')]:

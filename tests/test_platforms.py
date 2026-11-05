@@ -28,6 +28,7 @@ def test_platform_defaults_keep_windows_identity(tmp_path,host,engine,relative):
     ('linux','eSpeak NG','Pty Language Age/Gender VoiceName File Other\n 5 en-us --/M English_(America) gmw/en-US (en 3)\n','gmw/en-US')])
 def test_native_voice_ids_and_safe_file_input(tmp_path,host,engine,listing,voice):
     from describer.unix_speech import unix_speech
+    from describer import services  # Import before temporarily simulating another host.
     calls=[];text='--danger; $(echo secret)';output=tmp_path/'measured.wav'
     def run(args,cancel):
         calls.append(args)
@@ -36,7 +37,7 @@ def test_native_voice_ids_and_safe_file_input(tmp_path,host,engine,listing,voice
             assert Path(args[args.index('-f')+1]).read_text()==text
         if '-af' in args:output.write_bytes(b'RIFF'+b'0'*64)
         return b''
-    with patch.object(sys,'platform',host),patch('shutil.which',return_value='/usr/bin/espeak-ng'),patch.object(Path,'is_file',return_value=True),patch('describer.services.run',side_effect=run),patch('describer.services.tool',return_value='ffmpeg'):
+    with patch.object(sys,'platform',host),patch('shutil.which',return_value='/usr/bin/espeak-ng'),patch.object(Path,'is_file',return_value=True),patch.object(services,'run',side_effect=run),patch.object(services,'tool',return_value='ffmpeg'):
         assert unix_speech(engine,listing=True)[0]['id']==voice
         unix_speech(engine,text,output,voice,volume=40)
     assert all(text not in part for args in calls for part in args)

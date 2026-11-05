@@ -28,7 +28,7 @@ def documents():
 
 
 def manifest():
-    return {'application_version':'0.6.1','documentation_source':os.environ.get('DESCRIBER_DOCUMENTATION_SOURCE') or subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
+    return {'application_version':__import__('tomllib').loads((ROOT/'pyproject.toml').read_text(encoding='utf-8'))['project']['version'],'documentation_source':os.environ.get('DESCRIBER_DOCUMENTATION_SOURCE') or subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
             'scope':'Documentation only; original application acceptance retained. Windows signed executables unchanged. Mac ad-hoc integrity only.',
             'sha256':{name:hashlib.sha256(data).hexdigest() for name,data in documents().items()}}
 

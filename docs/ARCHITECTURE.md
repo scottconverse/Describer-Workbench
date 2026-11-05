@@ -1,10 +1,10 @@
 # Architecture and implementation guide
 
-Describer Workbench **0.6.1** · documentation updated November 5, 2026. Shared engine and native desktop workbench for Windows, macOS and Linux. The earlier signed0.5.2 package has its own [historical acceptance record](V052-ACCEPTANCE.md).
+Describer Workbench **0.7.0** · documentation updated November 5, 2026. Shared engine and native desktop workbench for Windows, macOS and Linux. The earlier signed0.5.2 package has its own [historical acceptance record](V052-ACCEPTANCE.md).
 
-The separate [macOS/Linux add-ons](UNIX-INSTALL.md) retain the existing Windows release. `platforms.py` chooses host data folders, narration choices and explicit macOS Keychain/Linux Secret Service storage; settings retain only opaque keyring references, with no plaintext fallback. `unix_speech.py` synthesizes through macOS `say` or eSpeak NG into measured WAVs. `DescriberUnix.spec` and Unix install/package helpers are separate from the unchanged Windows build spec. Unix updates are manual; they do not enter Windows Authenticode staging. Existing providers, consent and native CLI authentication ownership remain shared.
+The [macOS/Linux distributions](UNIX-INSTALL.md) share the 0.7.0 release with Windows. `platforms.py` chooses host data folders, narration choices and explicit macOS Keychain/Linux Secret Service storage; settings retain only opaque keyring references, with no plaintext fallback. `unix_speech.py` synthesizes through macOS `say` or eSpeak NG into measured WAVs. `DescriberUnix.spec` and Unix install/package helpers are separate from the unchanged Windows build spec. Unix updates are manual; they do not enter Windows Authenticode staging. Existing providers, consent and native CLI authentication ownership remain shared.
 
-Version 0.6.1: [AI connections](AI-CONNECTIONS.md) adds gateway/native subscription and explicit API adapters behind the same service, with no automatic model fallback. Native/gateway routes send up to eight sampled timestamped images without audio. Timed narration retains independently measured WAVs and safe placement; the live-text reader preference does not change that scheduling. Cues record their synthesis volume so live gain and export gain can account for it; older unknown levels require repair. Earlier 0.5.2 packages retain their historical behavior.
+Version 0.7.0: [AI connections](AI-CONNECTIONS.md) adds gateway/native subscription and explicit API adapters behind the same service, with no automatic model fallback. Native/gateway routes send up to eight sampled timestamped images without audio. Timed narration retains independently measured WAVs and safe placement; the live-text reader preference does not change that scheduling. Cues record their synthesis volume so live gain and export gain can account for it; older unknown levels require repair. Earlier 0.5.2 packages retain their historical behavior.
 
 The service centralizes provider validation and consent before queueing or resuming. Native tools retain their own authentication and receive an explicit environment allowlist. A shared sampler records actual decoded frame timestamps. Incomplete Gemini responses are durable review artifacts, never completed projects; blocked responses are not recovered. Authored timing, observed event provenance and accepted shortened narration remain separate fields. Structured pipeline/usage records reach both durable jobs and desktop status. Model perception still needs human correction: the accepted reviewed-draft workflow documents remaining factual errors and omissions rather than treating placement coverage as semantic validation.
 
@@ -12,23 +12,23 @@ The service centralizes provider validation and consent before queueing or resum
 
 ## System overview
 
-Stabilization source candidates add a preservation step between completed desktop
+Version 0.7.0 adds a preservation step between completed desktop
 analysis and the editable project. `drafting.DraftProposal` compares stable cue
 IDs and both event/authored intervals, retains boundary-crossing descriptions,
 requires explicit conflict replacement and glossary approval, and rejects stale
 project fingerprints. One desktop undo transaction carries cues, human review
 history, coverage, analysis and glossary together. Accepted partial-job placement
 is invalidated before combined narration is re-planned. Headless proposal helpers
-do not import Qt. Candidates read old project format 1 and save format 2 so an
+do not import Qt. Version 0.7.0 reads old project format 1 and save format 2 so an
 older application cannot silently discard new identity/review fields on re-save.
-These are candidate-source changes, separate from the published 0.6.1 binaries.
+These changes are included in 0.7.0.
 
-Candidate typing uses a single-cue command and coverage-row update, retaining
+Typing uses a single-cue command and coverage-row update, retaining
 existing list/timeline widgets. Structural/timing edits keep full transactions.
 Native list accessibility and timeline names share semantic cue metadata;
 custom-painted cue focus is explicit and normal list focus painting is retained.
 
-Candidate editor ownership is explicit: `editor_selection.CueSelection` holds
+Editor ownership is explicit: `editor_selection.CueSelection` holds
 stable cue identity, while `editor_history` owns structural, typing and glossary
 undo commands plus keyboard routing. The hidden compatibility table is removed;
 list filtering and time-based sorting project the same selection into visible
@@ -154,11 +154,11 @@ Exact tags `gemma4:12b`, `gemma4:26b` and `qwen3.8:27b-q6_K-vision` keep the exi
 
 Hatch builds a small headless wheel with optional desktop, local-classifier, HTTP, MCP, Gemini and download extras. The Windows PyInstaller folder includes the Qt desktop, `DescriberCLI.exe` and developer transports, sharing one module archive. FFmpeg/FFprobe are separate binaries under retained third-party terms. The pinned YAMNet detector is explicitly provisioned; large vision weights, credentials and user videos are not bundled.
 
-Version 0.6.1 retains the 0.6.0 engine and connection inventory and fixes the eight audit findings. The release verification asset records the exact signed-build source, signing provenance and executable hashes; the release tag identifies final source and documentation. Documentation-only follow-ups preserve that signed executable identity. Earlier releases retain their original acceptance records. The static website renderer produces quick-start, user, technical/developer, platform-installation, AI-connection, signing and architecture pages with downloadable Markdown and accessible SVG drawings; it does not process videos or host model credentials. See [release acceptance](V061-ACCEPTANCE.md) for observed results and limits.
+Version 0.7.0 retains the 0.6.0 engine and connection inventory and fixes the eight audit findings. The release verification asset records the exact signed-build source, signing provenance and executable hashes; the release tag identifies final source and documentation. Documentation-only follow-ups preserve that signed executable identity. Earlier releases retain their original acceptance records. The static website renderer produces quick-start, user, technical/developer, platform-installation, AI-connection, signing and architecture pages with downloadable Markdown and accessible SVG drawings; it does not process videos or host model credentials. See [release acceptance](V070-ACCEPTANCE.md) for observed results and limits.
 
 ## Evidence limits
 
-Automated checks cover structural behavior, real MCP initialization, HTTP boundaries, old-project compatibility, checkpoint reuse and real FFmpeg pause exports. The three native Blender samples exercise the real local vision, classifier and speech pipeline. Neither cue counts nor successful playback establish a percentage visual-accuracy score, WCAG compliance or complete essential-information coverage. Bounded native Codex/Claude/Antigravity and gateway Codex/Claude/Gemini requests passed; reported model identities and remaining keyed/local-server testing limits are in [AI connections](AI-CONNECTIONS.md). The separate Unix release receipts cover automated native speech and package acceptance; active NVDA/JAWS/VoiceOver/Orca use, human-listening review and full-film semantic quality remain outside verified acceptance. Historical audits apply only to their recorded candidates.
+Automated checks cover structural behavior, real MCP initialization, HTTP boundaries, old-project compatibility, checkpoint reuse and real FFmpeg pause exports. The three native Blender samples exercise the real local vision, classifier and speech pipeline. Neither cue counts nor successful playback establish a percentage visual-accuracy score, WCAG compliance or complete essential-information coverage. Bounded native Codex/Claude/Antigravity and gateway Codex/Claude/Gemini requests passed; reported model identities and remaining keyed/local-server testing limits are in [AI connections](AI-CONNECTIONS.md). The release receipt covers automated native speech and package acceptance. Bounded Windows NVDA events were checked during stabilization; JAWS/VoiceOver/Orca, human-listening review and full-film semantic quality remain outside verified acceptance. Historical audits apply only to their recorded candidates.
 
 ## Industry desktop presentation
 

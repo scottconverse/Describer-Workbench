@@ -2,8 +2,9 @@
 
 **Status:** all eight approved source packages are implemented, verified and
 pushed on `stabilization/eight-packages`. Application source is `ce3cded`;
-`61ca778` changes only CI setup and this evidence record. Installed/public
-0.6.1 applications remain separate; no binary release is part of this delivery.
+`61ca778` changes only CI setup and this evidence record. That source-only milestone is historical. Version 0.7.0 packages these changes;
+current platform/signing/delivery evidence is in V070-ACCEPTANCE.md and the
+release-verification.json asset.
 
 Approved scope: preserve every existing integration, model choice, format and
 safety boundary. Implement, verify, document and push one package before starting

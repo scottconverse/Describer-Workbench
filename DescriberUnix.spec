@@ -17,4 +17,4 @@ gui=EXE(pyz,[s for s in a.scripts if s[0]!='run_cli'],[],exclude_binaries=True,n
 cli=EXE(pyz,[s for s in a.scripts if s[0]!='run'],[],exclude_binaries=True,name='DescriberCLI',console=True,strip=False,upx=False)
 coll=COLLECT(gui,cli,a.binaries,a.datas,strip=False,upx=False,name='DescriberWorkbench')
 if sys.platform=='darwin':
-    app=BUNDLE(coll,name='Describer Workbench.app',bundle_identifier='org.describer.workbench',info_plist={'CFBundleExecutable':'DescriberWorkbench','CFBundleShortVersionString':'0.6.1','CFBundleVersion':'1','NSHighResolutionCapable':True,'LSMinimumSystemVersion':'15.0'})
+    app=BUNDLE(coll,name='Describer Workbench.app',bundle_identifier='org.describer.workbench',info_plist={'CFBundleExecutable':'DescriberWorkbench','CFBundleShortVersionString':'0.7.0','CFBundleVersion':'1','NSHighResolutionCapable':True,'LSMinimumSystemVersion':'15.0'})

@@ -1,8 +1,8 @@
-# AI connections — 0.6.1
+# AI connections — 0.7.0
 
 Documentation updated November 5, 2026. [Quick start](QUICK-START.md) · [User manual](USER-MANUAL.md) · [Platform installation](UNIX-INSTALL.md).
 
-Version 0.6.1 implements these finite routes. The Windows executables are signed as Scott Converse. See [release acceptance](V061-ACCEPTANCE.md) for executed checks and delivery boundaries.
+Version 0.7.0 implements these finite routes. The Windows executables are signed as Scott Converse. See [release acceptance](V070-ACCEPTANCE.md) for executed checks and delivery boundaries.
 
 The [macOS/Linux add-ons](UNIX-INSTALL.md) expose these same routes where the external CLI/server is installed. Re-select executable paths on the new machine. Windows sign-in opens the native tool window; Mac sign-in opens Terminal and Linux uses an available desktop terminal. Each CLI retains its credentials. Gateway authentication remains external and is not migrated. Saved API keys use macOS Keychain or Linux Secret Service instead of Windows DPAPI. Mac/Linux packages do not inherit the Windows certificate or the historical live-provider acceptance performed on Windows; run Test connection for the selected model/account on the destination computer.
 
