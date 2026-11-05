@@ -52,7 +52,7 @@ jobs:
           if [ "$TEST_SCOPE" = format ]; then
             python -m pytest -q tests/test_range_drafting.py -k 'legacy_projects or invalid_identity or draft_rejects' --junitxml=stabilization.xml
           else
-            python -m pytest -q tests/test_range_drafting.py tests/test_project.py tests/test_desktop_redesign.py tests/test_incremental_editing.py tests/test_desktop_accessibility.py tests/test_project_recovery.py tests/test_speech_cache.py --junitxml=stabilization.xml
+            python -m pytest -q tests/test_range_drafting.py tests/test_project.py tests/test_desktop_redesign.py tests/test_incremental_editing.py tests/test_desktop_accessibility.py tests/test_project_recovery.py tests/test_speech_cache.py tests/test_draft_workflow.py --junitxml=stabilization.xml
           fi
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()

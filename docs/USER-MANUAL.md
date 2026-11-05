@@ -110,6 +110,15 @@ Enter **Gemini API key** and **Gemini model** in Settings. Choose Gemini in the 
 
 ### Range, prompts and replacement
 
+**Stabilization source candidate — Draft with AI:** choose the connection and
+section, check the selected model and visible transmission notice, then Start
+draft. **Advanced** reveals all existing exact-model/catalog/test, provider,
+preset/prompt, verbosity and glossary controls in a scrolling panel. The notice
+and Start/Cancel remain visible outside that panel. Switching connections keeps
+each provider's configured model; nothing selects a substitute model. Cancel
+restores settings and editorial text. External operations still require their
+existing confirmation. If a connection has no model, open Advanced to choose it.
+
 **Stabilization source candidate:** after drafting, use **Review draft** to select proposed descriptions. Conflicting existing descriptions are kept by default; replacing one requires selecting both its replacement and the proposal to use. A description crossing the requested range boundary always stays. The existing glossary also stays unless you explicitly select its proposed replacement after comparing both versions. **Apply** changes the project in one step; Ctrl+Z restores cues, review/provenance, coverage and glossary together. Cancel keeps the project unchanged. Accepted partial-range narration must be repaired before timed playback; media export re-plans the combined project. The following paragraph describes the published 0.6.1 applications.
 
 Choose **Whole video**, **Next 20 seconds** or **Next 60 seconds**. Next ranges start at the current playhead and stop at the end of the video if necessary. Pick a prompt preset or edit the editorial guidance, then choose **Start draft**.

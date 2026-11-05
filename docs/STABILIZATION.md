@@ -157,6 +157,18 @@ full CI/build restart. Native Linux/macOS source/locking checks passed at `d7c3c
 `42103572104`. Six final cache/documentation checks passed locally. Package 5 is
 accepted and pushed.
 
+Package 6 candidate makes connection, configured model summary, range and Start
+with AI the ordinary path. Advanced retains every provider, exact model/catalog,
+connection test, prompt/preset, verbosity and glossary control. Transmission and
+preservation disclosures and Start/Cancel stay outside the scrolling area.
+Provider/model selection remains explicit, no fallback/default change; cancel
+restores settings and editorial text. 74 affected local tests and 3 subtests
+passed, including provider consent/routing and model/recovery regressions.
+Rendered native Qt simple/advanced layouts were inspected; final screen-height
+and empty-model-list refinements are covered by affected checks. One atomic
+patch missed an existing timer.stop clause, changed no files and was corrected
+from actual source. No full suite/build/CI restart. Native source checks pending.
+
 Native reader acceptance must identify exactly which
 reader/platform combination was exercised; simulated events are not that proof.
 

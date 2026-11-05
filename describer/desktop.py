@@ -709,26 +709,43 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
     def draft_dialog(self):
         if self.busy() or not self.project.video:return
         self.model_picker.begin_draft();original_prompt=self.prompt.toPlainText();original_preset=self.preset.currentText()
-        d=BlueprintDialog(self);d.setWindowTitle('DRAFT WITH AI');d.resize(760,840);v=QVBoxLayout(d);v.setContentsMargins(20,20,20,20);dialog_header(v,'DRAFT WITH AI','Choose a model, analysis range and editorial guidance.')
+        d=BlueprintDialog(self);d.setWindowTitle('DRAFT WITH AI');d.resize(760,600);outer=QVBoxLayout(d);outer.setContentsMargins(20,20,20,20);dialog_header(outer,'DRAFT WITH AI','Choose your connection and the section to draft. Review the result before export.')
+        from .providers import PROVIDERS,model_id
+        connection=QComboBox();connection.setAccessibleName('Draft connection');connection.addItems(PROVIDERS);connection.setCurrentText(self.model_picker.provider.currentText())
+        outer.addWidget(QLabel('Use this connection'));outer.addWidget(connection)
+        selected_summary=QLabel();selected_summary.setWordWrap(True);selected_summary.setAccessibleName('Selected draft model');outer.addWidget(selected_summary)
+        outer.addWidget(QLabel('Section to draft'))
+        scope=QComboBox();scope.setAccessibleName('Analysis range');scope.addItems([f'Whole video · {clock(self.project.duration)}',f'Next 20 s from {clock(self.player.position()/1000)}',f'Next 60 s from {clock(self.player.position()/1000)}']);scope.setCurrentIndex(self.model_picker.scope.currentIndex());outer.addWidget(scope)
+        advanced=QCheckBox('Advanced — models, connection tests and editorial controls');advanced.setAccessibleName('Show advanced draft controls');outer.addWidget(advanced)
+        advanced_scroll=QScrollArea();advanced_scroll.setWidgetResizable(True);advanced_scroll.setMinimumHeight(180)
+        advanced_body=QWidget();v=QVBoxLayout(advanced_body);advanced_scroll.setWidget(advanced_body);outer.addWidget(advanced_scroll,1);advanced_scroll.hide()
+        def expand(visible):advanced_scroll.setVisible(visible);d.resize(760,min(850 if visible else 600,max(500,d.screen().availableGeometry().height()-60)))
+        advanced.toggled.connect(expand)
+        connection.currentTextChanged.connect(self.model_picker.provider.setCurrentText)
         v.addWidget(section('1 · PROVIDER'))
         providers=QGridLayout();providers.setSpacing(10);v.addLayout(providers);provider_group=QButtonGroup(d)
-        from .providers import PROVIDERS,model_id
+        provider_buttons={}
         for index,provider in enumerate(PROVIDERS):
             card=BlueprintFrame();cv=QVBoxLayout(card);choice=QRadioButton(provider);choice.setAccessibleName(provider);choice.setChecked(self.model_picker.provider.currentText()==provider);provider_group.addButton(choice);cv.addWidget(choice);providers.addWidget(card,index//4,index%4);card.setProperty('providerCard',True);card.setProperty('selected',choice.isChecked());card.setMinimumHeight(60)
             choice.toggled.connect(lambda checked,c=card:(c.setProperty('selected',checked),c.style().unpolish(c),c.style().polish(c),c.update()))
             choice.toggled.connect(lambda checked,p=provider:self.model_picker.provider.setCurrentText(p) if checked else None)
+            provider_buttons[provider]=choice
         v.addWidget(section('2 · EXACT MODEL'))
         model_list=QListWidget();model_list.setItemDelegate(FlatSelectionDelegate(model_list));model_list.setAccessibleName('Discovered exact models');v.addWidget(model_list)
         exact_model=QLineEdit();exact_model.setAccessibleName('Exact analysis model ID');v.addWidget(exact_model)
+        exact_model.textChanged.connect(lambda text:selected_summary.setText('Selected model: '+(text or 'None selected — open Advanced to choose a model.')))
         def sync_models(*args):
             model_list.blockSignals(True);model_list.clear()
             for i in range(self.model_picker.model.count()):
                 item=QListWidgetItem(self.model_picker.model.itemText(i));item.setData(Qt.UserRole,self.model_picker.model.itemData(i) or item.text());model_list.addItem(item)
             selected=model_id(self.model_picker.data)
-            if not any(model_list.item(i).data(Qt.UserRole)==selected for i in range(model_list.count())):
+            if selected and not any(model_list.item(i).data(Qt.UserRole)==selected for i in range(model_list.count())):
                 item=QListWidgetItem(selected);item.setData(Qt.UserRole,selected);model_list.addItem(item)
             model_list.setCurrentRow(next((i for i in range(model_list.count()) if model_list.item(i).data(Qt.UserRole)==selected),-1));model_list.blockSignals(False)
             exact_model.setText(selected)
+            connection.blockSignals(True);connection.setCurrentText(self.model_picker.provider.currentText());connection.blockSignals(False)
+            provider_buttons[self.model_picker.provider.currentText()].setChecked(True)
+            selected_summary.setText('Selected model: '+(selected or 'None selected — open Advanced to choose a model.'))
         def selected_model(i):
             if i>=0:
                 name=model_list.item(i).data(Qt.UserRole);self.model_picker.store_model(name);exact_model.setText(name)
@@ -749,20 +766,21 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
         timer=QTimer(d);timer.timeout.connect(lambda:status.setText(self.model_picker.help.text()));timer.start(300)
         self.model_picker.reloaded.connect(sync_models)
         self.model_picker.provider.currentTextChanged.connect(sync_models)
-        v.addWidget(section('3 · RANGE'))
-        scope=QComboBox();scope.addItems([f'Whole video · {clock(self.project.duration)}',f'Next 20 s from {clock(self.player.position()/1000)}',f'Next 60 s from {clock(self.player.position()/1000)}']);scope.setCurrentIndex(self.model_picker.scope.currentIndex());v.addWidget(scope)
         v.addWidget(QLabel('Request count depends on range, frame interval and detected visual events.'))
         v.addWidget(section('4 · EDITORIAL INSTRUCTIONS'));v.addWidget(QLabel('Preset'));v.addWidget(self.preset);self.preset.show();v.addWidget(QLabel('Editorial prompt'));v.addWidget(self.prompt);self.prompt.show()
         verbosity=QComboBox();verbosity.addItems(['Short','Standard','Detailed']);verbosity.setCurrentText(self.settings.data['verbosity']);v.addWidget(QLabel('Verbosity'));v.addWidget(verbosity)
         glossary=QCheckBox('Recognize characters and update the glossary');glossary.setChecked(self.settings.data['auto_glossary']);v.addWidget(glossary)
-        note=QLabel();note.setWordWrap(True);v.addWidget(note)
+        note=QLabel();note.setWordWrap(True);note.setAccessibleName('Draft transmission and preservation');outer.addWidget(note)
         def update_note():
             from .providers import destination
             try:message=destination(self.model_picker.data)
             except ValueError as exc:message=str(exc)
             note.setText(message+'. External processing requires confirmation and may use allowance or API credit.'+f' Your {len(self.project.cues)} existing descriptions are kept unless you explicitly approve replacements after drafting.')
         update_note();self.model_picker.provider.currentTextChanged.connect(update_note)
-        actions=QDialogButtonBox(QDialogButtonBox.Cancel);actions.addButton('Start draft',QDialogButtonBox.AcceptRole).setProperty('role','primary');actions.accepted.connect(d.accept);actions.rejected.connect(d.reject);v.addWidget(actions)
+        def start_draft():
+            if not exact_model.text().strip():self.error('Choose a model in Advanced before drafting.');return
+            if self.model_picker.store_model(exact_model.text().strip()):d.accept()
+        actions=QDialogButtonBox(QDialogButtonBox.Cancel);actions.addButton('Start draft',QDialogButtonBox.AcceptRole).setProperty('role','primary');actions.accepted.connect(start_draft);actions.rejected.connect(d.reject);outer.addWidget(actions)
         accepted=d.exec();timer.stop();self.model_picker.provider.currentTextChanged.disconnect(update_note);self.model_picker.provider.currentTextChanged.disconnect(sync_models);self.model_picker.reloaded.disconnect(sync_models)
         for widget in (self.model_picker,self.preset,self.prompt):widget.setParent(self.centralWidget());widget.hide()
         self.model_picker.provider.currentTextChanged.disconnect(provider_actions)
@@ -772,6 +790,7 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
             self.model_picker.scope.setCurrentIndex(scope.currentIndex())
             self.settings.data.update(verbosity=verbosity.currentText(),auto_glossary=glossary.isChecked());self.settings.save()
             self.job_label.setText('Drafting descriptions');self.analyze()
+        d.deleteLater()
     def export(self):
         if self.busy() or not self.project.cues:return
         d=BlueprintDialog(self);d.setWindowTitle('EXPORT');d.resize(920,780);v=QVBoxLayout(d);v.setContentsMargins(20,20,20,20);dialog_header(v,'EXPORT','Choose an output format and review narration coverage.');row=QHBoxLayout();v.addLayout(row)

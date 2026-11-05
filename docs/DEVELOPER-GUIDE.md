@@ -61,6 +61,15 @@ failure preserves fresh analysis. Source builds hash `sound.py`; frozen builds
 hash the executable, since bundled Python sources may not exist as files. Cache
 entries can be removed while the app/engine is stopped; they are regenerated.
 
+Candidate drafting retains `ModelPicker`'s transactional settings. The simple
+connection selector and Advanced provider cards synchronize through its existing
+provider control; exact-model selection and all discovery/testing paths remain.
+Range and transmission/preservation disclosure remain outside the Advanced
+scroll area. Accept validates/stores the exact visible model before invoking the
+existing analysis/consent path. Cancel restores settings/prompt/preset. Advanced
+expansion is bounded by available screen height; dialog teardown reparents the
+shared editorial widgets and stops its status timer before deferred deletion.
+
 ## Install
 
 Install the source checkout with the interfaces you need:
