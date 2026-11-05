@@ -23,6 +23,11 @@ do not import Qt. Candidates read old project format 1 and save format 2 so an
 older application cannot silently discard new identity/review fields on re-save.
 These are candidate-source changes, separate from the published 0.6.1 binaries.
 
+Candidate typing uses a single-cue command and coverage-row update, retaining
+existing list/timeline widgets. Structural/timing edits keep full transactions.
+Native list accessibility and timeline names share semantic cue metadata;
+custom-painted cue focus is explicit and normal list focus painting is retained.
+
 ![Desktop and developer adapters share one headless engine.](diagrams/system.svg)
 
 The engine lives in Describer-Workbench. CivicCast remains a separate consumer; no release-candidate or live station data is part of this workspace. Desktop, Python, CLI, REST and MCP all call `DescriptionService`. A workspace has one process owner, an exclusive file lock and a serial job queue. Additional processes attach over HTTP rather than opening the same workspace. The headless imports do not require Qt. Native speech uses Windows SAPI/OneCore, macOS voices or Linux eSpeak NG; OpenAI speech retains its explicit remote consent and credential requirements.

@@ -26,6 +26,16 @@ Describer Workbench has one headless engine. The Qt desktop, Python API, CLI,
 REST API and MCP tools call the same `DescriptionService`. No WSL, Docker,
 desktop window or paid service is required for local processing.
 
+Candidate editor text changes use `TextEdit`, which retains one cue and its
+coverage row per undo group. It updates existing list items, the hidden compatibility
+row and timeline button; it does not refresh the whole workspace. A 1.2-second
+pause, cursor navigation, focus/cue change or other operation separates groups.
+Keyboard and context-menu undo share the project stack. Timing/structural edits
+continue through full `CueEdit` transactions. `cue_accessible` supplies the same
+semantic name for native list accessibility and timeline controls. Actual Windows
+NVDA evidence and cross-platform source-check limits are in the stabilization
+record; accessible Qt metadata alone is not proof of a reader workflow.
+
 ## Install
 
 Install the source checkout with the interfaces you need:
