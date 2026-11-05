@@ -153,7 +153,9 @@ a new caption fixture expected lists rather than the existing tuple output and
 was corrected. The frozen-identity fixture's process-global sys patch stalled an
 isolated test before the benchmark; it was stopped and replaced by a module-local
 fixture, with the affected test passing. Prior engine evidence was retained; no
-full CI/build restart. Native source/locking checks remain pending at delivery.
+full CI/build restart. Native Linux/macOS source/locking checks passed at `d7c3cf4` in run
+`42103572104`. Six final cache/documentation checks passed locally. Package 5 is
+accepted and pushed.
 
 Native reader acceptance must identify exactly which
 reader/platform combination was exercised; simulated events are not that proof.
