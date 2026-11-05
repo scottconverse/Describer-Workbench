@@ -87,17 +87,18 @@ def run(*args):subprocess.run(args,check=True)
 
 def launch_bundle(app,stage):
     """Launch through LaunchServices, rather than directly invoking the GUI binary."""
-    expected=str(app/'Contents/MacOS/DescriberWorkbench')
-    query='ObjC.import("AppKit"); var xs=$.NSRunningApplication.runningApplicationsWithBundleIdentifier("org.describer.workbench"); var r=[]; for(var i=0;i<xs.count;i++){var a=xs.objectAtIndex(i);if(ObjC.unwrap(a.executableURL.path)==='+json.dumps(expected)+')r.push({pid:Number(a.processIdentifier),executable:ObjC.unwrap(a.executableURL.path)});} JSON.stringify(r);'
+    expected=(app/'Contents/MacOS/DescriberWorkbench').resolve()
+    query='ObjC.import("AppKit"); var xs=$.NSRunningApplication.runningApplicationsWithBundleIdentifier("org.describer.workbench"); var r=[]; for(var i=0;i<xs.count;i++){var a=xs.objectAtIndex(i);r.push({pid:Number(a.processIdentifier),executable:ObjC.unwrap(a.executableURL.path)});} JSON.stringify(r);'
     with (stage/'bundle-launch.log').open('wb') as log:
         process=subprocess.Popen(['open','-n','-W',str(app)],stdout=log,stderr=log)
         owned=None
         try:
             time.sleep(8)
-            matches=json.loads(subprocess.check_output(['osascript','-l','JavaScript','-e',query],text=True))
-            assert len(matches)==1 and process.poll() is None,(matches,process.poll())
+            observed=json.loads(subprocess.check_output(['osascript','-l','JavaScript','-e',query],text=True))
+            matches=[item for item in observed if Path(item['executable']).resolve()==expected]
+            assert len(matches)==1 and process.poll() is None,(observed,str(expected),process.poll())
             owned=matches[0]
-            quit_script='ObjC.import("AppKit"); var a=$.NSRunningApplication.runningApplicationWithProcessIdentifier('+str(owned['pid'])+'); if(ObjC.unwrap(a.executableURL.path)!=='+json.dumps(expected)+')throw new Error("Owned process identity mismatch"); JSON.stringify({normal_quit:Boolean(a.terminate)});'
+            quit_script='ObjC.import("AppKit"); var a=$.NSRunningApplication.runningApplicationWithProcessIdentifier('+str(owned['pid'])+'); if(ObjC.unwrap(a.executableURL.path)!=='+json.dumps(owned['executable'])+')throw new Error("Owned process identity mismatch"); JSON.stringify({normal_quit:Boolean(a.terminate)});'
             result=json.loads(subprocess.check_output(['osascript','-l','JavaScript','-e',quit_script],text=True))
             assert result['normal_quit']
             process.wait(timeout=30);assert process.returncode==0
