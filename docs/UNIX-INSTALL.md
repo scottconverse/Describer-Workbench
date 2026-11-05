@@ -20,6 +20,8 @@ The tar archive extracts to `DescriberWorkbench/`; execute its `DescriberWorkben
 
 Use Python 3.11 or later. On macOS install FFmpeg first, for example using Homebrew (`brew install ffmpeg`). On Ubuntu install `python3-venv ffmpeg espeak-ng speech-dispatcher gnome-keyring libxcb-cursor0 libxkbcommon-x11-0 libegl1 libopengl0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-xinerama0 libxcb-xkb1 libxcb-randr0 libxcb-shape0 libxcb-xfixes0 libxcb-sync1 libx11-xcb1 libfontconfig1 libfreetype6 libglib2.0-0t64 libatspi2.0-0t64` through apt. Then, from the repository checkout, run:
 
+Intel Mac source installs may compile cryptography because its pinned version has no Intel Mac wheel. Install Xcode command-line tools (`xcode-select --install`) and Rust/OpenSSL/pkg-config (`brew install rust openssl@3 pkgconf`) first. Downloaded DMGs already contain their compiled dependencies and do not require this toolchain.
+
 ```sh
 python3 tools/install_unix.py
 ```

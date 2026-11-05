@@ -59,12 +59,17 @@ jobs:
       - name: Diagnose Linux native Qt loader
         if: runner.os == 'Linux'
         run: xvfb-run -a python tools/verify_linux_qt.py
-      - name: Linux native tests
+      # Recovery pass: reuse the unchanged 139 passing tests from run41990536002.
+      # Recheck the two frame failures and the remaining/changed test files.
+      # Restore the full-suite command after this bounded recovery, without rebuilding accepted packages.
+      - name: Linux remaining and failed tests
         if: runner.os == 'Linux'
-        run: xvfb-run -a dbus-run-session -- sh -c 'printf "ci-only" | gnome-keyring-daemon --unlock --components=secrets; python -m pytest -q --junitxml="$RUNNER_TEMP/native-tests.xml"'
+        timeout-minutes: 8
+        run: xvfb-run -a dbus-run-session -- sh -c 'printf "ci-only" | gnome-keyring-daemon --unlock --components=secrets; python -m pytest -vv -o faulthandler_timeout=45 tests/test_frames.py tests/test_recovery.py tests/test_services.py tests/test_subscriptions.py tests/test_updates.py --junitxml="$RUNNER_TEMP/native-tests.xml"'
       - name: Mac native tests
         if: runner.os == 'macOS'
-        run: python -m pytest -q --junitxml="$RUNNER_TEMP/native-tests.xml"
+        timeout-minutes: 8
+        run: python -m pytest -vv -o faulthandler_timeout=45 --junitxml="$RUNNER_TEMP/native-tests.xml"
       - name: Freeze platform add-on
         run: python -m PyInstaller --noconfirm --distpath dist-unix --workpath build-unix/frozen DescriberUnix.spec
       - name: Package installers

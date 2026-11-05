@@ -228,6 +228,7 @@ def test_readiness_does_not_equate_presence_with_verification(tmp_path):
     finally:w.dirty=False;w.close();app.processEvents()
 
 
+@pytest.mark.skipif(__import__('sys').platform!='win32',reason='Windows signed updater only; Unix manual-download boundary has its own test')
 def test_missing_update_feed_checks_official_release(tmp_path):
     app,w=make_window(tmp_path);w.settings.data['update_feed']='';messages=[];calls=[]
     try:
