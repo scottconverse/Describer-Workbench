@@ -29,7 +29,7 @@ class WorkerGuiTests(unittest.TestCase):
    w.project.duration=20;w.project.video='fixture'
    w.add_scene_answer('A person opens the door.',5)
    self.assertEqual((w.project.cues[0].start,w.project.cues[0].end),(5,9))
-   w.project_path=Path(tmp)/'project.adproject';w.table.selectRow(0);w.text.setPlainText('A person closes the door.');self.assertTrue(w.save_project())
+   w.project_path=Path(tmp)/'project.adproject';w.choose(0);w.text.setPlainText('A person closes the door.');self.assertTrue(w.save_project())
    from describer.project import Project
    self.assertEqual(Project.load(w.project_path).cues[0].text,'A person closes the door.')
    import logging

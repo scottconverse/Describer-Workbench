@@ -28,6 +28,22 @@ existing list/timeline widgets. Structural/timing edits keep full transactions.
 Native list accessibility and timeline names share semantic cue metadata;
 custom-painted cue focus is explicit and normal list focus painting is retained.
 
+Candidate editor ownership is explicit: `editor_selection.CueSelection` holds
+stable cue identity, while `editor_history` owns structural, typing and glossary
+undo commands plus keyboard routing. The hidden compatibility table is removed;
+list filtering and time-based sorting project the same selection into visible
+widgets. Commands retain the existing project/coverage/review transactions.
+Routine Qt tests use the offscreen backend and do not claim reader acceptance.
+
+```mermaid
+flowchart LR
+    C[Project cues and metadata] --> S[CueSelection by stable identity]
+    S --> L[Filtered description list and inline editor]
+    L --> H[Project-aware edit history]
+    H --> C
+    C --> T[Existing timeline and measured export plan]
+```
+
 ![Desktop and developer adapters share one headless engine.](diagrams/system.svg)
 
 The engine lives in Describer-Workbench. CivicCast remains a separate consumer; no release-candidate or live station data is part of this workspace. Desktop, Python, CLI, REST and MCP all call `DescriptionService`. A workspace has one process owner, an exclusive file lock and a serial job queue. Additional processes attach over HTTP rather than opening the same workspace. The headless imports do not require Qt. Native speech uses Windows SAPI/OneCore, macOS voices or Linux eSpeak NG; OpenAI speech retains its explicit remote consent and credential requirements.

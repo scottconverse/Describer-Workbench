@@ -6,6 +6,7 @@ Run from the repository with its desktop/local dependencies installed.
 """
 import argparse
 import copy
+from dataclasses import asdict
 import json
 from pathlib import Path
 import statistics
@@ -47,7 +48,7 @@ def main():
     from PySide6.QtWidgets import QApplication
     from PySide6.QtTest import QTest
     from describer.app import Window
-    from describer.project import Cue
+    from describer.project import Cue, Project
     from describer.services import DEFAULTS, probe, segment
     from describer.engine.core import protected_audio, sha
     app = QApplication.instance() or QApplication([])
@@ -68,6 +69,7 @@ def main():
             save()
             window = Window(root/(label+'-settings.json'))
             window.settings.data['sounds'] = False
+            window.speak_check.setChecked(False)
             try:
                 window.show()
                 started = time.perf_counter()
@@ -97,6 +99,22 @@ def main():
                 row['editing'] = {'cue_count': count, 'samples_ms': timings,
                                   'median_ms': statistics.median(timings), 'max_ms': max(timings),
                                   'undo_commands': window.undo_stack.count(), 'memory': memory()}
+                edited=asdict(window.project)
+                window.undo_stack.undo();window.undo_stack.redo()
+                assert asdict(window.project)==edited,'Undo/redo changed project metadata'
+                window.project_path=root/(label+'.adproject')
+                assert window.save_project()
+                assert asdict(Project.load(window.project_path))==edited,'Save/reopen changed project metadata'
+                row['undo_redo_save_reopen']=True
+                window._editor_loading=True
+                window.text.setPlainText('Stale editor contents from another project')
+                window._editor_loading=False
+                window._recent_path=str(window.project_path);window.load_project()
+                assert window.text.toPlainText()==window.project.cues[window.selected_index()].text,'Loading retained stale editor text'
+                assert asdict(window.project)==edited,'Load changed project metadata'
+                row['load_resynchronizes_editor']=True
+                assert sha(source)==row['sha256'],'Original media changed'
+                row['source_unchanged']=True
                 window.grab().save(str(args.output/(label+'.png')))
                 window.player.setSource(QUrl())
                 started = time.perf_counter()

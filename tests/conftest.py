@@ -1,5 +1,8 @@
-"""Keep one native Qt application alive across GUI tests and media backends."""
+"""Run routine Qt tests offscreen and retain one application across the session."""
+import os
 import pytest
+
+os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 
 
 @pytest.fixture(scope='session',autouse=True)

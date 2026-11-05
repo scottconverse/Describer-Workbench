@@ -181,6 +181,11 @@ Select a description to seek and expand its inline editor. Start, End and text u
 
 Times accept numeric seconds (`62.5`), minutes/seconds (`1:02.5`) or hours/minutes/seconds (`00:01:02.5`). Changing Start shifts End to preserve cue duration; changing End adjusts only End. The ± buttons nudge by 0.1 seconds. Invalid intermediate input stays in the editor but does not enter the project; correct it before saving or exporting. Text must be nonempty and the end must follow the start within the video duration.
 
+**Stabilization source candidate:** the selected description stays selected when
+changing its time moves it in the list, or when a filter still includes it.
+Deleting it selects a neighboring description. Undo restores the description and
+its metadata; ordinary typing remains grouped into useful undo steps.
+
 Use this review sequence:
 
 1. Watch the source scene and verify visible actions, objects, identities and chronology.

@@ -1,9 +1,9 @@
 """Industry desktop presentation; all media/model work remains in Window services."""
+from .editor_history import CueEdit, GlossaryEdit, ProjectUndoKeys
 import copy
-import time
 from pathlib import Path
-from PySide6.QtCore import Qt, QRectF, QPointF, QTimer, QProcess, QSize, QObject, QThread, Signal, QEvent
-from PySide6.QtGui import QColor, QPainter, QPen, QBrush, QPolygonF, QFont, QFontDatabase, QUndoStack, QUndoCommand, QPixmap, QIcon
+from PySide6.QtCore import Qt, QRectF, QPointF, QTimer, QProcess, QSize, QObject, QThread, Signal
+from PySide6.QtGui import QColor, QPainter, QPen, QBrush, QPolygonF, QFont, QFontDatabase, QUndoStack, QPixmap, QIcon
 from PySide6.QtWidgets import (QWidget, QFrame, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QStackedWidget, QTabWidget, QScrollArea, QSplitter, QDialog, QDialogButtonBox,
     QPlainTextEdit, QLineEdit, QComboBox, QCheckBox, QListWidget, QRadioButton, QButtonGroup, QProgressBar, QDockWidget,
@@ -233,89 +233,6 @@ class Timeline(QWidget):
         p.drawPolygon(QPolygonF([QPointF(x,25),QPointF(x+4,29),QPointF(x,33),QPointF(x-4,29)]));p.restore()
 
 
-class CueEdit(QUndoCommand):
-    def __init__(self, window, before, after, title):
-        super().__init__(title);self.window=window;self.before=before;self.after=after
-        from .drafting import coverage_for
-        self.before_coverage=copy.deepcopy(window.project.coverage)
-        self.after_coverage=coverage_for(after,self.before_coverage,before)
-        self.before_analysis=copy.deepcopy(window.project.analysis)
-        self.after_analysis=dict(copy.deepcopy(self.before_analysis),requires_replan=True)
-    def apply(self, data, coverage, analysis):
-        self.window.project.cues=copy.deepcopy(data);self.window.dirty=True
-        self.window.project.coverage=copy.deepcopy(coverage);self.window.project.analysis=copy.deepcopy(analysis)
-        self.window.refresh();self.window.last_spoken=None
-        if not getattr(self.window,'_typing',False) and self.window.project.cues:self.window.choose(min(max(0,self.window.table.currentRow()),len(data)-1))
-    def undo(self):self.apply(self.before,self.before_coverage,self.before_analysis)
-    def redo(self):self.apply(self.after,self.after_coverage,self.after_analysis)
-
-
-class ProjectUndoKeys(QObject):
-    """Keep the text widget's private history from bypassing project metadata."""
-    def eventFilter(self,widget,event):
-        if event.type() in (QEvent.FocusOut,QEvent.MouseButtonPress) or (event.type()==QEvent.KeyPress and event.key() in (Qt.Key_Left,Qt.Key_Right,Qt.Key_Up,Qt.Key_Down,Qt.Key_Home,Qt.Key_End,Qt.Key_PageUp,Qt.Key_PageDown)):
-            self.parent()._typing_session=getattr(self.parent(),'_typing_session',0)+1
-        if event.type() in (QEvent.ShortcutOverride,QEvent.KeyPress) and event.key()==Qt.Key_Z and event.modifiers() in (Qt.ControlModifier,Qt.ControlModifier|Qt.ShiftModifier):
-            event.accept()
-            if event.type()==QEvent.KeyPress:
-                stack=self.parent().undo_stack
-                if event.modifiers() & Qt.ShiftModifier:stack.redo()
-                else:stack.undo()
-            return True
-        return super().eventFilter(widget,event)
-
-
-class TextEdit(QUndoCommand):
-    """One cue and coverage row per typing group; structural edits stay separate."""
-    def __init__(self,window,index,before,after):
-        super().__init__('Edit description')
-        from .drafting import coverage_for
-        self.window=window;self.index=index
-        self.before=copy.deepcopy(before);self.after=copy.deepcopy(after)
-        self.session=getattr(window,'_typing_session',0);self.when=time.monotonic()
-        self.coverage_index=next((i for i,row in enumerate(window.project.coverage) if row.get('cue_id')==before.cue_id),None)
-        if self.coverage_index is None and before.event_id:
-            matches=[i for i,row in enumerate(window.project.coverage) if row.get('event_id')==before.event_id]
-            if len(matches)==1:self.coverage_index=matches[0]
-        self.before_row=copy.deepcopy(window.project.coverage[self.coverage_index]) if self.coverage_index is not None else None
-        self.after_row=coverage_for([after],[self.before_row] if self.before_row is not None else [])[0]
-        self.replan=window.project.analysis.get('requires_replan')
-        self.had_replan='requires_replan' in window.project.analysis
-    def id(self):return 1802
-    def mergeWith(self,other):
-        if not isinstance(other,TextEdit) or self.window is not other.window or self.after.cue_id!=other.before.cue_id or self.session!=other.session or other.when-self.when>1.2 or self.after!=other.before:return False
-        self.after=other.after;self.after_row=other.after_row;self.when=other.when
-        return True
-    def apply(self,cue,row,undo=False):
-        w=self.window;old=w.project.cues[self.index]
-        if old.cue_id!=cue.cue_id:raise ValueError('Description identity changed during undo.')
-        w.project.cues[self.index]=copy.deepcopy(cue)
-        if row is None:
-            if self.coverage_index is not None:w.project.coverage.pop(self.coverage_index);self.coverage_index=None
-        elif self.coverage_index is None:
-            self.coverage_index=len(w.project.coverage);w.project.coverage.append(copy.deepcopy(row))
-        else:w.project.coverage[self.coverage_index]=copy.deepcopy(row)
-        if undo:
-            if self.had_replan:w.project.analysis['requires_replan']=self.replan
-            else:w.project.analysis.pop('requires_replan',None)
-        else:w.project.analysis['requires_replan']=True
-        w.dirty=True;w.last_spoken=None;w.played_pauses.clear()
-        w.update_cue(self.index,old)
-        if not getattr(w,'_typing',False):w.choose(self.index)
-    def undo(self):self.apply(self.before,self.before_row,True)
-    def redo(self):self.apply(self.after,self.after_row)
-
-
-class GlossaryEdit(QUndoCommand):
-    def __init__(self,window,after):
-        super().__init__('Delete glossary character');self.window=window;self.before=window.project.glossary;self.after=after
-    def apply(self,value):
-        self.window.project.glossary=value;self.window.dirty=True
-        self.window._glossary_snapshot=None;self.window.sync_glossary();self.window.update_status()
-    def undo(self):self.apply(self.before)
-    def redo(self):self.apply(self.after)
-
-
 class DesktopInterface:
     """Presentation mixin. Window retains ownership of jobs and existing safeguards."""
     def build_interface(self):
@@ -332,8 +249,8 @@ class DesktopInterface:
         old=self.takeCentralWidget()
         # Reparent the live widgets before disposing of the superseded layout.
         for w in (self.video,self.model_picker,self.start,self.end,self.text,self.preset,self.prompt,
-                  self.volume,self.speak_check,self.current,self.log_view,self.cancel_button,self.table,self.slider,self.file_label):w.setParent(root)
-        self.table.hide();self.slider.hide();self.model_picker.hide();self.cancel_button.hide();self.file_label.hide();self.preset.hide();self.prompt.hide()
+                  self.volume,self.speak_check,self.current,self.log_view,self.cancel_button,self.slider,self.file_label):w.setParent(root)
+        self.slider.hide();self.model_picker.hide();self.cancel_button.hide();self.file_label.hide();self.preset.hide();self.prompt.hide()
         bar=QHBoxLayout();outer.addLayout(bar)
         bar.addWidget(BrandMark());brand=QLabel('DESCRIBER WORKBENCH');brand.setObjectName('brand');bar.addWidget(brand)
         self.project_title=QLabel('New project');bar.addWidget(self.project_title);bar.addStretch()
@@ -510,6 +427,8 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
             if self.cue_filter.currentIndex()==1 and c.disposition!='unresolved':continue
             if self.cue_filter.currentIndex()==2 and c.disposition!='pause':continue
             item=QListWidgetItem(c.text);item.setData(Qt.UserRole,c);item.setData(Qt.UserRole+1,i+1);item.setData(Qt.AccessibleTextRole,cue_accessible(c,i));item.setToolTip(cue_status(c)+': '+c.text);item.setSizeHint(QSize(250,108));self.cue_list.addItem(item);self.visible_indices.append(i)
+        selected=self.selected_index()
+        if selected in self.visible_indices:self.cue_list.setCurrentRow(self.visible_indices.index(selected))
         self.cue_list.blockSignals(False);self.tabs.setTabText(0,f'Descriptions · {len(self.project.cues)}');self.empty.setVisible(not self.project.cues);self.cue_list.setVisible(bool(self.project.cues));self.inline_scroll.setVisible(bool(self.project.cues))
         self.timeline.sync();self.update_status()
     def list_selected(self,row):
@@ -517,7 +436,7 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
     def choose(self,index):
         if not 0<=index<len(self.project.cues):return
         self._typing_session=getattr(self,'_typing_session',0)+1
-        self._selected_cue=self.project.cues[index];self.table.setCurrentCell(index,0);self.select_cue();self.inline.show()
+        self.cue_selection.select(self.project.cues,index);self._selected_cue=self.project.cues[index];self.select_cue();self.inline.show()
         if index in self.visible_indices:
             self.cue_list.blockSignals(True);self.cue_list.setCurrentRow(self.visible_indices.index(index));self.cue_list.blockSignals(False)
         self.timeline.ensure_visible(self.project.cues[index].start);self.update_fit()
@@ -531,11 +450,6 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
     def update_cue(self,index,old):
         """Update live text without replacing the list, editor or timeline buttons."""
         cue=self.project.cues[index]
-        self.table.blockSignals(True)
-        try:
-            self.table.item(index,2).setText(cue.text)
-            self.table.item(index,3).setText(cue.disposition+(': '+cue.uncertainty if cue.uncertainty else ''))
-        finally:self.table.blockSignals(False)
         mode=self.cue_filter.currentIndex()
         visible=mode==0 or (mode==1 and cue.disposition=='unresolved') or (mode==2 and cue.disposition=='pause')
         self.cue_list.blockSignals(True)
@@ -580,7 +494,7 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
         try:field.setText(str(round(max(0,seconds(field.text())+delta),1)))
         except ValueError:pass
     def mark_checked(self):
-        i=self.table.currentRow()
+        i=self.selected_index()
         if self.busy() or i<0:return
         cues=copy.deepcopy(self.project.cues);cues[i]=cues[i].reviewed();self.commit_cues(cues,'Mark checked');self.choose(i)
     def preview_context(self):

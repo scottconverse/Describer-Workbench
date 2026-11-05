@@ -1,9 +1,9 @@
 """Real desktop library matrix. No cloud requests or API keys used."""
-import copy,hashlib,json,sys,tempfile,threading,time
+import copy,hashlib,json,sys,tempfile,threading
 from pathlib import Path
 from PySide6.QtCore import QUrl
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QLabel,QApplication
 from PySide6.QtMultimedia import QMediaPlayer,QVideoSink,QAudioOutput
 from describer.project import Project,Cue,import_subtitles
 from describer.services import DEFAULTS,probe,segment,export_audio,run,tool
@@ -67,7 +67,7 @@ def main():
   w=Window(tmp/'ui-settings.json');w.settings.data['sounds']=False;w.set_video(visual);w.generated(([Cue(.5,2.5,'An astronaut stands on the moon.')],'Astronaut: White spacesuit.'))
   assert 'spacesuit' in w.project.glossary
   for language in LANGUAGES:
-   apply_language(w,language);assert w.table.horizontalHeaderItem(0).text()==translate('Start',language)
+   apply_language(w,language);assert any(label.text()==translate('Start',language) for label in w.findChildren(QLabel))
   apply_language(w,'English');w.show();app.processEvents();w.grab().save(str(output/'workbench-0.3.png'));w.dirty=False;w.close();app.processEvents();QTest.qWait(500);app.processEvents()
  result['passed']=True;save();print('PASSED',len(result['videos']),'videos',len(result['subtitles']),'subtitles',len(result['audio_layouts']),'audio mixes',flush=True)
 

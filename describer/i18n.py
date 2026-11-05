@@ -49,5 +49,3 @@ def apply_language(window,language):
             known={translate(original,language) for language in LANGUAGES}|{original}
             if current not in known:original=current;obj.setProperty('source_'+prop,current)
             obj.setProperty(prop,translate(original,language))
-    if hasattr(window,'table'):
-        for i,label in enumerate(['Start','End','Description']):window.table.horizontalHeaderItem(i).setText(translate(label,language))

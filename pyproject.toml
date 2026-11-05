@@ -19,7 +19,7 @@ mcp = ["mcp>=1.20,<2"]
 local = ["numpy>=2,<3", "onnxruntime>=1.23,<2"]
 gemini = ["google-genai==2.34.0"]
 download = ["yt-dlp==2026.10.26"]
-dev = ["pytest>=8,<10", "httpx>=0.28,<1", "build>=1.2", "ruff>=0.12"]
+dev = ["pytest>=8,<10", "httpx>=0.28,<1", "build>=1.2", "ruff>=0.12", "mypy>=1,<2"]
 
 [project.scripts]
 describer = "describer.cli:main"

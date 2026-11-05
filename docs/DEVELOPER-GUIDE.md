@@ -1,5 +1,25 @@
 # Technical user and developer guide — 0.6.1
 
+**Candidate editor boundaries:** `editor_history.py` contains existing project
+undo/redo commands and keyboard routing; `editor_selection.py` holds cue identity
+independently of widgets. Use `Window.choose(index)` and `selected_index()`;
+the hidden table is removed. Selection survives sorting and filtering, with a
+neighbor selected only after the selected cue is removed. Tests and native
+acceptance helpers exercise visible controls rather than obsolete table cells.
+
+Routine tests default to `QT_QPA_PLATFORM=offscreen` before creating QApplication.
+This exercises real Qt controls/event delivery without occupying the desktop;
+it does not prove native screen-reader output. Candidate source CI runs affected
+desktop Ruff F checks and strict mypy on the typed selection model. It does not
+claim the older dynamic Window/presentation classes are fully statically typed.
+
+```powershell
+$env:QT_QPA_PLATFORM='offscreen'
+python -m pytest -q
+python -m ruff check --select F describer/app.py describer/desktop.py describer/editor_history.py describer/editor_selection.py
+python -m mypy --strict --follow-imports=silent describer/editor_selection.py
+```
+
 **Candidate export preview:** `export_preview.py` stamps canonical validated cue
 data, source/audio file identity, captions and relevant narration settings after
 the shared `prepare` pipeline. The preview shares `included_pauses` with the

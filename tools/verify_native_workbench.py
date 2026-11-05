@@ -30,7 +30,7 @@ def main():
         try:
             assert time.monotonic()-state['started']<25,'Playback acceptance timed out'
             if state['step']=='ready' and window.player.isSeekable():
-                assert window.table.columnCount()==4 and window.table.rowCount()==len(project.cues)
+                assert window.cue_list.count()==len(project.cues)
                 window.seek(round(cue.event_start*1000));window.player.play();state['step']='waiting-pause'
             elif state['step']=='waiting-pause' and window.pause_active:
                 assert window.player.playbackState()==QMediaPlayer.PlaybackState.PausedState

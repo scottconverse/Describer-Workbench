@@ -186,6 +186,35 @@ was inspected. Acceptance-helper misuse of the video-only probe on WAV was
 corrected to FFprobe; prior checkpoints reused. An atomic documentation patch
 context miss changed no files. No full CI/build restart. Three final preview/stale-job checks and three documentation checks passed. A collection command used the nonexistent test_docs.py path; only the correctly named test_documentation.py was then run. Native Linux/macOS source checks passed at c24a3f1 in run42106391026. Package 7 is accepted and pushed.
 
+Package 8 candidate extracts existing edit-history commands and keyboard routing
+into `editor_history.py`, and replaces hidden-table selection with the typed
+`CueSelection` identity model. Sorting, filtering, deletion, undo and load/save
+use that model. The visible filter selection is retained. Loading a different
+project resynchronizes the editor before it can be saved, preventing stale text
+from carrying over. Advanced controls, providers, formats and safety remain.
+
+31 affected checks and 3 subtests passed after the filter correction. One final
+cross-cutting regression pass completed with 216 tests and 3 subtests passing,
+4 platform skips and one existing FastAPI/httpx deprecation warning. A targeted
+additional load test reproduced stale editor text; the synchronization fix then
+passed 33 affected selection/edit/recovery/drafting/export checks. Unaffected
+full-suite evidence was retained, with no whole-suite restart. Actual offscreen
+Qt playback, 20-character editing, undo/redo and save/reopen passed on the same
+short/30-minute/two-hour inputs, with unchanged source hashes and one typing undo
+group. A final real NASA-media load check confirmed stale fields are replaced
+without changing saved metadata. These offscreen latency/memory measurements
+are not directly comparable to earlier native-window results. No AI, detector,
+reader or human-listening claims are added by this check.
+
+Affected desktop/tool Ruff F checks and strict mypy on the selection model pass;
+the dynamic legacy GUI is not claimed fully typed. Three documentation checks
+pass. Tests default to offscreen Qt. Desktop use was stopped at the user's
+request and the computer-use runtime reset; the user confirmed release, then
+authorized continuation headlessly. Initial extraction left three unused
+imports, fixed locally; atomic patch context misses changed no files. These
+agent/helper issues did not restart full CI or builds. Native source checks
+remain pending for this candidate.
+
 Native reader acceptance must identify exactly which
 reader/platform combination was exercised; simulated events are not that proof.
 

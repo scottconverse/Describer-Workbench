@@ -9,7 +9,7 @@ from PySide6.QtCore import QObject, QThread, Signal, Qt, QUrl, QTimer, Slot
 from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QFileDialog, QInputDialog, QMessageBox, QLabel, QPlainTextEdit, QLineEdit,
-    QComboBox, QTableWidget, QTableWidgetItem, QSlider, QSplitter, QDialog, QFormLayout,
+    QComboBox, QSlider, QSplitter, QDialog, QFormLayout,
     QDialogButtonBox, QScrollArea, QSpinBox, QDoubleSpinBox, QCheckBox)
 from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 from PySide6.QtMultimediaWidgets import QVideoWidget
@@ -116,9 +116,8 @@ class Window(DesktopInterface, QMainWindow):
         self.volume=QSlider(Qt.Orientation.Horizontal);self.volume.setRange(0,100);self.volume.setValue(self.settings.data['player_volume']);self.volume.setMaximumWidth(110);self.volume.setAccessibleName('Player volume');self.volume.valueChanged.connect(self.set_volume);controls.addWidget(QLabel('Volume'));controls.addWidget(self.volume)
         self.speak_check=QCheckBox('Speak descriptions');self.speak_check.setChecked(True);controls.addWidget(self.speak_check)
         self.current=QLabel('');self.current.setWordWrap(True);self.current.setAccessibleName('Current description');el.addWidget(self.current)
-        self.table=QTableWidget(0,4);self.table.setHorizontalHeaderLabels(['Start','End','Description','Placement']);self.table.setColumnWidth(2,650)
-        self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows);self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        self.table.itemSelectionChanged.connect(self.select_cue);el.addWidget(self.table,1)
+        from .editor_selection import CueSelection
+        self.cue_selection=CueSelection()
         form=QHBoxLayout();el.addLayout(form);self.start=QLineEdit('0');self.end=QLineEdit('3')
         form.addWidget(QLabel('Start'));form.addWidget(self.start);form.addWidget(QLabel('End'));form.addWidget(self.end)
         self.start.setAccessibleName('Description start time');self.end.setAccessibleName('Description end time');self.start.editingFinished.connect(self.update_fit)
@@ -312,21 +311,22 @@ class Window(DesktopInterface, QMainWindow):
         self.original_volume=self.settings.data['player_volume']/100
         self.set_speech_volume(self.settings.data['speech_volume']);self.speech_state(self.speech.state())
     def refresh(self):
-        self.table.blockSignals(True);self.table.setRowCount(len(self.project.cues))
-        for i,c in enumerate(self.project.cues):
-            for k,v in enumerate([stamp(c.start),stamp(c.end),c.text,c.disposition+(': '+c.uncertainty if c.uncertainty else '')]):self.table.setItem(i,k,QTableWidgetItem(v))
-        self.table.blockSignals(False)
+        self.cue_selection.reconcile(self.project.cues)
         if hasattr(self,'pages'):
             self.pages.setCurrentIndex(1 if self.project.video else 0)
             self.render_cues();self.sync_glossary();self.presentation_position(self.player.position());self.render_usage(self.project.analysis.get('usage',[]))
+            selected=self.selected_index()
+            if selected>=0 and not getattr(self,'_typing',False) and self._selected_cue is not self.project.cues[selected]:self.select_cue()
             self.recents.clear()
             self.recent_empty.setVisible(not self.settings.data.get('recent_projects'));self.recents.setVisible(bool(self.settings.data.get('recent_projects')))
             self.editor_toolbar.setVisible(self.pages.currentIndex()==1)
             for path in self.settings.data.get('recent_projects',[]):
                 from PySide6.QtWidgets import QListWidgetItem
                 item=QListWidgetItem(Path(path).stem);item.setData(Qt.UserRole,path);item.setToolTip(path);self.recents.addItem(item)
+    def selected_index(self) -> int:
+        return self.cue_selection.index(self.project.cues)
     def select_cue(self):
-        i=self.table.currentRow()
+        i=self.selected_index()
         if 0<=i<len(self.project.cues):
             self._editor_loading=True
             c=self.project.cues[i];self.start.setText(str(c.start));self.end.setText(str(c.end));self.text.setPlainText(c.text);self.seek(round(c.start*1000));self._old_start=c.start
@@ -334,7 +334,7 @@ class Window(DesktopInterface, QMainWindow):
             if hasattr(self,'inline'):self._selected_cue=c;self.inline.show();self.update_fit()
     def editor_changed(self):
         if getattr(self,'_editor_loading',False) or self.busy():return
-        i=self.table.currentRow()
+        i=self.selected_index()
         if not 0<=i<len(self.project.cues):return
         try:
             candidate=self.editor_cue()
@@ -343,19 +343,19 @@ class Window(DesktopInterface, QMainWindow):
         if candidate==self.project.cues[i]:return
         old=self.project.cues[i]
         if hasattr(self,'undo_stack') and (candidate.start,candidate.end)==(old.start,old.end):
-            from .desktop import TextEdit
+            from .editor_history import TextEdit
             self._typing=True
             try:self.undo_stack.push(TextEdit(self,i,old,candidate))
             finally:self._typing=False
             return
         before=copy.deepcopy(self.project.cues);after=copy.deepcopy(before);after[i]=candidate;after.sort(key=lambda c:c.start)
         if hasattr(self,'undo_stack'):
-            from .desktop import CueEdit
+            from .editor_history import CueEdit
             self._typing=True
             try:self.undo_stack.push(CueEdit(self,before,after,'Edit description'))
             finally:self._typing=False
             index=next(j for j,c in enumerate(self.project.cues) if c==candidate)
-            self.table.blockSignals(True);self.table.setCurrentCell(index,0);self.table.blockSignals(False)
+            self.cue_selection.select(self.project.cues,index)
             self._selected_cue=self.project.cues[index];self.update_fit()
         else:self.project.cues=after;self.dirty=True
     def start_time_changed(self):
@@ -371,7 +371,7 @@ class Window(DesktopInterface, QMainWindow):
     def editor_cue(self):
         if not self.project.video:raise ValueError('Open a video first.')
         candidate=Cue(seconds(self.start.text()),seconds(self.end.text()),self.text.toPlainText()).validate(self.project.duration)
-        i=self.table.currentRow()
+        i=self.selected_index()
         if 0<=i<len(self.project.cues):
             old=self.project.cues[i]
             return old.edited(candidate.start,candidate.end,candidate.text,self.project.duration)
@@ -385,14 +385,14 @@ class Window(DesktopInterface, QMainWindow):
         except Exception as e:self.error(str(e))
     def apply_edit(self):
         if self.busy():return
-        i=self.table.currentRow()
+        i=self.selected_index()
         if i<0:return
         try:
             cues=copy.deepcopy(self.project.cues);cues[i]=self.editor_cue();self.commit_cues(cues,'Apply description edit')
         except Exception as e:self.error(str(e))
     def delete_cue(self):
         if self.busy():return
-        i=self.table.currentRow()
+        i=self.selected_index()
         if i>=0:
             if QMessageBox.question(self,'Delete description','Delete the selected description?')==QMessageBox.StandardButton.Yes:
                 cues=copy.deepcopy(self.project.cues);cues.pop(i);self.commit_cues(cues,'Delete description')
@@ -410,7 +410,7 @@ class Window(DesktopInterface, QMainWindow):
         return self.save_project(destination=path)
     def snapshot_draft(self):
         if not self.dirty or not self.project.video or self.busy():return
-        editor=None;i=self.table.currentRow()
+        editor=None;i=self.selected_index()
         if 0<=i<len(self.project.cues):editor={'cue_id':self.project.cues[i].cue_id,'start':self.start.text(),'end':self.end.text(),'text':self.text.toPlainText()}
         try:
             self.draft_store.snapshot(self.project,self.project_path,editor)
@@ -448,7 +448,7 @@ class Window(DesktopInterface, QMainWindow):
         except (OSError,ValueError,KeyError,TypeError) as exc:self.error(str(exc))
     def save_project(self,*,destination=None):
         if self.busy():return False
-        i=self.table.currentRow()
+        i=self.selected_index()
         if 0<=i<len(self.project.cues):
             try:
                 candidate=self.editor_cue()
@@ -732,7 +732,7 @@ class Window(DesktopInterface, QMainWindow):
         return True
     def export_to(self,p,destination_checked=False):
         if self.busy() or not self.project.cues:return
-        i=self.table.currentRow()
+        i=self.selected_index()
         if i>=0:
             try:self.project.cues[i]=self.editor_cue()
             except Exception as exc:self.error(str(exc));return

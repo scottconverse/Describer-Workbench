@@ -47,7 +47,7 @@ def test_review_coverage_filter_and_group_boundaries():
             assert w.project.coverage[0]['detector_evidence']=='preserve this'
             w.undo_stack.undo();assert w.project.cues==original.cues and w.project.coverage==original.coverage
             w.undo_stack.redo()
-            with patch('describer.desktop.time.monotonic',return_value=10**12):QTest.keyClicks(w.text,'b')
+            with patch('describer.editor_history.time.monotonic',return_value=10**12):QTest.keyClicks(w.text,'b')
             assert w.undo_stack.count()==2
             w.choose(1);QTest.keyClicks(w.text,'c');assert w.undo_stack.count()==3
             w.cue_filter.setCurrentIndex(0);w.choose(0);QTest.keyClicks(w.text,'d');assert w.undo_stack.count()==4

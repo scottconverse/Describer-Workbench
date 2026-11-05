@@ -25,7 +25,7 @@ def main():
             if window.player.isSeekable():break
         window.start.setText('1');window.end.setText('3');window.text.setPlainText('An astronaut steps onto the moon.');window.add_cue()
         assert len(window.project.cues)==1
-        window.table.selectRow(0);app.processEvents();assert window.player.position()==1000
+        window.choose(0);app.processEvents();assert window.player.position()==1000
         window.start.setText('2');window.shift_end();assert float(window.end.text())==4
         window.text.setPlainText('The astronaut descends the ladder.');window.apply_edit();assert window.project.cues[0].start==2
         project=tmp/'project.adproject';window.project.save(project);window.project.export(output/'sample.srt')

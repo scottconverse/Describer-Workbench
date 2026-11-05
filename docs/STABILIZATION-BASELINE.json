@@ -303,5 +303,189 @@
       "Actual whole-source YAMNet and FFmpeg, no AI inference/synthesis or factual-quality claim.",
       "Cold and warm calls use the shared pipeline stage; files/models are hashed on every request."
     ]
+  },
+  "package_8": {
+    "source_parent": "232e704896179d5850a12a4072ff2b2e128bdfa9",
+    "working_candidate": true,
+    "qt_platform": "offscreen",
+    "limits": [
+      "Offscreen Qt playback/editing/undo/save/reopen with actual media; not directly comparable to native-window latency/memory.",
+      "No new AI inference, speech detector or reader acceptance claim."
+    ],
+    "cases": [
+      {
+        "label": "short",
+        "sha256": "a6145154aee091019c2fc91def46b6e661a73be4da062a8463098e1115ee2e8c",
+        "duration": 120.166667,
+        "failures": [],
+        "open_to_play_seconds": 0.9004501999588683,
+        "playback_position_ms": 100,
+        "editing": {
+          "cue_count": 12,
+          "samples_ms": [
+            17.185699893161654,
+            13.117099995724857,
+            3.6788000725209713,
+            2.7624000795185566,
+            2.8973999433219433,
+            2.454900066368282,
+            2.70389998331666,
+            3.014099900610745,
+            2.907100017182529,
+            3.289500018581748,
+            2.9033999890089035,
+            2.7254000306129456,
+            2.727599930949509,
+            2.1605000365525484,
+            2.2990000434219837,
+            3.5164000000804663,
+            6.3934000208973885,
+            8.468199986964464,
+            11.16809993982315,
+            9.534499957226217
+          ],
+          "median_ms": 2.960599958896637,
+          "max_ms": 17.185699893161654,
+          "undo_commands": 1,
+          "memory": {
+            "working_bytes": 220450816,
+            "process_peak_bytes": 220450816
+          }
+        },
+        "undo_redo_save_reopen": true,
+        "source_unchanged": true,
+        "visual_20s_segment_seconds": 1.3355617000488564
+      },
+      {
+        "label": "program",
+        "sha256": "e6bcff3e9d51beee13d094d40533b9ec5a73d62c7be479c4e332151a59225329",
+        "duration": 1800.212,
+        "failures": [],
+        "open_to_play_seconds": 0.4505771000403911,
+        "playback_position_ms": 153,
+        "editing": {
+          "cue_count": 180,
+          "samples_ms": [
+            14.699600054882467,
+            14.996399986557662,
+            10.388599941506982,
+            6.606200011447072,
+            7.512899930588901,
+            6.583200069144368,
+            6.213200045749545,
+            6.378500023856759,
+            4.495500004850328,
+            3.383500035852194,
+            2.877200022339821,
+            3.378800000064075,
+            2.8309000190347433,
+            3.5185000160709023,
+            2.800600021146238,
+            2.2738000843673944,
+            2.4165998911485076,
+            2.2797000128775835,
+            3.289800020866096,
+            2.747999969869852
+          ],
+          "median_ms": 3.451000025961548,
+          "max_ms": 14.996399986557662,
+          "undo_commands": 1,
+          "memory": {
+            "working_bytes": 221995008,
+            "process_peak_bytes": 225914880
+          }
+        },
+        "undo_redo_save_reopen": true,
+        "source_unchanged": true,
+        "visual_20s_segment_seconds": 0.5233121000928804
+      },
+      {
+        "label": "meeting",
+        "sha256": "ba534aadbbb04a8e91f3b433e9dc436a2e8be93501e611e65dabedb6db529f6b",
+        "duration": 7210.012,
+        "failures": [],
+        "open_to_play_seconds": 0.41788540000561625,
+        "playback_position_ms": 113,
+        "editing": {
+          "cue_count": 721,
+          "samples_ms": [
+            11.797199957072735,
+            15.362899983301759,
+            8.551100036129355,
+            7.136699976399541,
+            6.388399982824922,
+            7.580999983474612,
+            6.68360001873225,
+            5.416399915702641,
+            6.299600005149841,
+            7.75019999127835,
+            6.22420001309365,
+            4.611999960616231,
+            3.8526999996975064,
+            6.150300032459199,
+            4.493599990382791,
+            3.9688999531790614,
+            4.172799992375076,
+            5.425499984994531,
+            4.264799994416535,
+            3.9561999728903174
+          ],
+          "median_ms": 6.187250022776425,
+          "max_ms": 15.362899983301759,
+          "undo_commands": 1,
+          "memory": {
+            "working_bytes": 252641280,
+            "process_peak_bytes": 252641280
+          }
+        },
+        "undo_redo_save_reopen": true,
+        "source_unchanged": true,
+        "visual_20s_segment_seconds": 0.5236418999265879
+      }
+    ],
+    "final_load_regression": {
+      "label": "short",
+      "sha256": "a6145154aee091019c2fc91def46b6e661a73be4da062a8463098e1115ee2e8c",
+      "duration": 120.166667,
+      "failures": [],
+      "open_to_play_seconds": 0.5787178999744356,
+      "playback_position_ms": 106,
+      "editing": {
+        "cue_count": 12,
+        "samples_ms": [
+          21.208800026215613,
+          11.337200063280761,
+          10.041400091722608,
+          12.01730000320822,
+          9.320099954493344,
+          5.0876999739557505,
+          4.622800042852759,
+          5.797300022095442,
+          3.2952999463304877,
+          4.291099961847067,
+          5.4243000922724605,
+          6.7841000854969025,
+          5.875099916011095,
+          11.154300067573786,
+          40.127099957317114,
+          9.53109993133694,
+          8.749400032684207,
+          10.476800031028688,
+          55.08800002280623,
+          8.79190000705421
+        ],
+        "median_ms": 9.055999980773777,
+        "max_ms": 55.08800002280623,
+        "undo_commands": 1,
+        "memory": {
+          "working_bytes": 222281728,
+          "process_peak_bytes": 222294016
+        }
+      },
+      "undo_redo_save_reopen": true,
+      "load_resynchronizes_editor": true,
+      "source_unchanged": true,
+      "visual_20s_segment_seconds": 0.7491190999280661
+    }
   }
 }
