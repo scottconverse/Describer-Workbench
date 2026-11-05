@@ -1,0 +1,79 @@
+# Eight-package stabilization
+
+Approved scope: preserve every existing integration, model choice, format and
+safety boundary. Implement, verify, document and push one package before starting
+the next. Current released applications remain separate from source candidates.
+
+1. Non-destructive range drafting and consistent project transactions.
+2. Incremental editing and useful typing undo groups.
+3. Keyboard focus, accessible cue information, contrast and native acceptance.
+4. Save As, bounded unsaved-work recovery and reversible glossary deletion.
+5. Validated cross-job speech-analysis reuse.
+6. Simple drafting with preserved advanced controls and visible transmission.
+7. Export duration/outcome previews based on the real plan.
+8. Small controller/model extractions and affected GUI lint/type checks.
+
+## Baseline protocol
+
+[Recorded baseline and limits](STABILIZATION-BASELINE.json). The two-hour load
+check after Package 1 measured338ms median/564ms maximum at721cues, compared with
+410ms/523ms in the corrected original run. This is not Package 2's incremental
+editing improvement; run-to-run variation and the remaining full refresh remain.
+
+Before application changes, run `tools/stabilization_baseline.py` on actual short,
+30-minute and two-hour media. Keep source identity, input hashes, each keystroke's
+elapsed time, open/playback, real detector and segment processing times, process
+memory and failures. The controlled cue population is one cue per ten seconds;
+it is a load fixture, not AI output or factual-accuracy evidence. Full AI drafting
+cost/quality is a separate workflow measurement. Compare the same inputs after
+affected packages. Preserve original source media and user settings.
+
+## Package 1 preservation rules
+
+- Existing descriptions are retained by default, including authored, edited,
+  reviewed, approved and legacy descriptions whose history cannot be inferred.
+- Use stable cue identity distinct from the observed event identity. Preserve
+  original event times/evidence and distinguish human review from placement.
+- A range is half-open `[start,end)`. A cue touching/crossing either boundary is
+  retained in full, never clipped or silently deleted. Consider both authored
+  placement and observed provenance when detecting conflicts.
+- Present proposed additions and conflicting descriptions before changing the
+  project. Replacing a conflicting existing description requires an explicit
+  choice; retaining it remains the default. Never let provider output assign
+  human approval.
+- Applying a draft is one complete project transaction: cues, identity,
+  provenance/review state, coverage, analysis/usage and glossary. Undo/redo must
+  restore these together. Reject stale proposals if the project has changed.
+- Cancellation/failure/rejected proposals do not mutate the project. Save/load
+  round trips preserve the same identities and states. Atomic saves remain.
+- Preserve existing glossary by default; show proposed changes separately.
+  Retained cue coverage stays attached to its cue; replacement coverage applies
+  only to accepted replacements/additions. Reconcile combined narration before
+  media export rather than treating partial-range timing as globally verified.
+
+## Evidence status
+
+Package 1 has passed local preservation, service, GUI, recovery and media checks.
+The full Windows suite recorded186passing tests,3subtests and4skips, plus7
+failures caused by a test's old disclosure-text selector. All seven corrected
+provider consent/routing cases passed in the affected run (132passes, one
+recovery-fixture failure). That fixture reused an old cue ID for purportedly new
+AI output; fresh proposal identity and explicit approval fixed it, with53tests
+and3subtests passing. Final event-window/identity checks passed7tests. Existing
+passed evidence was retained; the full suite was not restarted. Documentation
+links and affected Ruff checks pass. Windows emitted a native COM diagnostic at
+the legacy start-screen visibility check; execution continued and the test
+passed. No claim is made that this diagnostic has been resolved.
+
+The native Windows real-media workflow decoded NASA video, explicitly replaced
+one reviewed fixture cue, accepted another, preserved three other cues and the
+original glossary, and verified full-project undo/redo and save/reopen. These are
+fixture proposals through actual Qt controls, not a live AI or reader test.
+Linux/Mac source checks are pending on the pushed candidate; Package 2 has not
+started. Native reader acceptance must identify exactly which
+reader/platform combination was exercised; simulated events are not that proof.
+
+Source candidates on the stabilization branch introduce a draft-review dialog.
+The published 0.6.1 applications retain their documented replacement behavior
+until a separately verified application release. A candidate does not update the
+installed application or public binary merely by being committed.

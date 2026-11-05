@@ -61,6 +61,8 @@ def main():
     for p in (ROOT/'website').iterdir():
         if p.is_file():shutil.copy2(p,out/p.name)
     shutil.copytree(ROOT/'docs/diagrams',out/'diagrams',dirs_exist_ok=True)
+    for name in ('STABILIZATION.md', 'STABILIZATION-BASELINE.json'):
+        shutil.copy2(ROOT/'docs'/name,out/name)
     for src,title,name in [('QUICK-START.md','Quick start without programming','quick-start.html'),('AI-CONNECTIONS.md','AI connections','connections.html'),('CODE-SIGNING.md','Platform signing and release integrity','signing.html'),('USER-MANUAL.md','User manual','manual.html'),('ARCHITECTURE.md','Architecture guide','architecture.html'),('DEVELOPER-GUIDE.md','Developer guide','developer.html'),('UNIX-INSTALL.md','macOS and Linux installation','unix.html')]:
         source=(ROOT/'docs'/src).read_text(encoding='utf-8')
         (out/name).write_text(render(source,title,name),encoding='utf-8')

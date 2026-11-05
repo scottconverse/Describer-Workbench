@@ -131,7 +131,7 @@ def test_visible_draft_test_uses_exact_model_consent_and_correct_route(tmp_path,
             assert refresh.isEnabled()==(provider!='Anthropic API')
             editor=next(x for x in dialog.findChildren(QLineEdit) if x.accessibleName()=='Exact analysis model ID')
             editor.setText('exact-fixture-model');test.click();QApplication.processEvents()
-            disclosure=next(x.text() for x in dialog.findChildren(QLabel) if 'Range analysis replaces' in x.text())
+            disclosure=next(x.text() for x in dialog.findChildren(QLabel) if 'existing descriptions are kept' in x.text())
             assert provider in disclosure and 'no audio' in disclosure
             assert 'Uploads video to Google' not in disclosure
             if provider=='OpenAI-compatible':assert 'gateway forwards' not in disclosure

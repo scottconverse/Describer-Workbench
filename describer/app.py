@@ -366,13 +366,17 @@ class Window(DesktopInterface, QMainWindow):
         return candidate
     def add_cue(self):
         if self.busy():return
-        try:self.project.cues.append(self.editor_cue());self.changed()
+        try:
+            from uuid import uuid4
+            cue=self.editor_cue();cue.cue_id=uuid4().hex;cue.origin='manual';cue.manually_edited=True
+            self.commit_cues([*self.project.cues,cue],'Add description')
         except Exception as e:self.error(str(e))
     def apply_edit(self):
         if self.busy():return
         i=self.table.currentRow()
         if i<0:return
-        try:self.project.cues[i]=self.editor_cue();self.changed()
+        try:
+            cues=copy.deepcopy(self.project.cues);cues[i]=self.editor_cue();self.commit_cues(cues,'Apply description edit')
         except Exception as e:self.error(str(e))
     def delete_cue(self):
         if self.busy():return
@@ -380,12 +384,19 @@ class Window(DesktopInterface, QMainWindow):
         if i>=0:
             if QMessageBox.question(self,'Delete description','Delete the selected description?')==QMessageBox.StandardButton.Yes:
                 cues=copy.deepcopy(self.project.cues);cues.pop(i);self.commit_cues(cues,'Delete description')
-    def changed(self):self.project.cues.sort(key=lambda c:c.start);self.dirty=True;self.refresh();self.last_spoken=None
+    def changed(self):
+        from .drafting import coverage_for
+        self.project.cues.sort(key=lambda c:c.start)
+        self.project.coverage=coverage_for(self.project.cues,self.project.coverage)
+        self.dirty=True;self.refresh();self.last_spoken=None
     def save_project(self):
         if self.busy():return False
         i=self.table.currentRow()
         if 0<=i<len(self.project.cues):
-            try:self.project.cues[i]=self.editor_cue();self.changed()
+            try:
+                candidate=self.editor_cue()
+                if candidate!=self.project.cues[i]:
+                    cues=copy.deepcopy(self.project.cues);cues[i]=candidate;self.commit_cues(cues,'Save description edit')
             except Exception as e:self.error(str(e));return False
         p=self.project_path
         if not p:p,_=QFileDialog.getSaveFileName(self,'Save project','','Describer project (*.adproject)')
@@ -489,21 +500,34 @@ class Window(DesktopInterface, QMainWindow):
         self.job(check,ready)
     def analyze(self):
         if self.busy() or not self.project.video:return
-        if self.project.cues and QMessageBox.question(self,'Replace descriptions','Replace existing descriptions with newly generated results?')!=QMessageBox.StandardButton.Yes:return
         snapshot=copy.deepcopy(self.project);original_settings=copy.deepcopy(self.settings.data);settings=dict(original_settings,allow_cloud=True);prompt=self.prompt.toPlainText()
+        from .drafting import fingerprint
+        original_identity=fingerprint(self.project)
         scope=self.model_picker.scope.currentIndex()
         start_at=self.player.position()/1000 if scope else 0
         duration={1:20,2:60}.get(scope)
         def task(c,l):
-            cues=generate(snapshot,settings,prompt,c,l,start_at,duration);return cues,snapshot.glossary,snapshot.coverage,snapshot.analysis
+            cues=generate(snapshot,settings,prompt,c,l,start_at,duration)
+            return {'project':Project(snapshot.video,snapshot.duration,cues,snapshot.glossary,snapshot.coverage,snapshot.analysis),
+                    'original':original_identity,'start':start_at,'end':min(snapshot.duration,start_at+duration) if duration is not None else snapshot.duration}
         self.operation_preflight(original_settings,lambda:self.job(task,self.generated),narration=True,detector=True)
     def generated(self,result):
-        cues,glossary,*metadata=result;self.project.glossary=glossary;self.project.cues=cues
-        if metadata:self.project.coverage,self.project.analysis=metadata
-        self.played_pauses.clear();self.changed();self.log(f'Generated {len(cues)} descriptions; placement/uncertainty shown in the table. Review visual facts before use.')
-        # Refresh the editor even if row zero was already selected before regeneration.
-        # Save commits the selected editor, which must not still contain the old cue.
-        if cues:self.table.setCurrentCell(0,0);self.select_cue()
+        from .drafting import DraftProposal, ProjectChange, fingerprint, review_proposal
+        if isinstance(result,dict):
+            if result['original']!=fingerprint(self.project):
+                self.error('The project changed while drafting. Existing work was kept; review a new draft.');return
+            generated=result['project'];start,end=result['start'],result['end']
+        else:
+            cues,glossary,*metadata=result
+            generated=Project(self.project.video,self.project.duration,cues,glossary,metadata[0] if metadata else [],metadata[1] if len(metadata)>1 else {})
+            start,end=0,self.project.duration
+        try:
+            proposal=DraftProposal(self.project,generated,start,end)
+            after=review_proposal(self,proposal) if self.project.cues else proposal.apply(self.project,proposal.candidates.keys(),set(),not bool(self.project.glossary))
+            if after is None:self.log('Draft not applied; existing work kept.');return
+            self.undo_stack.push(ProjectChange(self,self.project,after,'Apply reviewed draft'))
+            self.log(f'Applied draft; {len(after.cues)} descriptions retained/accepted. Review facts and repair narration before timed playback or export.')
+        except ValueError as exc:self.error(str(exc))
     def scene_request(self,instruction,done,length=10,operation='ask'):
         if self.busy() or not self.project.video:return
         self.player.pause();pos=self.player.position()/1000;snapshot=copy.deepcopy(self.project);duration=self.project.duration;settings=copy.deepcopy(self.settings.data);settings['allow_cloud']=True
@@ -556,7 +580,8 @@ class Window(DesktopInterface, QMainWindow):
             service=get_service();allowed=dict(settings,allow_cloud=True)
             def done(project):
                 if self.project is identity:
-                    self.project=project;self.undo_stack.clear();self._selected_cue=None;self.changed();self.log('Narration repaired. Save the project to keep the new audio references.')
+                    from .drafting import ProjectChange
+                    self.undo_stack.push(ProjectChange(self,self.project,project,'Repair narration'));self.log('Narration repaired. Save the project to keep the new audio references.')
             self.job(lambda c,l:service.repair_narration(snapshot,allowed,c,l),done)
         self.operation_preflight(settings,launch,narration=True,detector=True,vision=False)
     def recover_jobs(self):
@@ -601,6 +626,16 @@ class Window(DesktopInterface, QMainWindow):
                     return service.wait(job['id'],cancel,log)
                 def done(result):
                     if self.project is not identity:return
+                    if job['operation']=='describe':
+                        from .drafting import fingerprint
+                        if self.project.video!=result.video or self.project.duration!=result.duration:
+                            self.project=copy.deepcopy(project);self.project_path=None;self._selected_cue=None
+                            self.undo_stack.clear();self.reset_scene();self.refresh()
+                            self.player.setSource(QUrl.fromLocalFile(result.video));self.file_label.setText(result.video)
+                            if self.project.cues:self.choose(0)
+                        self.generated({'project':result,'original':fingerprint(self.project),'start':job['start'],
+                                        'end':min(result.duration,job['start']+job['duration']) if job['duration'] is not None else result.duration})
+                        self.log('Recovered draft '+job['id']+' used the same preservation/review rules.');return
                     self.project=result;self.project_path=None;self.undo_stack.clear();self._selected_cue=None;self.reset_scene();self.played_pauses.clear()
                     self.player.setSource(QUrl.fromLocalFile(result.video));self.file_label.setText(result.video);self.changed()
                     artifact=service.get_job(job['id']).get('artifact')

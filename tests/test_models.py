@@ -112,7 +112,10 @@ class PickerTests(unittest.TestCase):
             try:
                 w.project=Project('fixture',100,[Cue(60,62,'Old description.')]);w.project_path=Path(tmp)/'result.adproject'
                 w.refresh();w.table.selectRow(0);w.select_cue()
-                w.generated(([Cue(60,62,'New generated description.')],''))
+                def explicitly_replace(window,proposal):
+                    return proposal.apply(window.project,set(proposal.candidates),set(proposal.existing),False)
+                with patch('describer.drafting.review_proposal',side_effect=explicitly_replace):
+                    w.generated(([Cue(60,62,'New generated description.')],''))
                 self.assertTrue(w.save_project())
                 self.assertEqual(Project.load(w.project_path).cues[0].text,'New generated description.')
             finally:w.dirty=False;w.close();self.app.processEvents()

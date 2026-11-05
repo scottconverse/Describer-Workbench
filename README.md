@@ -2,6 +2,8 @@
 
 **One audio-description engine for a desktop workbench, Python, CLI, REST/OpenAPI and MCP.**
 
+Source stabilization work is tracked in [the eight-package plan and preservation rules](docs/STABILIZATION.md). On that candidate branch, drafting produces an explicit review/merge proposal and preserves existing work by default. Published 0.6.1 installers retain the release behavior described below until a separately verified release.
+
 macOS and Linux are additional native distributions of 0.6.1 under the separate [platform add-on release](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.6.1-unix.1): Apple Silicon/Intel Mac DMGs and Linux x64 DEB/portable archive. Follow [macOS/Linux installation, source installation and platform limits](docs/UNIX-INSTALL.md). Mac packages have no Apple publisher certificate or notarization. The signed Windows 0.6.1 package below remains unchanged and stays the default stable release.
 
 **Version 0.6.1** fixes whole-chunk metadata validation and retry, visible subscription connection tests and disclosure, settings recovery, model metadata display, workflow instructions, optional-hours VTT import and prompt-preset rename. See [connection setup and verification limits](docs/AI-CONNECTIONS.md) and [0.6.1 acceptance](docs/V061-ACCEPTANCE.md). Windows releases require Scott Converse Azure Trusted Signing; the release verification asset records the executed signing and delivery results. The [0.6.0 record](docs/V060-ACCEPTANCE.md) remains historical evidence.

@@ -34,6 +34,8 @@ Use **Export → Subtitles · .srt** for a simple text output. For narrated MP3/
 
 ## 4. Try an AI draft when ready
 
+**Stabilization source candidate:** your existing descriptions stay by default. After drafting, review the proposals and explicitly approve any replacements. Cancel keeps your project unchanged; Ctrl+Z undoes the complete accepted draft. Published 0.6.1 applications still behave as described in the next paragraph.
+
 Save a separate copy of your project first: **AI analysis replaces the cue list**, even when analyzing a short range. Choose **Draft with AI**, select your connection and exact model ID, then try **Next 20 seconds**. Local Ollama needs a separately installed vision model. Claude, Codex and Antigravity use their installed CLI sign-in or the existing subscription gateway. API credits are separate. [Connection setup](AI-CONNECTIONS.md) explains each route and its limits.
 
 Review facts, names, omitted actions, printed text and timing. Completion and a green placement status do not prove accuracy. Sampled-frame routes cannot hear dialogue. The engine protects sound independently, but that detector can also make mistakes.

@@ -3,6 +3,7 @@ import math
 import re
 from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
+from uuid import uuid4
 
 
 def seconds(value):
@@ -43,10 +44,21 @@ class Cue:
     timing_end: float | None = None
     audio_volume: float | None = None
     narration_text: str = ''
+    cue_id: str = field(default_factory=lambda: uuid4().hex, compare=False)
+    origin: str = 'legacy'
+    manually_edited: bool = False
+    review_status: str = 'unreviewed'
+    review_history: list[dict] = field(default_factory=list)
 
     def narration_window(self):
         """Authored scheduling intent is separate from observed provenance."""
         return (self.timing_start, self.timing_end) if self.timing_start is not None else (self.event_start, self.event_end)
+
+    def reviewed(self):
+        from dataclasses import replace
+        return replace(self, uncertainty='', disposition='unplanned', review_status='reviewed',
+                       review_history=[*self.review_history, {'status':self.review_status, 'uncertainty':self.uncertainty,
+                           'text':self.text, 'event_id':self.event_id, 'action':'human-checked'}])
 
     def edited(self, start, end, text, duration=0):
         """Keep observation/review identity while invalidating changed narration."""
@@ -55,19 +67,27 @@ class Cue:
         if (candidate.start, candidate.end) != (self.start, self.end):
             candidate.timing_start, candidate.timing_end = candidate.start, candidate.end
         if (candidate.start, candidate.end, candidate.text) != (self.start, self.end, self.text):
+            candidate.manually_edited = True
+            if self.review_status in ('reviewed', 'approved'):
+                import hashlib
+                candidate.review_history = [*self.review_history, {'status': self.review_status,
+                    'text_sha256': hashlib.sha256(self.text.encode('utf-8')).hexdigest(), 'start': self.start, 'end': self.end}]
+                candidate.review_status = 'needs-review'
             candidate.audio = ''
             candidate.speech_seconds = 0
             candidate.speed = 1
             candidate.audio_volume = None
             candidate.narration_text = ''
-            candidate.disposition = 'unresolved' if self.disposition == 'unresolved' or self.uncertainty else 'unplanned'
+            candidate.disposition = 'unresolved' if self.disposition == 'unresolved' or self.uncertainty or candidate.review_status == 'needs-review' else 'unplanned'
         return candidate
 
     def validate(self, duration=0):
         self.start, self.end = seconds(self.start), seconds(self.end)
-        for name in ('text', 'event_id', 'kind', 'evidence', 'uncertainty', 'audio','narration_text'):
+        for name in ('text', 'event_id', 'kind', 'evidence', 'uncertainty', 'audio','narration_text', 'cue_id', 'origin'):
             if not isinstance(getattr(self, name), str):
                 raise ValueError('Description metadata must contain text values.')
+        if not self.cue_id or self.review_status not in ('unreviewed', 'needs-review', 'reviewed', 'approved') or not isinstance(self.manually_edited, bool) or not isinstance(self.review_history, list):
+            raise ValueError('Invalid description identity or review state.')
         self.speech_seconds = seconds(self.speech_seconds)
         self.speed = float(self.speed)
         if self.audio_volume is not None:
@@ -183,8 +203,9 @@ def normalize_chunk(data, start, length, log=lambda _:None):
         row['start'],row['end'] = (a-start,b-start) if absolute else (a,b)
         # Observation metadata comes from the normalized response, not arbitrary
         # provider-supplied scheduling/audio fields.
-        for key in ('event_start','event_end','audio','speech_seconds','speed','audio_volume','timing_start','timing_end','narration_text'):
+        for key in ('event_start','event_end','audio','speech_seconds','speed','audio_volume','timing_start','timing_end','narration_text', 'cue_id', 'origin', 'manually_edited', 'review_status', 'review_history'):
             row.pop(key, None)
+        row['origin'] = 'generated'
         adjusted.append(row)
     if absolute:log('Reconciled source-absolute chunk timestamps.')
     return normalize_generated(adjusted,length,log,strict=True)
@@ -239,6 +260,8 @@ class Project:
 
     def save(self, path):
         from .engine.core import atomic_json
+        if len({cue.cue_id for cue in self.cues}) != len(self.cues):
+            raise ValueError('Duplicate description identity; the existing project file was not changed.')
         atomic_json(path, {'version': 1, **asdict(self)})
 
     @classmethod
@@ -246,7 +269,9 @@ class Project:
         j = json.loads(Path(path).read_text(encoding='utf-8-sig'))
         if j.get('version') != 1:
             raise ValueError('Unsupported project version.')
-        return cls(j['video'], seconds(j['duration']), parse_cues(j['cues'], j['duration']), j.get('glossary', ''), j.get('coverage', []), j.get('analysis', {}))
+        cues = parse_cues(j['cues'], j['duration'])
+        if len({cue.cue_id for cue in cues}) != len(cues):raise ValueError('Duplicate description identity in saved project.')
+        return cls(j['video'], seconds(j['duration']), cues, j.get('glossary', ''), j.get('coverage', []), j.get('analysis', {}))
 
     def export(self, path):
         if Path(path).suffix.lower() == '.srt':

@@ -1,0 +1,138 @@
+{
+  "source": "918b47065af494f9f6b8b48a334015e343ef5eae",
+  "platform": "Windows native Qt",
+  "protocol": "Actual playback/segment/detector; controlled one-cue-per-ten-seconds editor load,20 keystrokes. No live AI baseline.",
+  "media_limits": "NASA Apollo library short;30m and2h excerpts of the SAME City Council Study Session September29,2026 (YouTube fWMTQj830Ho). Long excerpts are not independent genres. Originals unchanged; copy-trim offsets reflected in actual durations.",
+  "helper_correction": "Initial ctypes memory handle width returned invalid zeros. Retained initial processing timings; reran only affected GUI/memory measurements before app changes. Do not interpret between-run latency variation as an improvement.",
+  "failures_or_limits": [
+    "No full-provider processing/accuracy baseline; reported processing is independent speech detection and20s visual segmentation.",
+    "Memory covers the Python/Qt process, excludes FFmpeg child memory.",
+    "Qt decoded long media with Late SEI warnings; playback progressed.",
+    "New preservation tests initially failed because proposal/review fields did not exist."
+  ],
+  "cases": [
+    {
+      "label": "short",
+      "media_sha256": "a6145154aee091019c2fc91def46b6e661a73be4da062a8463098e1115ee2e8c",
+      "actual_duration": 120.166667,
+      "editor": {
+        "cue_count": 12,
+        "samples_ms": [
+          39.58809992764145,
+          30.30469990335405,
+          41.911000036634505,
+          97.24579995963722,
+          76.10299997031689,
+          67.65330000780523,
+          68.83030000608414,
+          78.81340000312775,
+          77.1059999242425,
+          82.00349996332079,
+          51.11560004297644,
+          42.31900000013411,
+          50.04220001865178,
+          41.55989992432296,
+          39.21519999857992,
+          40.5880999751389,
+          57.307900045998394,
+          47.1866000443697,
+          56.10950000118464,
+          58.088600053451955
+        ],
+        "median_ms": 53.61255002208054,
+        "max_ms": 97.24579995963722,
+        "undo_commands": 20,
+        "memory": {
+          "working_bytes": 268414976,
+          "process_peak_bytes": 268414976
+        }
+      },
+      "open_to_play_seconds": 0.849059300031513,
+      "whole_media_speech_seconds": 5.295779599924572,
+      "visual_20s_segment_seconds": 0.719388399971649,
+      "failures": []
+    },
+    {
+      "label": "program",
+      "media_sha256": "e6bcff3e9d51beee13d094d40533b9ec5a73d62c7be479c4e332151a59225329",
+      "actual_duration": 1800.212,
+      "editor": {
+        "cue_count": 180,
+        "samples_ms": [
+          129.98930003959686,
+          156.5980000887066,
+          153.98129995446652,
+          115.53139996249229,
+          122.0457999734208,
+          129.19250002596527,
+          157.28819998912513,
+          112.01860010623932,
+          140.79910004511476,
+          152.3344999877736,
+          122.88859998807311,
+          170.8957999944687,
+          152.85419998690486,
+          131.51779992040247,
+          133.82859993726015,
+          135.41520002763718,
+          153.2543000066653,
+          156.0017999727279,
+          151.51320002041757,
+          165.14749999623746
+        ],
+        "median_ms": 146.15615003276616,
+        "max_ms": 170.8957999944687,
+        "undo_commands": 20,
+        "memory": {
+          "working_bytes": 399044608,
+          "process_peak_bytes": 399048704
+        }
+      },
+      "open_to_play_seconds": 0.4697458000155166,
+      "whole_media_speech_seconds": 5.449576599989086,
+      "visual_20s_segment_seconds": 0.7554815999465063,
+      "failures": []
+    },
+    {
+      "label": "meeting",
+      "media_sha256": "ba534aadbbb04a8e91f3b433e9dc436a2e8be93501e611e65dabedb6db529f6b",
+      "actual_duration": 7210.012,
+      "editor": {
+        "cue_count": 721,
+        "samples_ms": [
+          385.6961999554187,
+          385.81720006186515,
+          368.92400006763637,
+          399.8936000280082,
+          382.4917000019923,
+          407.63219993095845,
+          438.4149999823421,
+          522.5947999861091,
+          454.14779998827726,
+          420.31940002925694,
+          431.8417999893427,
+          437.1604999760166,
+          426.0273000691086,
+          502.39850010257214,
+          385.5936999898404,
+          390.37829998414963,
+          444.09150001592934,
+          397.75459992233664,
+          399.1315000457689,
+          412.8999999957159
+        ],
+        "median_ms": 410.2660999633372,
+        "max_ms": 522.5947999861091,
+        "undo_commands": 20,
+        "memory": {
+          "working_bytes": 715763712,
+          "process_peak_bytes": 715767808
+        }
+      },
+      "open_to_play_seconds": 0.8192659000633284,
+      "whole_media_speech_seconds": 20.385935200029053,
+      "visual_20s_segment_seconds": 0.4626189999980852,
+      "failures": []
+    }
+  ]
+}

@@ -229,12 +229,18 @@ class Timeline(QWidget):
 class CueEdit(QUndoCommand):
     def __init__(self, window, before, after, title):
         super().__init__(title);self.window=window;self.before=before;self.after=after
-    def apply(self, data):
+        from .drafting import coverage_for
+        self.before_coverage=copy.deepcopy(window.project.coverage)
+        self.after_coverage=coverage_for(after,self.before_coverage,before)
+        self.before_analysis=copy.deepcopy(window.project.analysis)
+        self.after_analysis=dict(copy.deepcopy(self.before_analysis),requires_replan=True)
+    def apply(self, data, coverage, analysis):
         self.window.project.cues=copy.deepcopy(data);self.window.dirty=True
+        self.window.project.coverage=copy.deepcopy(coverage);self.window.project.analysis=copy.deepcopy(analysis)
         self.window.refresh();self.window.last_spoken=None
         if not getattr(self.window,'_typing',False) and self.window.project.cues:self.window.choose(min(max(0,self.window.table.currentRow()),len(data)-1))
-    def undo(self):self.apply(self.before)
-    def redo(self):self.apply(self.after)
+    def undo(self):self.apply(self.before,self.before_coverage,self.before_analysis)
+    def redo(self):self.apply(self.after,self.after_coverage,self.after_analysis)
 
 
 class DesktopInterface:
@@ -457,7 +463,7 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
     def mark_checked(self):
         i=self.table.currentRow()
         if self.busy() or i<0:return
-        cues=copy.deepcopy(self.project.cues);cues[i].uncertainty='';cues[i].disposition='unplanned';self.commit_cues(cues,'Mark checked');self.choose(i)
+        cues=copy.deepcopy(self.project.cues);cues[i]=cues[i].reviewed();self.commit_cues(cues,'Mark checked');self.choose(i)
     def preview_context(self):
         try:self.seek(round(max(0,seconds(self.start.text())-2)*1000));self.player.play()
         except ValueError:pass
@@ -627,7 +633,7 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
             from .providers import destination
             try:message=destination(self.model_picker.data)
             except ValueError as exc:message=str(exc)
-            note.setText(message+'. External processing requires confirmation and may use allowance or API credit.'+f' Range analysis replaces the {len(self.project.cues)} current descriptions.')
+            note.setText(message+'. External processing requires confirmation and may use allowance or API credit.'+f' Your {len(self.project.cues)} existing descriptions are kept unless you explicitly approve replacements after drafting.')
         update_note();self.model_picker.provider.currentTextChanged.connect(update_note)
         actions=QDialogButtonBox(QDialogButtonBox.Cancel);actions.addButton('Start draft',QDialogButtonBox.AcceptRole).setProperty('role','primary');actions.accepted.connect(d.accept);actions.rejected.connect(d.reject);v.addWidget(actions)
         accepted=d.exec();timer.stop();self.model_picker.provider.currentTextChanged.disconnect(update_note);self.model_picker.provider.currentTextChanged.disconnect(sync_models);self.model_picker.reloaded.disconnect(sync_models)
