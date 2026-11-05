@@ -111,6 +111,20 @@ def test_invalid_identity_cannot_overwrite_saved_work(tmp_path):
     assert path.read_bytes() == original
 
 
+def test_legacy_projects_load_but_new_saves_require_a_metadata_aware_reader(tmp_path):
+    import json
+    path = tmp_path/'legacy.adproject'
+    legacy = {'version':1,'video':'source','duration':10,'cues':[{'start':1,'end':3,'text':'Existing work.'}],'glossary':'Existing glossary'}
+    path.write_text(json.dumps(legacy))
+    project = Project.load(path)
+    assert project.cues[0].origin == 'legacy' and project.glossary == legacy['glossary']
+    saved = tmp_path/'candidate.adproject'
+    project.save(saved)
+    assert json.loads(saved.read_text())['version'] == 2
+    assert asdict(Project.load(saved)) == asdict(project)
+    assert json.loads(path.read_text()) == legacy
+
+
 def test_partial_narration_placement_is_not_reused_outside_the_event_range():
     from describer.drafting import DraftProposal
     old = Project('source',60,[Cue(40,44,'Outside narration.').validate(60)])

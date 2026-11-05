@@ -262,12 +262,14 @@ class Project:
         from .engine.core import atomic_json
         if len({cue.cue_id for cue in self.cues}) != len(self.cues):
             raise ValueError('Duplicate description identity; the existing project file was not changed.')
-        atomic_json(path, {'version': 1, **asdict(self)})
+        # Older applications discard unknown cue fields when re-saving v1.
+        # Require a reader that understands preservation/review metadata.
+        atomic_json(path, {'version': 2, **asdict(self)})
 
     @classmethod
     def load(cls, path):
         j = json.loads(Path(path).read_text(encoding='utf-8-sig'))
-        if j.get('version') != 1:
+        if j.get('version') not in (1, 2):
             raise ValueError('Unsupported project version.')
         cues = parse_cues(j['cues'], j['duration'])
         if len({cue.cue_id for cue in cues}) != len(cues):raise ValueError('Duplicate description identity in saved project.')

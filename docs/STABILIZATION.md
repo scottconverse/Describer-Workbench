@@ -46,6 +46,9 @@ affected packages. Preserve original source media and user settings.
   restore these together. Reject stale proposals if the project has changed.
 - Cancellation/failure/rejected proposals do not mutate the project. Save/load
   round trips preserve the same identities and states. Atomic saves remain.
+- Candidates read existing format-1 projects and save format 2. Older 0.6.1
+  applications reject new files instead of silently dropping new identity and
+  review metadata. Original files remain unchanged until explicitly saved.
 - Preserve existing glossary by default; show proposed changes separately.
   Retained cue coverage stays attached to its cue; replacement coverage applies
   only to accepted replacements/additions. Reconcile combined narration before
@@ -69,8 +72,9 @@ The native Windows real-media workflow decoded NASA video, explicitly replaced
 one reviewed fixture cue, accepted another, preserved three other cues and the
 original glossary, and verified full-project undo/redo and save/reopen. These are
 fixture proposals through actual Qt controls, not a live AI or reader test.
-Linux/Mac source checks are pending on the pushed candidate; Package 2 has not
-started. Native reader acceptance must identify exactly which
+Linux/Mac source checks passed at179ab39 (run42095956461). A subsequent narrow
+file-format compatibility correction is being verified before Package 1 closure;
+Package 2 has not started. Native reader acceptance must identify exactly which
 reader/platform combination was exercised; simulated events are not that proof.
 
 Source candidates on the stabilization branch introduce a draft-review dialog.

@@ -323,6 +323,8 @@ Gemini uses google-genai file upload, processing polling and generation with the
 
 ## 17. Project format and integrations
 
+**Stabilization source candidate:** existing projects still open. Newly saved projects use format 2 to protect identity and review history; older 0.6.1 applications will report an unsupported project version rather than discard those details. Keep your original project copy if you need to continue using the released application. The version-1 example below describes the released format, which the candidate can also read.
+
 The [developer guide](DEVELOPER-GUIDE.md) covers the shared Python service, scriptable CLI, REST/OpenAPI and MCP over stdio or Streamable HTTP. Submit returns a durable job handle; inspect status, cancel/resume, page/time-filter descriptions, read coverage, edit with a revision, ask/explore and export. One process owns each workspace and runs one job at a time. GUI users can choose **File → Start developer API / MCP** to share their engine at `127.0.0.1:8796`; the private token path is logged. Other clients connect to that owner. Do not expose this local service directly on the Internet.
 
 Example `.adproject` (illustrative; update the media path):
