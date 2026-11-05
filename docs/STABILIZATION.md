@@ -213,7 +213,7 @@ request and the computer-use runtime reset; the user confirmed release, then
 authorized continuation headlessly. Initial extraction left three unused
 imports, fixed locally; atomic patch context misses changed no files. These
 agent/helper issues did not restart full CI or builds. Native source checks
-remain pending for this candidate.
+at ce3cded passed all macOS tests/lint/types in run42108524514. Linux retained 49 passing tests and 3 subtests, but one added credential-storage test correctly refused plaintext because the new workflow lacked Secret Service. This is an agent CI setup error, not a product-test failure. The workflow now reuses the existing Unix dbus/keyring setup. A Linux-only keyring scope reruns just that test plus lint/types skipped after failure; all other passed evidence is retained. The original run remains recorded as failed. Final narrow check pending.
 
 Native reader acceptance must identify exactly which
 reader/platform combination was exercised; simulated events are not that proof.
