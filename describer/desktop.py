@@ -306,6 +306,16 @@ class TextEdit(QUndoCommand):
     def redo(self):self.apply(self.after,self.after_row)
 
 
+class GlossaryEdit(QUndoCommand):
+    def __init__(self,window,after):
+        super().__init__('Delete glossary character');self.window=window;self.before=window.project.glossary;self.after=after
+    def apply(self,value):
+        self.window.project.glossary=value;self.window.dirty=True
+        self.window._glossary_snapshot=None;self.window.sync_glossary();self.window.update_status()
+    def undo(self):self.apply(self.before)
+    def redo(self):self.apply(self.after)
+
+
 class DesktopInterface:
     """Presentation mixin. Window retains ownership of jobs and existing safeguards."""
     def build_interface(self):
@@ -404,6 +414,8 @@ class DesktopInterface:
         right=QVBoxLayout();right.setAlignment(Qt.AlignTop);layout.addLayout(right,1);right.addWidget(section('RECENT PROJECTS'))
         self.recent_empty=QLabel('No recent projects yet.\nOpen a video and save your first project.');self.recent_empty.setWordWrap(True);right.addWidget(self.recent_empty)
         self.recents=QListWidget();right.addWidget(self.recents);self.recents.itemActivated.connect(lambda item:self.open_recent(item.data(Qt.UserRole)))
+        self.recovery_button=button(right,'Recover unsaved drafts',self.recover_unsaved)
+        self.recovery_button.setVisible(bool(self.draft_store.entries()))
         right.addSpacing(28);right.addWidget(section('SETUP CHECKLIST'));self.setup_checks={};self.setup_actions={}
         for title,group in [('Speech detector','Updates'),('Ollama','Keys & privacy'),('Windows voices','Speech & playback'),('Gemini key','Keys & privacy')]:
             line=QHBoxLayout();right.addLayout(line);check=QCheckBox(native_text(title));check.setAttribute(Qt.WA_TransparentForMouseEvents);check.setFocusPolicy(Qt.NoFocus);line.addWidget(check);self.setup_checks[title]=check;line.addStretch();action=button(line,'Set up',lambda checked=False,s=group:self.edit_settings(s),role='link');self.setup_actions[title]=action
@@ -644,11 +656,19 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
     def make_glossary(self):
         page=QWidget();v=QVBoxLayout(page);v.setAlignment(Qt.AlignTop);v.setSpacing(10);self.tabs.addTab(page,'Glossary');host=QWidget();host.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Maximum);self.glossary_list=QVBoxLayout(host);self.glossary_list.setContentsMargins(0,0,0,0);self.glossary_list.setAlignment(Qt.AlignTop);self.glossary_list.setSpacing(10);v.addWidget(host);button(v,'Add character',lambda:self.glossary_card('',''));v.addStretch()
     def glossary_card(self,name,description):
-        card=BlueprintFrame();card.setFixedHeight(166);v=QVBoxLayout(card);v.setContentsMargins(16,16,16,16);v.setSpacing(8);n=QLineEdit(name);n.setPlaceholderText('Character name');n.setAccessibleName('Character name');d=QPlainTextEdit(description);d.setPlaceholderText('Visible identifying details');d.setFixedHeight(80);d.setAccessibleName('Character description');v.addWidget(n);v.addWidget(d);self.glossary_list.addWidget(card)
+        card=BlueprintFrame();card.setFixedHeight(206);v=QVBoxLayout(card);v.setContentsMargins(16,16,16,16);v.setSpacing(8);n=QLineEdit(name);n.setPlaceholderText('Character name');n.setAccessibleName('Character name');d=QPlainTextEdit(description);d.setPlaceholderText('Visible identifying details');d.setFixedHeight(80);d.setAccessibleName('Character description');v.addWidget(n);v.addWidget(d);self.glossary_list.addWidget(card)
         def save():
             if self._syncing or self.busy():return
             self.project.glossary='\n'.join(f'{a.text()}: {b.toPlainText()}' for a,b in self.glossary_fields);self._glossary_snapshot=self.project.glossary;self.dirty=True
         self.glossary_fields.append((n,d));n.textEdited.connect(save);d.textChanged.connect(save)
+        controls=QHBoxLayout();v.addLayout(controls)
+        def remove():
+            if self.busy():return
+            index=next(i for i,(a,b) in enumerate(self.glossary_fields) if a is n)
+            lines=self.project.glossary.splitlines()
+            after='\n'.join(lines[:index]+lines[index+1:])
+            self.undo_stack.push(GlossaryEdit(self,after))
+        button(controls,'Delete character',remove).setAccessibleName('Delete character '+(name or 'unnamed'))
     def sync_glossary(self):
         if getattr(self,'_glossary_snapshot',None)==self.project.glossary:return
         self._glossary_snapshot=self.project.glossary

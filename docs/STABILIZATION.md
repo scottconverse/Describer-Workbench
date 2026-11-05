@@ -118,6 +118,19 @@ Initial test-window visibility was delayed and a duplicate fixture window was
 closed normally; intermittent CUA foreground/geometry errors were recovered by
 fresh observations, without changing the app. No full CI or build restart.
 
+Package 4 candidate adds Save As, bounded local unsaved snapshots and reversible
+glossary deletion. Cancelled/failed Save As leaves the original path/file intact.
+Snapshots include all project data and pending editor values, use atomic writes,
+validate source size/mtime at recovery and open unsaved copies. A real Windows
+Qt/video workflow used the actual 30-second timer, abruptly exited the isolated
+child (23), restarted, accepted the real recovery dialog, restored the full
+project/review history and saved a separate copy. Original project/video were
+unchanged. Local checks passed 42 affected tests, then 24 focused GUI, preservation
+and documentation tests after narrowing deletion to keep other glossary lines
+exactly. No full suite, binary build or earlier CI run was restarted. Native
+source checks are pending at the implementation commit. The store limits and
+30-second recovery window are documented in the user/developer guides.
+
 Native reader acceptance must identify exactly which
 reader/platform combination was exercised; simulated events are not that proof.
 

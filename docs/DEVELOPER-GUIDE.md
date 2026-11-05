@@ -36,6 +36,18 @@ semantic name for native list accessibility and timeline controls. Actual Window
 NVDA evidence and cross-platform source-check limits are in the stabilization
 record; accessible Qt metadata alone is not proof of a reader workflow.
 
+Candidate `project_recovery.DraftStore` atomically writes format-2 project
+snapshots plus original path, source size/mtime and pending editor fields beneath
+`unsaved-drafts` beside the settings file. It copies project data, not settings or
+credentials. The desktop's 30-second timer runs only while dirty and idle;
+unchanged content is deduplicated. Retention is 3 per project, 20 total, 50 MiB,
+10 MiB per snapshot. Pruning is limited to validated owned files in that resolved
+directory and excludes symlinks. A recovered project has no active save path.
+Save As changes the active path only after atomic project persistence succeeds.
+Engine jobs/checkpoints remain separate. The native crash acceptance helper uses
+a disposable profile/video and intentionally exits its child with code 23 after
+the actual timer fires; it verifies full-state recovery and unchanged originals.
+
 ## Install
 
 Install the source checkout with the interfaces you need:

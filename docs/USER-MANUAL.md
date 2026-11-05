@@ -134,6 +134,29 @@ With **Recognize characters and update the glossary** enabled in Draft with AI, 
 
 For a clean model comparison, use identical media/range/prompts and clear the glossary before each run. Keep each result in a separate project. Do not let incorrect identities become established facts. Ollama is told to leave names unknown because it has no audio; a visual label is not an established personal name.
 
+**Stabilization source candidate — saving and recovery:** File → Save project as…
+(Ctrl+Shift+S, shown with the host's native modifier) writes a separate version
+and makes it the active save path; cancel/failure keeps the old path and file.
+Choose a different filename to preserve the original.
+
+Unsaved, idle projects receive local recovery snapshots every 30 seconds. File →
+Recover unsaved drafts, or the Start screen action when snapshots exist, opens a
+recovered **unsaved copy**. Save that copy with a new name. Pending editor text
+and intermediate invalid times are retained; correct invalid values before saving.
+Recovery requires the source video to retain its size and modification time;
+restore the original file if it changed. Snapshots are separate from interrupted
+AI-job recovery and never overwrite your explicit project files. Keep explicit
+saves: an interruption before the first snapshot can lose the latest 30 seconds.
+The store retains at most 3 versions per project, 20 total and 50 MiB; individual
+snapshots over 10 MiB are skipped with a diagnostic. Old versions expire as new
+ones arrive. Saving or explicitly discarding clears this session's snapshots;
+previous-session drafts remain available within those bounds. These changes are
+source candidates, separate from published 0.6.1 applications.
+
+Glossary cards in the source candidate include **Delete character**. Ctrl+Z
+restores a deleted character; Ctrl+Shift+Z deletes it again. Other glossary lines,
+cues and evidence remain intact.
+
 ## 6. Edit and review descriptions
 
 **Stabilization source candidate:** continuous text typing is grouped into one undo step until a pause of 1.2 seconds, cursor navigation, a different cue, or another operation. Ctrl+Z, Ctrl+Shift+Z and the text context menu use the same project history, including review state and coverage. Text edits update the existing cue widgets; timing changes may reorder the full list. Published 0.6.1 applications retain their previous editing behavior.

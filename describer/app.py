@@ -74,6 +74,8 @@ class Window(DesktopInterface, QMainWindow):
     def __init__(self, settings_path=None):
         super().__init__();from . import __version__;self.setWindowTitle('Describer Workbench '+__version__);self.resize(1180,850)
         self.settings=Settings(settings_path);self.project=Project();self.project_path=None;self.dirty=False
+        from .project_recovery import DraftStore
+        self.draft_store=DraftStore(self.settings.path.parent/'unsaved-drafts')
         from .diagnostics import make_logger
         self.logger=make_logger(self.settings)
         self.thread=None;self.cancel=threading.Event();self.last_spoken=None;self.history=[]
@@ -130,11 +132,11 @@ class Window(DesktopInterface, QMainWindow):
         self.log_view=QPlainTextEdit();self.log_view.setReadOnly(True);self.log_view.setMaximumHeight(95);self.log_view.setAccessibleName('Status and token usage log');layout.addWidget(self.log_view)
         menu=self.menuBar().addMenu('&File')
         for label,key,fn in [('Open video','Ctrl+O',self.open_video),('Open URL','Ctrl+U',self.open_url),('Open YouTube','Ctrl+Y',self.open_url),
-                             ('Open project','Ctrl+Shift+O',self.load_project),('Save project','Ctrl+S',self.save_project),
+                             ('Open project','Ctrl+Shift+O',self.load_project),('Save project','Ctrl+S',self.save_project),('Save project as…','Ctrl+Shift+S',self.save_project_as),
                              ('Import SRT / VTT','Ctrl+I',self.import_cues),('Settings','Ctrl+,',self.edit_settings),('Export','Ctrl+E',self.export)]:
             action=QAction(label,self);action.setShortcut(QKeySequence(key));action.triggered.connect(fn);menu.addAction(action)
         glossary=QAction('Character glossary',self);glossary.triggered.connect(self.edit_glossary);menu.addAction(glossary)
-        for label,fn in [('Recover interrupted jobs',self.recover_jobs),('Repair narration',self.repair_narration),('Install speech detector',self.install_detector),('Start developer API / MCP',self.start_api),('Stop developer API / MCP',self.stop_api)]:
+        for label,fn in [('Recover unsaved drafts',self.recover_unsaved),('Recover interrupted jobs',self.recover_jobs),('Repair narration',self.repair_narration),('Install speech detector',self.install_detector),('Start developer API / MCP',self.start_api),('Stop developer API / MCP',self.stop_api)]:
             action=QAction(label,self);action.triggered.connect(fn);menu.addAction(action)
         for label,fn in [('Manage presets',self.presets),('Manage voice presets',self.manage_voices),('Test selected export voice',self.test_voice),(native_text('Select Windows export voice'),self.select_windows_voice),('Import original data',self.import_original),('Check for updates',self.check_updates)]:
             action=QAction(label,self);action.triggered.connect(fn);menu.addAction(action)
@@ -148,6 +150,7 @@ class Window(DesktopInterface, QMainWindow):
         if self.settings.data.get('auto_update_check'):QTimer.singleShot(1500,self.check_updates)
         helpaction=QAction('Help',self);helpaction.setShortcut('F1');helpaction.triggered.connect(self.help);self.menuBar().addAction(helpaction);apply_language(self,self.settings.data['ui_language'])
         self.build_interface()
+        self.recovery_timer=QTimer(self);self.recovery_timer.setInterval(30000);self.recovery_timer.timeout.connect(self.snapshot_draft);self.recovery_timer.start()
         apply_language(self,self.settings.data['ui_language'])
     def button(self,row,text,fn):
         b=QPushButton(text);b.clicked.connect(fn);row.addWidget(b);return b
@@ -208,6 +211,8 @@ class Window(DesktopInterface, QMainWindow):
         choice=QMessageBox.question(self,'Unsaved project','Save changes before continuing?',QMessageBox.StandardButton.Save|QMessageBox.StandardButton.Discard|QMessageBox.StandardButton.Cancel)
         if choice==QMessageBox.StandardButton.Cancel:return False
         if choice==QMessageBox.StandardButton.Save:return bool(self.save_project())
+        try:self.draft_store.clear_session();self.recovery_button.setVisible(bool(self.draft_store.entries()))
+        except OSError as exc:self.log('Recovery cleanup deferred: '+str(exc))
         return True
     def reset_scene(self):
         self.history=[]
@@ -396,7 +401,52 @@ class Window(DesktopInterface, QMainWindow):
         self.project.cues.sort(key=lambda c:c.start)
         self.project.coverage=coverage_for(self.project.cues,self.project.coverage)
         self.dirty=True;self.refresh();self.last_spoken=None
-    def save_project(self):
+    def save_project_as(self):
+        if self.busy():return False
+        path,_=QFileDialog.getSaveFileName(self,'Save project as',str(self.project_path or ''),'Describer project (*.adproject)')
+        if not path:return False
+        if self.project_path and Path(path).resolve()==Path(self.project_path).resolve():
+            self.error('Choose a different name to preserve the original project.');return False
+        return self.save_project(destination=path)
+    def snapshot_draft(self):
+        if not self.dirty or not self.project.video or self.busy():return
+        editor=None;i=self.table.currentRow()
+        if 0<=i<len(self.project.cues):editor={'cue_id':self.project.cues[i].cue_id,'start':self.start.text(),'end':self.end.text(),'text':self.text.toPlainText()}
+        try:
+            self.draft_store.snapshot(self.project,self.project_path,editor)
+            self.recovery_button.setVisible(bool(self.draft_store.entries()))
+        except (OSError,ValueError) as exc:self.log('Automatic recovery snapshot failed: '+str(exc))
+    def recover_unsaved(self):
+        if self.busy() or not self.guard_changes():return
+        rows=self.draft_store.entries()
+        if not rows:self.notify('No unsaved recovery drafts are available.');return
+        from datetime import datetime
+        labels=[f'{i+1}. {Path(meta.get("original") or path).name} — {datetime.fromtimestamp(meta["created_ns"]/1e9).strftime("%Y-%m-%d %H:%M:%S")}' for i,(path,meta) in enumerate(rows)]
+        selected,ok=QInputDialog.getItem(self,'Recover unsaved draft','Open a recovered copy. Saved projects remain unchanged.',labels,0,False)
+        if not ok:return
+        try:
+            project,meta=self.draft_store.load(rows[labels.index(selected)][0])
+            if not Path(project.video).is_file():raise ValueError('The original video is unavailable. Restore it before recovering this draft.')
+            info=Path(project.video).stat()
+            if meta.get('media_stat')!=[info.st_size,info.st_mtime_ns]:raise ValueError('The source video changed since this snapshot. Restore the original video before recovery.')
+            from .services import probe
+            actual=probe(project.video)
+            for cue in project.cues:cue.validate(actual)
+            project.duration=actual
+            self.pause_active=False;self.pause_player.stop();self.narration.stop();self.playback_speech.stop();self.player.stop()
+            self.undo_stack.clear();self._selected_cue=None;self.project=project;self.project_path=None;self.dirty=True;self.reset_scene();self.played_pauses.clear();self.last_spoken=None
+            self.player.setSource(QUrl.fromLocalFile(project.video));self.file_label.setText(project.video);self.refresh()
+            editor=meta.get('editor') or {}
+            index=next((i for i,cue in enumerate(project.cues) if cue.cue_id==editor.get('cue_id')),0 if project.cues else -1)
+            if index>=0:
+                self.choose(index)
+                if editor:
+                    self._editor_loading=True
+                    try:self.start.setText(editor['start']);self.end.setText(editor['end']);self.text.setPlainText(editor['text'])
+                    finally:self._editor_loading=False
+            self.log('Recovered an unsaved copy. Save with a new name; original saved files were not changed.')
+        except (OSError,ValueError,KeyError,TypeError) as exc:self.error(str(exc))
+    def save_project(self,*,destination=None):
         if self.busy():return False
         i=self.table.currentRow()
         if 0<=i<len(self.project.cues):
@@ -405,11 +455,18 @@ class Window(DesktopInterface, QMainWindow):
                 if candidate!=self.project.cues[i]:
                     cues=copy.deepcopy(self.project.cues);cues[i]=candidate;self.commit_cues(cues,'Save description edit')
             except Exception as e:self.error(str(e));return False
-        p=self.project_path
+        p=destination or self.project_path
         if not p:p,_=QFileDialog.getSaveFileName(self,'Save project','','Describer project (*.adproject)')
         if not p:return False
-        try:self.project.save(p);self.project_path=p;self.dirty=False;self.remember_project();self.update_status();self.log('Project saved.');return True
+        try:self.project.save(p)
         except Exception as e:self.error(str(e));return False
+        self.project_path=p;self.dirty=False
+        try:self.remember_project()
+        except Exception as exc:self.log('Project saved; recent-project settings could not be updated: '+str(exc))
+        self.update_status();self.log('Project saved.')
+        try:self.draft_store.clear_session();self.recovery_button.setVisible(bool(self.draft_store.entries()))
+        except OSError as exc:self.log('Saved; recovery cleanup deferred: '+str(exc))
+        return True
     def load_project(self):
         if self.busy() or not self.guard_changes():return
         p=getattr(self,'_recent_path',None)
@@ -1013,6 +1070,7 @@ class Window(DesktopInterface, QMainWindow):
             self.cancel.set();self.log('Cancelling; wait for the current operation to finish before closing.');event.ignore();return
         if not self.guard_changes():event.ignore();return
         if not self.stop_api():event.ignore();return
+        self.recovery_timer.stop()
         self.pause_active=False;self.pause_player.stop();self.narration.stop()
         self.timeline.stop_decoder()
         self.player.stop();self.player.setSource(QUrl());self.playback_speech.stop();self.preview.stop();self.preview.setSource(QUrl());self.preview_tmp.cleanup()
