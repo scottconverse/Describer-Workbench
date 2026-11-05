@@ -12,6 +12,17 @@ The service centralizes provider validation and consent before queueing or resum
 
 ## System overview
 
+Stabilization source candidates add a preservation step between completed desktop
+analysis and the editable project. `drafting.DraftProposal` compares stable cue
+IDs and both event/authored intervals, retains boundary-crossing descriptions,
+requires explicit conflict replacement and glossary approval, and rejects stale
+project fingerprints. One desktop undo transaction carries cues, human review
+history, coverage, analysis and glossary together. Accepted partial-job placement
+is invalidated before combined narration is re-planned. Headless proposal helpers
+do not import Qt. Candidates read old project format 1 and save format 2 so an
+older application cannot silently discard new identity/review fields on re-save.
+These are candidate-source changes, separate from the published 0.6.1 binaries.
+
 ![Desktop and developer adapters share one headless engine.](diagrams/system.svg)
 
 The engine lives in Describer-Workbench. CivicCast remains a separate consumer; no release-candidate or live station data is part of this workspace. Desktop, Python, CLI, REST and MCP all call `DescriptionService`. A workspace has one process owner, an exclusive file lock and a serial job queue. Additional processes attach over HTTP rather than opening the same workspace. The headless imports do not require Qt. Native speech uses Windows SAPI/OneCore, macOS voices or Linux eSpeak NG; OpenAI speech retains its explicit remote consent and credential requirements.

@@ -16,8 +16,8 @@ the next. Current released applications remain separate from source candidates.
 ## Baseline protocol
 
 [Recorded baseline and limits](STABILIZATION-BASELINE.json). The two-hour load
-check after Package 1 measured338ms median/564ms maximum at721cues, compared with
-410ms/523ms in the corrected original run. This is not Package 2's incremental
+check after Package 1 measured 338 ms median/564 ms maximum at 721 cues, compared
+with 410 ms/523 ms in the corrected original run. This is not Package 2's incremental
 editing improvement; run-to-run variation and the remaining full refresh remain.
 
 Before application changes, run `tools/stabilization_baseline.py` on actual short,
@@ -34,7 +34,7 @@ affected packages. Preserve original source media and user settings.
   reviewed, approved and legacy descriptions whose history cannot be inferred.
 - Use stable cue identity distinct from the observed event identity. Preserve
   original event times/evidence and distinguish human review from placement.
-- A range is half-open `[start,end)`. A cue touching/crossing either boundary is
+- A range is half-open `[start,end)`. A cue crossing either boundary is
   retained in full, never clipped or silently deleted. Consider both authored
   placement and observed provenance when detecting conflicts.
 - Present proposed additions and conflicting descriptions before changing the
@@ -57,12 +57,12 @@ affected packages. Preserve original source media and user settings.
 ## Evidence status
 
 Package 1 has passed local preservation, service, GUI, recovery and media checks.
-The full Windows suite recorded186passing tests,3subtests and4skips, plus7
+The full Windows suite recorded 186 passing tests, 3 subtests and 4 skips, plus 7
 failures caused by a test's old disclosure-text selector. All seven corrected
-provider consent/routing cases passed in the affected run (132passes, one
+provider consent/routing cases passed in the affected run (132 passes, one
 recovery-fixture failure). That fixture reused an old cue ID for purportedly new
-AI output; fresh proposal identity and explicit approval fixed it, with53tests
-and3subtests passing. Final event-window/identity checks passed7tests. Existing
+AI output; fresh proposal identity and explicit approval fixed it, with 53 tests
+and 3 subtests passing. Final event-window/identity checks passed 7 tests. Existing
 passed evidence was retained; the full suite was not restarted. Documentation
 links and affected Ruff checks pass. Windows emitted a native COM diagnostic at
 the legacy start-screen visibility check; execution continued and the test
@@ -72,9 +72,14 @@ The native Windows real-media workflow decoded NASA video, explicitly replaced
 one reviewed fixture cue, accepted another, preserved three other cues and the
 original glossary, and verified full-project undo/redo and save/reopen. These are
 fixture proposals through actual Qt controls, not a live AI or reader test.
-Linux/Mac source checks passed at179ab39 (run42095956461). A subsequent narrow
-file-format compatibility correction is being verified before Package 1 closure;
-Package 2 has not started. Native reader acceptance must identify exactly which
+Linux/Mac source checks passed at `179ab39` (run `42095956461`). The narrow
+file-format compatibility correction at `94cf008` passed 49 affected local
+checks and format-specific Linux/Mac checks (run `42096984452`); the original
+GUI evidence was retained. The actual old reader rejected format 2, and forcing
+format 1 demonstrated the loss of identity/review fields that the correction
+prevents. Package 1 is accepted and pushed; Package 2 is next.
+
+Native reader acceptance must identify exactly which
 reader/platform combination was exercised; simulated events are not that proof.
 
 Source candidates on the stabilization branch introduce a draft-review dialog.
