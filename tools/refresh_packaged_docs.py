@@ -70,7 +70,7 @@ def snapshot(folder,mac=False):
         if not p.is_file():continue
         if relative.startswith('_internal/docs/') or relative in ('_internal/README.md','_internal/documentation-manifest.json'):continue
         if mac and (relative.startswith('Contents/Resources/docs/') or relative in ('Contents/Resources/README.md','Contents/Resources/documentation-manifest.json','Contents/_CodeSignature/CodeResources')):continue
-        value=unsigned_macho(p) if mac and relative=='Contents/MacOS/DescriberWorkbench' else digest(p)
+        value=unsigned_macho(p) if mac and relative in ('Contents/MacOS/DescriberWorkbench','Contents/MacOS/DescriberCLI') else digest(p)
         result[relative]={'sha256':value,'mode':p.stat().st_mode & 0o777}
     return result
 
