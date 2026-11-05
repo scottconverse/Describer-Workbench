@@ -128,7 +128,10 @@ project/review history and saved a separate copy. Original project/video were
 unchanged. Local checks passed 42 affected tests, then 24 focused GUI, preservation
 and documentation tests after narrowing deletion to keep other glossary lines
 exactly. No full suite, binary build or earlier CI run was restarted. Native
-source checks are pending at the implementation commit. The store limits and
+Linux/macOS source checks passed at `67cdeba` in run `42102036691`. A controlled
+721-cue snapshot/retention check measured 29–37 ms per snapshot, with three
+retained versions totaling 1.43 MB; this is filesystem work, not AI or GUI latency.
+Package 4 is accepted and pushed. The store limits and
 30-second recovery window are documented in the user/developer guides.
 
 Native reader acceptance must identify exactly which
