@@ -93,7 +93,9 @@ keyboard test exposed private text-widget undo bypassing project history and
 was fixed. Two new fixtures needed normalization of legacy event times and a
 noncanonical evidence field. Only those affected tests were repeated; no app
 build or full CI restart. The pre-existing Windows COM diagnostic remained
-nonterminal. Final affected and native results are recorded with delivery.
+nonterminal. Final local runs passed 48 tests and 3 subtests, then 7 editing/documentation
+checks. Native Linux and macOS source/Qt tests passed at `9b9da1a` in run
+`42098539007`. Package 2 is accepted and pushed.
 
 Native reader acceptance must identify exactly which
 reader/platform combination was exercised; simulated events are not that proof.
