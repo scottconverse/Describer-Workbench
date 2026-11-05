@@ -154,7 +154,7 @@ Both tools use the selected analysis provider and applicable transmission confir
 
 ## 8. Listen, choose voices and export
 
-**Speak descriptions** enables speech when the playhead enters a cue. Timed cues use measured narration WAVs: in-gap cues use bounded speed and duck the soundtrack; pause cues stop the source, play measured narration, then resume. Windows is the default export voice. Unresolved cues are not narrated. Seeking stops narration and resets pending pauses. Late entry into a safe slot pauses instead of overrunning it. Older unplanned cues use live text speech until replanned; planned WAVs with unknown recorded synthesis level require repair. Player volume and speech volume are separate. The Speech slider scales live Windows text speech and measured WAV playback/export. The optional screen reader controls its own live-text volume/rate; it does not schedule timed narration. **Allow new descriptions to interrupt speech** applies to live text interruption/queuing.
+**Speak descriptions** enables speech when the playhead enters a cue. Timed cues use measured narration WAVs: in-gap cues use bounded speed and duck the soundtrack; pause cues stop the source, play measured narration, then resume. Windows is the default export voice on Windows; the add-ons default to macOS voices or eSpeak NG. Unresolved cues are not narrated. Seeking stops narration and resets pending pauses. Late entry into a safe slot pauses instead of overrunning it. Older unplanned cues use live text speech until replanned; planned WAVs with unknown recorded synthesis level require repair. Player volume and speech volume are separate. The Speech slider scales live Windows text speech and measured WAV playback/export. The optional screen reader controls its own live-text volume/rate; it does not schedule timed narration. **Allow new descriptions to interrupt speech** applies to live text interruption/queuing.
 
 The **Audio export speech engine** is separate from playback voice:
 
@@ -163,6 +163,8 @@ The **Audio export speech engine** is separate from playback voice:
 | Windows | 64-bit SAPI voices installed in Windows |
 | Windows 32-bit | 32-bit SAPI via the SysWOW64 PowerShell host |
 | Windows OneCore | Installed Windows OneCore voices |
+| macOS (Mac add-on) | Installed macOS voices, synthesized to measured WAV |
+| eSpeak NG (Linux add-on) | Installed eSpeak NG voices, synthesized to measured WAV |
 | OpenAI | Configured API key, model, base voice/preset and paid remote synthesis |
 
 Choose the engine and voice directly in the Export dialog for narrated media. Installed Windows voices load asynchronously for the selected engine; OpenAI lists the configured base voice and saved presets. Accepting Export saves the selected engine/voice for subsequent exports; Cancel leaves settings unchanged. Alternatively, configure **Settings → Export voice** or **File → Select Windows export voice** and use **Test selected export voice** for a preview. Changing engines clears an incompatible native voice selection. OpenAI preview and export confirm before sending text. Draft also names OpenAI speech separately from its vision destination before any external processing.
@@ -223,7 +225,7 @@ NVDA/JAWS end-to-end acceptance was not performed. The presence of controller mo
 
 Projects are user-selected `.adproject` JSON files with `version`, `video`, `duration`, `cues` and `glossary`, plus optional coverage/analysis and event/placement fields. Existing version-1 projects remain readable. Video is an absolute path, not embedded media. Moving a project to another computer requires moving the media separately; **Open project** prompts you to locate a missing video and revalidates cue durations. Projects contain description text and paths; inspect before sharing. Save is written to a sibling temporary file then replaced.
 
-Settings live at `%LOCALAPPDATA%/DescriberWorkbench/settings.json`. API keys are DPAPI-protected for the current Windows user. Moving this file to a different account does not move working keys. If a key cannot be unlocked, re-enter it. Damaged/incompatible settings, including malformed nested connection/model entries or a missing selected profile, load defaults with a warning and are preserved in a `.recovery-*` copy before saving. Other settings are not encrypted.
+On Windows, settings live at `%LOCALAPPDATA%/DescriberWorkbench/settings.json`. Mac/Linux paths, secure keyring requirements and manual updates are in [the platform guide](UNIX-INSTALL.md). API keys are DPAPI-protected for the current Windows user. Moving this file to a different account does not move working keys. If a key cannot be unlocked, re-enter it. Damaged/incompatible settings, including malformed nested connection/model entries or a missing selected profile, load defaults with a warning and are preserved in a `.recovery-*` copy before saving. Other settings are not encrypted.
 
 Logs live beside settings, rotate at 1 MiB with one backup and redact configured key strings. They may still include paths, descriptions and error text. Temporary clips/frames/audio are created for jobs and normally removed when their temporary directories close. Downloaded videos and exported files remain where you chose to save them. Engine jobs, snapshots, checkpoints and narration persist under `%LOCALAPPDATA%/DescriberWorkbench/engine` (or `DESCRIBER_HOME/engine`); they are needed for resume and planned playback. Keep them with projects. There is no automatic deletion. API keys are omitted from saved jobs.
 
@@ -345,7 +347,7 @@ When extending a provider, trace selection → saved exact tag → capability/pr
 
 ## 19. Support and license notes
 
-Report issues at the [GitHub issue tracker](https://github.com/scottconverse/Describer-Workbench/issues). Include app/Windows version, exact tag/provider, range, reproducible steps and redacted logs. Share a public sample only if you have the rights. Omit keys and private paths/media.
+Report issues at the [GitHub issue tracker](https://github.com/scottconverse/Describer-Workbench/issues). Include app/operating-system version, exact tag/provider, range, reproducible steps and redacted logs. Share a public sample only if you have the rights. Omit keys and private paths/media.
 
 This is newly written reconstruction source, not recovered original source or an original-author-endorsed release. New Workbench code is licensed under Apache-2.0 with no warranty. Third-party dependencies/translations retain their own terms; Apache-2.0 does not relicense those assets. See [third-party notices](../THIRD-PARTY-NOTICES.md).
 

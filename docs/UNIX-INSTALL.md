@@ -18,7 +18,7 @@ The tar archive extracts to `DescriberWorkbench/`; execute its `DescriberWorkben
 
 ## Install from the repository
 
-Use Python 3.11 or later. On macOS install FFmpeg first, for example using Homebrew (`brew install ffmpeg`). On Ubuntu install `python3-venv ffmpeg espeak-ng speech-dispatcher gnome-keyring libxcb-cursor0 libxkbcommon-x11-0 libegl1 libopengl0` through apt. Then, from the repository checkout, run:
+Use Python 3.11 or later. On macOS install FFmpeg first, for example using Homebrew (`brew install ffmpeg`). On Ubuntu install `python3-venv ffmpeg espeak-ng speech-dispatcher gnome-keyring libxcb-cursor0 libxkbcommon-x11-0 libegl1 libopengl0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-xinerama0 libxcb-xkb1 libxcb-randr0 libxcb-shape0 libxcb-xfixes0 libxcb-sync1 libx11-xcb1 libfontconfig1 libfreetype6 libglib2.0-0t64 libatspi2.0-0t64` through apt. Then, from the repository checkout, run:
 
 ```sh
 python3 tools/install_unix.py
@@ -46,4 +46,4 @@ Remove the downloaded Mac app or use `sudo apt remove describer-workbench` for t
 
 Build and native acceptance results will be recorded in the add-on release's verification receipt. Source implementation alone is not proof of a working package, successful installation, real provider entitlement, human-listening quality or screen-reader usability. Earlier Windows release receipts apply only to their original Windows candidate. The unsigned Mac and Linux packages do not inherit Windows certificate claims.
 
-Mac-bundled FFmpeg/x264 are GPL components used as separate executables. Their licenses, exact source archives and build script accompany the add-on distribution; see `unix-media-sources-arm64.tar.gz` or `unix-media-sources-x64.tar.gz` and the media build receipt. Linux uses package-managed media/speech executables and their distribution's licenses/source packages.
+Mac-bundled FFmpeg/x264 and the LAME MP3 encoder have retained GPL/LGPL licenses and corresponding source; the FFmpeg build uses GPL terms. These are components used as separate executables. Their licenses, exact source archives and build script accompany the add-on distribution; see `unix-media-sources-arm64.tar.gz` or `unix-media-sources-x64.tar.gz` and the media build receipt. Linux uses package-managed media/speech executables and their distribution's licenses/source packages.

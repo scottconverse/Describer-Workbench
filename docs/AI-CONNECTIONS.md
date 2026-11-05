@@ -19,7 +19,7 @@ Subscriptions, native CLIs and API credits are separate routes. An installed CLI
 
 ## Setup
 
-Choose the route in **Draft with AI**, enter an exact model ID, and save. Each route retains its own model ID. For compatible servers, use **File > Manage AI connections** to add, select, disable or delete a profile. Saving a profile selects the connection while preserving the selected provider. Select **OpenAI-compatible** to use it. Cancel discards the edits. API credentials are stored under Windows DPAPI; removing a saved credential is explicit.
+Choose the route in **Draft with AI**, enter an exact model ID, and save. Each route retains its own model ID. For compatible servers, use **File > Manage AI connections** to add, select, disable or delete a profile. Saving a profile selects the connection while preserving the selected provider. Select **OpenAI-compatible** to use it. Cancel discards the edits. API credentials use Windows DPAPI, macOS Keychain or Linux Secret Service for the host; removing a saved credential is explicit.
 
 Select a discovered row or type in the separate **Exact analysis model ID** field. The visible **Test connection** button uses that ID and the selected route. Subscription/native/compatible/Anthropic routes use the synthetic-image test; Ollama uses its labeled text test. Gemini is checked when a confirmed operation starts. Gemini and Anthropic API have no catalog refresh in this interface. Draft displays the selected destination and whether it receives sampled images without audio or Gemini video; normal external-processing confirmation remains required.
 

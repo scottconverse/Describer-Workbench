@@ -8,6 +8,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 import urllib.error
@@ -63,6 +64,8 @@ def cli_command(settings):
     name={'Codex CLI':'codex','Claude CLI':'claude','Gemini CLI':'agy'}[provider]
     configured=settings.get({'Codex CLI':'codex_cli','Claude CLI':'claude_cli','Gemini CLI':'gemini_cli'}[provider]) or settings.get('cli_paths',{}).get(provider,'')
     path=configured or shutil.which(name+'.exe') or shutil.which(name) or shutil.which(name+'.ps1')
+    if not path and sys.platform=='darwin':
+        path=next((str(candidate) for candidate in (Path.home()/'.local/bin'/name,Path('/opt/homebrew/bin')/name,Path('/usr/local/bin')/name) if candidate.is_file()),None)
     if not path and name=='agy':
         candidate=Path.home()/'Tools'/'agy'/'bin'/'agy.exe'
         if candidate.is_file():path=str(candidate)
@@ -91,7 +94,11 @@ def subscription_environment():
                  'TEMP TMP TMPDIR LANG TZ TERM COLORTERM NO_COLOR '
                  'NODE_EXTRA_CA_CERTS NODE_NO_WARNINGS HTTP_PROXY HTTPS_PROXY ALL_PROXY NO_PROXY '
                  'SSL_CERT_FILE SSL_CERT_DIR CODEX_HOME CLAUDE_CONFIG_DIR').split())
-    return {key:value for key,value in os.environ.items() if key.upper() in allowed or key.upper().startswith('LC_')}
+    if os.name!='nt':allowed.update('DISPLAY WAYLAND_DISPLAY XAUTHORITY DBUS_SESSION_BUS_ADDRESS XDG_RUNTIME_DIR XDG_CONFIG_HOME XDG_DATA_HOME XDG_CACHE_HOME'.split())
+    env={key:value for key,value in os.environ.items() if key.upper() in allowed or key.upper().startswith('LC_')}
+    if sys.platform=='darwin':
+        env['PATH']=os.pathsep.join(dict.fromkeys([env.get('PATH',''),str(Path.home()/'.local/bin'),'/opt/homebrew/bin','/usr/local/bin']))
+    return env
 
 
 def open_native_login(settings,cwd):
@@ -106,7 +113,6 @@ def open_native_login(settings,cwd):
     if provider not in args:raise ValueError('Choose a native subscription CLI. The shared gateway retains its own sign-in tools.')
     if os.name!='nt':
         import shlex
-        import sys
         # Terminal daemons may retain a different environment. Clean it inside
         # the launched script too; do not persist any environment values.
         allowed=subscription_environment()
@@ -131,7 +137,8 @@ def run_cli(command, args, text, cwd, cancel, timeout):
     with tempfile.TemporaryFile() as output,tempfile.TemporaryFile() as error,tempfile.TemporaryFile() as stdin:
         stdin.write(text.encode());stdin.seek(0)
         env=subscription_environment()
-        process=subprocess.Popen(command+args,stdin=stdin,stdout=output,stderr=error,cwd=cwd,env=env,creationflags=CREATE_NO_WINDOW)
+        options={'start_new_session':True} if os.name!='nt' else {}
+        process=subprocess.Popen(command+args,stdin=stdin,stdout=output,stderr=error,cwd=cwd,env=env,creationflags=CREATE_NO_WINDOW,**options)
         deadline=time.monotonic()+timeout
         try:
             while process.poll() is None:
@@ -147,9 +154,18 @@ def run_cli(command, args, text, cwd, cancel, timeout):
             if process.poll() is None:
                 if os.name=='nt':
                     subprocess.run(['taskkill','/PID',str(process.pid),'/T','/F'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=10)
-                else:process.terminate()
+                else:
+                    import signal
+                    try:os.killpg(process.pid,signal.SIGTERM)
+                    except ProcessLookupError:pass
                 try:process.wait(timeout=5)
-                except subprocess.TimeoutExpired:process.kill();process.wait()
+                except subprocess.TimeoutExpired:
+                    if os.name=='nt':process.kill()
+                    else:
+                        import signal
+                        try:os.killpg(process.pid,signal.SIGKILL)
+                        except ProcessLookupError:pass
+                    process.wait()
 
 
 def discover(settings,cancel,log):

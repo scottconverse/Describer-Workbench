@@ -51,6 +51,42 @@ def test_frozen_linux_system_tools_do_not_load_bundle_libraries():
         assert not platforms.external_environment()
 
 
+@pytest.mark.skipif(sys.platform=='win32',reason='Windows retains its existing console/process ownership')
+def test_native_login_preserves_desktop_bus_but_excludes_api_overrides(tmp_path):
+    from describer.subscriptions import open_native_login
+    fixture={'HOME':str(tmp_path),'PATH':'/usr/bin:/bin','DISPLAY':':98','DBUS_SESSION_BUS_ADDRESS':'unix:path=/fixture','OPENAI_API_KEY':'private-key','NODE_OPTIONS':'--require private.js'}
+    with patch.dict(os.environ,fixture,clear=True),patch('describer.subscriptions.cli_command',return_value=['/fixture/native tool']),patch('shutil.which',return_value='/usr/bin/xterm'),patch('subprocess.Popen') as launch:
+        open_native_login({'analysis_provider':'Codex CLI'},tmp_path)
+    env=launch.call_args.kwargs['env']
+    assert env['DISPLAY']==':98' and env['DBUS_SESSION_BUS_ADDRESS']=='unix:path=/fixture'
+    assert 'OPENAI_API_KEY' not in env and 'NODE_OPTIONS' not in env
+    script=(tmp_path/'subscription-login.command').read_text()
+    assert 'private-key' not in script and 'private.js' not in script
+    assert "'/fixture/native tool'" in script
+
+
+@pytest.mark.skipif(sys.platform=='win32',reason='Windows uses the unchanged owned taskkill tree path')
+def test_unix_cli_cancellation_stops_its_owned_child(tmp_path):
+    import threading
+    import time
+    from describer.subscriptions import run_cli
+    ready=tmp_path/'ready';stopped=tmp_path/'stopped'
+    child="import signal,time,sys;from pathlib import Path;signal.signal(signal.SIGTERM,lambda *args:(Path(sys.argv[2]).write_text('stopped'),sys.exit(0)));Path(sys.argv[1]).write_text('ready');time.sleep(30)"
+    parent="import subprocess,sys,time;subprocess.Popen([sys.executable,'-c',sys.argv[1],sys.argv[2],sys.argv[3]]);time.sleep(30)"
+    cancel=threading.Event()
+    def request_cancel():
+        deadline=time.monotonic()+10
+        while not ready.exists() and time.monotonic()<deadline:time.sleep(.02)
+        cancel.set()
+    owner=threading.Thread(target=request_cancel);owner.start()
+    try:
+        with pytest.raises(InterruptedError):run_cli([sys.executable],['-c',parent,child,str(ready),str(stopped)],'',tmp_path,cancel,15)
+        deadline=time.monotonic()+3
+        while not stopped.exists() and time.monotonic()<deadline:time.sleep(.02)
+        assert ready.exists() and stopped.read_text()=='stopped'
+    finally:cancel.set();owner.join(timeout=11)
+
+
 @pytest.mark.skipif(sys.platform=='win32',reason='Windows retains independently verified DPAPI storage')
 def test_keyring_roundtrip_reuses_reference_and_never_writes_plaintext(tmp_path):
     from describer.services import Settings

@@ -31,13 +31,14 @@ jobs:
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: '3.13'
+          cache: pip
       - name: Record resource headroom
         run: df -h
       - name: Linux desktop dependencies
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y ffmpeg espeak-ng speech-dispatcher gnome-keyring dbus-x11 xvfb xterm openbox wmctrl libxcb-cursor0 libxkbcommon-x11-0 libegl1 libopengl0
+          sudo apt-get install -y ffmpeg espeak-ng speech-dispatcher gnome-keyring dbus-x11 xvfb xterm openbox wmctrl libxcb-cursor0 libxkbcommon-x11-0 libegl1 libopengl0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-xinerama0 libxcb-xkb1 libxcb-randr0 libxcb-shape0 libxcb-xfixes0 libxcb-sync1 libx11-xcb1 libfontconfig1 libfreetype6 libglib2.0-0t64 libatspi2.0-0t64
       - name: Mac ephemeral acceptance keychain
         if: runner.os == 'macOS'
         run: |
@@ -55,6 +56,9 @@ jobs:
           echo "$PWD/unix-media/bin" >> "$GITHUB_PATH"
       - name: Affected lint
         run: python -m ruff check --select F describer/engine describer/adapters describer/cli.py tests/test_engine.py tests/test_protocols.py tests/test_media_exports.py tools tests/test_platforms.py
+      - name: Diagnose Linux native Qt loader
+        if: runner.os == 'Linux'
+        run: xvfb-run -a python tools/verify_linux_qt.py
       - name: Linux native tests
         if: runner.os == 'Linux'
         run: xvfb-run -a dbus-run-session -- sh -c 'printf "ci-only" | gnome-keyring-daemon --unlock --components=secrets; python -m pytest -q --junitxml="$RUNNER_TEMP/native-tests.xml"'
@@ -102,6 +106,7 @@ jobs:
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: '3.13'
+          cache: pip
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: unix-${{ matrix.target }}-${{ github.sha }}
@@ -110,7 +115,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y ffmpeg espeak-ng speech-dispatcher gnome-keyring dbus-x11 xvfb xterm openbox wmctrl libxcb-cursor0 libxkbcommon-x11-0 libegl1 libopengl0
+          sudo apt-get install -y ffmpeg espeak-ng speech-dispatcher gnome-keyring dbus-x11 xvfb xterm openbox wmctrl libxcb-cursor0 libxkbcommon-x11-0 libegl1 libopengl0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-xinerama0 libxcb-xkb1 libxcb-randr0 libxcb-shape0 libxcb-xfixes0 libxcb-sync1 libx11-xcb1 libfontconfig1 libfreetype6 libglib2.0-0t64 libatspi2.0-0t64
       - name: Mac ephemeral acceptance keychain
         if: runner.os == 'macOS'
         run: |

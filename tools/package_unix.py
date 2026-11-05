@@ -36,7 +36,7 @@ def main():
         desktop=package/'usr/share/applications';desktop.mkdir(parents=True)
         (desktop/'describer-workbench.desktop').write_text('[Desktop Entry]\nType=Application\nName=Describer Workbench\nExec=/usr/bin/describer-workbench\nTerminal=false\nCategories=AudioVideo;Accessibility;\n')
         control=package/'DEBIAN';control.mkdir()
-        (control/'control').write_text('Package: describer-workbench\nVersion: 0.6.1-1\nArchitecture: amd64\nMaintainer: Scott Converse\nSection: video\nPriority: optional\nDepends: ffmpeg, espeak-ng, libxcb-cursor0, libxkbcommon-x11-0, libegl1, libopengl0, libdbus-1-3, speech-dispatcher\nRecommends: gnome-keyring\nDescription: Audio description creation and review workbench\n')
+        (control/'control').write_text('Package: describer-workbench\nVersion: 0.6.1-1\nArchitecture: amd64\nMaintainer: Scott Converse\nSection: video\nPriority: optional\nDepends: ffmpeg, espeak-ng, libxcb-cursor0, libxcb-icccm4, libxcb-image0, libxcb-keysyms1, libxcb-render-util0, libxcb-xinerama0, libxcb-xkb1, libxcb-randr0, libxcb-shape0, libxcb-xfixes0, libxcb-sync1, libx11-xcb1, libfontconfig1, libfreetype6, libglib2.0-0t64, libatspi2.0-0t64, libxkbcommon-x11-0, libegl1, libopengl0, libdbus-1-3, speech-dispatcher\nRecommends: gnome-keyring\nDescription: Audio description creation and review workbench\n')
         subprocess.run(['dpkg-deb','--root-owner-group','--build',str(package),str(out/(label+'.deb'))],check=True)
     artifacts=[p for p in out.iterdir() if p.suffix in ('.dmg','.deb','.gz') and p.is_file()]
     hashes={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in artifacts}

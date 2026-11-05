@@ -19,6 +19,7 @@ def test_subscription_environment_preserves_native_home_and_excludes_unrelated_s
              'AGY_ADC_AUTH':'true','GOOGLE_APPLICATION_CREDENTIALS':'private-adc','GOOGLE_GEMINI_BASE_URL':'api-override',
              'OPENAI_API_KEY':'private-api','ANTHROPIC_API_KEY':'private-api','NODE_OPTIONS':'--require fixture.js'}
     with patch.dict(os.environ,fixture,clear=True):env=subscriptions.subscription_environment()
+    if __import__('sys').platform=='darwin':env.pop('PATH',None)  # Finder PATH additions are tested separately.
     assert {key.upper():value for key,value in env.items()}=={key.upper():fixture[key] for key in ('Path','USERPROFILE','CODEX_HOME','CLAUDE_CONFIG_DIR','HTTPS_PROXY','LC_MESSAGES')}
 
 
