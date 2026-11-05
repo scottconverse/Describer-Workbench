@@ -114,7 +114,7 @@ jobs:
           if-no-files-found: warn
 
   acceptance:
-    if: ${{ always() && (needs.native.result == 'success' || inputs.candidate_run != '') }}
+    if: ${{ !cancelled() && (needs.native.result == 'success' || inputs.candidate_run != '') }}
     name: ${{ matrix.target }} installed acceptance
     needs: native
     timeout-minutes: 25
