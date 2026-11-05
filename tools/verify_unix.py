@@ -88,6 +88,10 @@ def main():
     Keyring().delete_password('DescriberWorkbench',reference)
     voices=windows_speech(native_engine(),listing=True);assert voices
     native={'voice_engine':native_engine(),'windows_voice':voices[0]['id'],'allow_cloud':False,'speech_volume':100}
+    # Complete export requires the explicitly provisioned speech detector on a
+    # fresh machine, just as it does in the desktop. Exercise its frozen CLI.
+    detector=json.loads(command([cli,'assets','provision','--destination',out/'yamnet.onnx']))
+    native['sound_model']=detector['speech_model']
     config=out/'voice-settings.json';config.write_text(json.dumps(native))
     source=out/'source.mp4'
     run([tool('ffmpeg'),'-v','error','-y','-f','lavfi','-i','color=c=blue:s=160x120:r=30:d=5','-f','lavfi','-i','sine=frequency=220:duration=5','-c:v','libx264','-c:a','aac','-shortest',str(source)])
@@ -120,7 +124,7 @@ def main():
         assert command([root/'venv/bin/describer','--version'],env=env).strip()=='0.6.1'
         launcher=home/('Applications/Describer Workbench.app/Contents/MacOS/DescriberWorkbench' if mac else '.local/share/applications/describer-workbench.desktop')
         assert launcher.is_file();source_install={'cli_version':'0.6.1','launcher':str(launcher)}
-    result={'platform':sys.platform,'frozen_modules':modules,'secure_keyring_roundtrip':True,'native_voice':voices[0],'speech_seconds':duration,'extended_export_seconds':export_duration,'source_gui_media':source_gui,'packaged_gui':frozen_gui,'source_install':source_install,'publisher_certificate':False,'notarized':False,'limits':['CI virtual display/audio; no human listening or VoiceOver/Orca acceptance claimed.','Existing AI transports regression-tested; no live subscription inference on CI.']}
+    result={'platform':sys.platform,'frozen_modules':modules,'secure_keyring_roundtrip':True,'native_voice':voices[0],'speech_detector_sha256':hashlib.sha256(Path(detector['speech_model']).read_bytes()).hexdigest(),'speech_seconds':duration,'extended_export_seconds':export_duration,'source_gui_media':source_gui,'packaged_gui':frozen_gui,'source_install':source_install,'publisher_certificate':False,'notarized':False,'limits':['CI virtual display/audio; no human listening or VoiceOver/Orca acceptance claimed.','Existing AI transports regression-tested; no live subscription inference on CI.']}
     (out/'receipt.json').write_text(json.dumps(result,indent=2));print(json.dumps(result))
 
 
