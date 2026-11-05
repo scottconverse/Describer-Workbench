@@ -59,15 +59,15 @@ class DocumentationTests(unittest.TestCase):
         from tools import build_site
         source=(build_site.ROOT/'website/index.html').read_text(encoding='utf-8')
         hero=source.split('<section class="hero"',1)[1].split('</section>',1)[0]
-        for platform in ('windows','macos-arm64','macos-x64','linux'):
+        for platform in ('windows','macos-arm64','linux'):
             self.assertIn(f'data-platform="{platform}"',hero)
-        for extension in ('windows-x64.zip','macos-arm64.dmg','macos-x64.dmg','linux-x64.deb'):
+        for extension in ('windows-x64.zip','macos-arm64.dmg','linux-x64.deb'):
             self.assertIn(extension,hero)
         self.assertNotIn('A Windows workspace',source)
         self.assertNotIn('<h3>Windows speech</h3>',source)
         for name in ('README.md','docs/QUICK-START.md','docs/USER-MANUAL.md'):
             text=(build_site.ROOT/name).read_text(encoding='utf-8')
-            for target in ('macos-arm64.dmg','macos-x64.dmg','linux-x64.deb','windows-x64.zip'):
+            for target in ('macos-arm64.dmg','linux-x64.deb','windows-x64.zip'):
                 self.assertIn(target,text,(name,target))
         architecture=(build_site.ROOT/'docs/ARCHITECTURE.md').read_text(encoding='utf-8')
         for concept in ('Keychain','Secret Service','ad-hoc','platforms.svg','manual replacement'):

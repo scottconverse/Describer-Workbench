@@ -4,7 +4,7 @@
 
 **Version 0.7.0** delivers the [eight-package stabilization plan](docs/STABILIZATION.md): explicit range-draft review that preserves existing work, grouped responsive editing, keyboard/reader cue information, Save As and bounded unsaved recovery, validated speech-analysis reuse, simpler drafting with every advanced connection retained, measured export previews, and cue-identity selection. See [release acceptance and limits](docs/V070-ACCEPTANCE.md).
 
-Windows x64 ZIP, Apple Silicon/Intel Mac DMGs, and Linux x64 DEB/portable archives are available from the [same release](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.7.0). All three can also be installed from this repository; follow the platform instructions below. Windows executables are signed as Scott Converse using Azure Trusted Signing with Microsoft timestamps. Mac packages have ad-hoc integrity signatures, no Apple publisher certificate and no notarization; Linux packages are unsigned. Prior releases and their receipts remain historical.
+Windows x64 ZIP, an Apple Silicon Mac DMG, and Linux x64 DEB/portable archives are available from the [same release](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.7.0). All three can also be installed from this repository; follow the platform instructions below. Windows executables are signed as Scott Converse using Azure Trusted Signing with Microsoft timestamps. Mac packages have ad-hoc integrity signatures, no Apple publisher certificate and no notarization; Linux packages are unsigned. There is no Intel Mac DMG for 0.7.0. Prior releases and their receipts remain historical.
 
 Open a video, draft descriptions through the selected analysis connection, edit every cue, listen alongside the video, and export subtitles or a narrated audio mix. Version 0.7.0 supports Gemini, Ollama, the existing subscription gateway, native Codex/Claude/Antigravity tools and explicit API profiles. Manual editing, subtitle import and native speech work without an AI API key. These are reviewed drafts: correct visual facts, missing events, readable text and timing before final export.
 
@@ -33,7 +33,7 @@ Open a video, draft descriptions through the selected analysis connection, edit 
 | --- | --- | --- | --- |
 | Windows x64 (Windows 11 tested) | [Portable ZIP](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.7.0/DescriberWorkbench-0.7.0-windows-x64.zip) | Extract everything; open `DescriberWorkbench/DescriberWorkbench.exe`. Keep `_internal` beside it. | Scott Converse, Azure Trusted Signing with Microsoft timestamps |
 | Mac, Apple Silicon, macOS 15+ | [arm64 DMG](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.7.0/DescriberWorkbench-0.7.0-macos-arm64.dmg) | Open DMG; drag the app to Applications. | No Apple publisher certificate or notarization; ad-hoc integrity only |
-| Mac, Intel, macOS 15+ | [x64 DMG](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.7.0/DescriberWorkbench-0.7.0-macos-x64.dmg) | Open DMG; drag the app to Applications. | No Apple publisher certificate or notarization; ad-hoc integrity only |
+| Mac, Intel, macOS 15+ | No DMG for 0.7.0 (its build did not complete) | Install from the repository; see the [platform guide](docs/UNIX-INSTALL.md). Not tested on Intel for 0.7.0. | None (source install) |
 | Ubuntu 24.04 / compatible Debian desktop, x86-64 | [DEB installer](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.7.0/DescriberWorkbench-0.7.0-linux-x64.deb) | `sudo apt install ./DescriberWorkbench-0.7.0-linux-x64.deb`; open Describer Workbench from the applications menu. | Unsigned |
 | Other Linux x86-64 desktops | [Portable tar](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.7.0/DescriberWorkbench-0.7.0-linux-x64.tar.gz) | Extract; run `DescriberWorkbench/DescriberWorkbench` after installing native dependencies. | Unsigned; other distributions not acceptance-tested |
 
@@ -121,7 +121,7 @@ See [privacy and recovery](docs/USER-MANUAL.md#12-privacy-storage-and-recovery) 
 
 ## Run and build from source
 
-Native packages were checked on Windows 11, Ubuntu 24.04 x64 and macOS 15 arm64/Intel. Python source requires 3.11+; acceptance used 3.13. For Mac/Linux, install prerequisites then run `python3 tools/install_unix.py` from the checkout; it creates a per-user environment and launcher. See [the platform guide](docs/UNIX-INSTALL.md) for toolchain requirements and native packaging. The following build commands are **Windows-specific**. Install FFmpeg/FFprobe on PATH or place their executables in `bin/`.
+Native packages were checked on Windows 11, Ubuntu 24.04 x64 and macOS 15 arm64. The 0.7.0 Intel Mac build did not complete. Python source requires 3.11+; acceptance used 3.13. For Mac/Linux, install prerequisites then run `python3 tools/install_unix.py` from the checkout; it creates a per-user environment and launcher. See [the platform guide](docs/UNIX-INSTALL.md) for toolchain requirements and native packaging. The following build commands are **Windows-specific**. Install FFmpeg/FFprobe on PATH or place their executables in `bin/`.
 
 ```powershell
 git clone https://github.com/scottconverse/Describer-Workbench.git
@@ -137,7 +137,7 @@ The build script installs the desktop, local-model and developer transport extra
 
 ## Verification
 
-For Mac/Linux, [the separate verification receipt](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.7.0/release-verification.json) records native secure storage, measured speech, MP4/MP3, packaged GUI/CLI/HTTP/MCP and repository-launcher checks. Intel acceptance is cumulative across the retained package check and focused source-installer repair, not a claim that every historical workflow succeeded. Human listening, VoiceOver/Orca and live destination subscription entitlements remain unverified.
+For Mac/Linux, [the separate verification receipt](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.7.0/release-verification.json) records the native build and test results. For 0.7.0, the separate installed-package acceptance jobs were skipped because the Intel build failed; the receipt says so. Human listening, VoiceOver/Orca and live destination subscription entitlements remain unverified.
 
 For Windows 0.7.0, see the [release acceptance record](docs/V070-ACCEPTANCE.md) and the release verification asset for source identity, signed artifact hashes, CI results and remaining limits. The [0.5.1 acceptance record](docs/V051-ACCEPTANCE.md) preserves earlier results. Historical 0.4.2 evidence below applies only to that release. The new protocol tests initialize real MCP clients over stdio and HTTP; media tests check actual FFmpeg output. No percentage visual-accuracy claim is made.
 
