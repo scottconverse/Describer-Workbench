@@ -186,5 +186,9 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: unix-acceptance-${{ matrix.target }}-${{ github.sha }}
-          path: ${{ runner.temp }}/unix-acceptance
+          path: |
+            ${{ runner.temp }}/unix-acceptance/receipt.json
+            ${{ runner.temp }}/unix-acceptance/packaged-gui.log
+            ${{ runner.temp }}/unix-acceptance/interfaces/receipt.json
+            ${{ runner.temp }}/unix-acceptance/interfaces/http.log
           if-no-files-found: warn

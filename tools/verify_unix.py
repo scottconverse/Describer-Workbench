@@ -38,11 +38,15 @@ def packaged_gui(exe,out):
     home=out/'packaged-home';home.mkdir();env['HOME']=str(home)
     with (out/'packaged-gui.log').open('wb') as log:
         process=subprocess.Popen([str(exe)],env=env,stdout=log,stderr=log)
+        quit_detail=None
         try:
             time.sleep(8);assert process.poll() is None,'Packaged GUI exited during startup'
             if sys.platform=='darwin':
-                bundle=next(p for p in exe.parents if p.suffix=='.app')
-                command(['osascript','-e','tell application "'+str(bundle)+'" to quit'])
+                # Address the exact owned executable. A directly launched Qt
+                # bundle need not be registered under its path in LaunchServices.
+                script='ObjC.import("AppKit"); var a=$.NSRunningApplication.runningApplicationWithProcessIdentifier('+str(process.pid)+'); if (ObjC.unwrap(a.executableURL.path)!=='+json.dumps(str(exe))+') throw new Error("Owned application identity mismatch"); JSON.stringify({pid:a.processIdentifier,bundle:ObjC.unwrap(a.bundleIdentifier),normal_quit_requested:Boolean(a.terminate)});'
+                quit_detail=json.loads(command(['osascript','-l','JavaScript','-e',script]))
+                assert quit_detail['normal_quit_requested'],quit_detail
             else:
                 windows=command(['wmctrl','-lp'])
                 match=next((row.split()[0] for row in windows.splitlines() if len(row.split())>2 and row.split()[2]==str(process.pid)),None)
@@ -51,7 +55,7 @@ def packaged_gui(exe,out):
             process.wait(timeout=30);assert process.returncode==0,process.returncode
         finally:
             if process.poll() is None:process.terminate();process.wait(timeout=10)
-    return {'startup_survived':True,'normal_quit_exit':process.returncode}
+    return {'startup_survived':True,'normal_quit_exit':process.returncode,'native_quit':quit_detail}
 
 
 def main():
