@@ -260,5 +260,48 @@
       "Memory is this process; child FFmpeg memory is not included.",
       "Same source videos and controlled cue load; occasional paint spikes remain. No AI inference comparison."
     ]
+  },
+  "package_5": {
+    "source": "4bc0e3d7431f5c1bad3d78ffb4c6112a1741a2b3",
+    "working_candidate": true,
+    "cases": [
+      {
+        "label": "short",
+        "duration": 120.166667,
+        "source_sha256": "a6145154aee091019c2fc91def46b6e661a73be4da062a8463098e1115ee2e8c",
+        "cold_seconds": 1.282007599947974,
+        "warm_seconds": 0.6684338999912143,
+        "identical_result": true,
+        "classification_samples": 250,
+        "protected_intervals": 10,
+        "source_unchanged": true
+      },
+      {
+        "label": "program",
+        "duration": 1800.212,
+        "source_sha256": "e6bcff3e9d51beee13d094d40533b9ec5a73d62c7be479c4e332151a59225329",
+        "cold_seconds": 6.369591699913144,
+        "warm_seconds": 0.4224006000440568,
+        "identical_result": true,
+        "classification_samples": 3749,
+        "protected_intervals": 12,
+        "source_unchanged": true
+      },
+      {
+        "label": "meeting",
+        "duration": 7210.012,
+        "source_sha256": "ba534aadbbb04a8e91f3b433e9dc436a2e8be93501e611e65dabedb6db529f6b",
+        "cold_seconds": 24.076535200001672,
+        "warm_seconds": 0.6547744000563398,
+        "identical_result": true,
+        "classification_samples": 15021,
+        "protected_intervals": 79,
+        "source_unchanged": true
+      }
+    ],
+    "limits": [
+      "Actual whole-source YAMNet and FFmpeg, no AI inference/synthesis or factual-quality claim.",
+      "Cold and warm calls use the shared pipeline stage; files/models are hashed on every request."
+    ]
   }
 }

@@ -80,7 +80,8 @@ def protected_audio(project, settings, cancel, log):
     spans, trace = [], []
     if any(s['codec_type'] == 'audio' for s in info['streams']):
         log('Measuring speech and vocal sounds independently of vision…')
-        spans, trace = speech_spans(Path(project.video), project.duration, speech_model(settings), cancel)
+        from .speech_cache import measured
+        spans, trace = measured(Path(project.video), project.duration, speech_model(settings), cancel,log,speech_spans)
     if settings.get('captions'):
         for c in import_subtitles(settings['captions'], project.duration):
             spans.append([max(0, c.start - .3), min(project.duration, c.end + .3)])

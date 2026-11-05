@@ -157,6 +157,13 @@ Glossary cards in the source candidate include **Delete character**. Ctrl+Z
 restores a deleted character; Ctrl+Shift+Z deletes it again. Other glossary lines,
 cues and evidence remain intact.
 
+**Stabilization source candidate — repeated drafting:** speech/vocal measurement
+is reused locally when the video, detector and analysis implementation still
+match. Repeating a short-range draft can therefore avoid scanning the whole
+soundtrack again. Changed videos/detectors or rejected cache data are measured
+again. This preserves dialogue protection and caption handling; it does not
+reuse AI descriptions or change your selected provider/model.
+
 ## 6. Edit and review descriptions
 
 **Stabilization source candidate:** continuous text typing is grouped into one undo step until a pause of 1.2 seconds, cursor navigation, a different cue, or another operation. Ctrl+Z, Ctrl+Shift+Z and the text context menu use the same project history, including review state and coverage. Text edits update the existing cue widgets; timing changes may reorder the full list. Published 0.6.1 applications retain their previous editing behavior.

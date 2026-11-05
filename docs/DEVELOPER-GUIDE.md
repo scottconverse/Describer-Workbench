@@ -48,6 +48,19 @@ Engine jobs/checkpoints remain separate. The native crash acceptance helper uses
 a disposable profile/video and intentionally exits its child with code 23 after
 the actual timer fires; it verifies full-state recovery and unchanged originals.
 
+Candidate `engine.speech_cache` stores disposable validated classification JSON
+under the host data folder's `speech-cache`, shared across engine jobs. The cache
+key includes actual media/detector/decoder/implementation hashes and inference
+runtime versions; it excludes the vision provider/model and requested range,
+which cannot change independently measured source audio. A changed detector,
+decoder or implementation invalidates reuse. Captions are always imported and
+applied afresh. Existing per-job checkpoints remain separate. Corrupt cache data
+is recomputed; cancellation never publishes partial data. Per-key advisory locks
+avoid duplicate measurement and remain responsive to cancellation. Cache I/O
+failure preserves fresh analysis. Source builds hash `sound.py`; frozen builds
+hash the executable, since bundled Python sources may not exist as files. Cache
+entries can be removed while the app/engine is stopped; they are regenerated.
+
 ## Install
 
 Install the source checkout with the interfaces you need:

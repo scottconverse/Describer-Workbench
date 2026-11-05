@@ -134,6 +134,27 @@ retained versions totaling 1.43 MB; this is filesystem work, not AI or GUI laten
 Package 4 is accepted and pushed. The store limits and
 30-second recovery window are documented in the user/developer guides.
 
+Package 5 candidate reuses whole-source speech/vocal classification through the
+same shared pipeline stage across jobs. The key hashes source bytes, duration,
+pinned detector bytes, detector implementation (executable when frozen), FFmpeg,
+ONNX runtime and NumPy versions. Captions are overlaid freshly on every call.
+Payload digest/shape/finite-interval/score validation rejects corrupt reuse;
+changed inputs create a new key. A per-key file lock observes cancellation while
+waiting. Cancellation/failure publishes no result; unavailable cache storage
+falls back to fresh validated analysis, not unprotected gaps. Source/model bytes
+are checked again before publication. Detector checksum verification still runs
+before any cache lookup.
+
+Actual Windows YAMNet/FFmpeg comparisons on the same three media measured fresh
+versus reused protection at 1.28/0.67 s (short), 6.37/0.42 s (30 minutes), and
+24.08/0.65 s (two hours), with identical results and unchanged source hashes.
+These are stage timings, not full AI throughput/quality. 46 affected checks passed;
+a new caption fixture expected lists rather than the existing tuple output and
+was corrected. The frozen-identity fixture's process-global sys patch stalled an
+isolated test before the benchmark; it was stopped and replaced by a module-local
+fixture, with the affected test passing. Prior engine evidence was retained; no
+full CI/build restart. Native source/locking checks remain pending at delivery.
+
 Native reader acceptance must identify exactly which
 reader/platform combination was exercised; simulated events are not that proof.
 
