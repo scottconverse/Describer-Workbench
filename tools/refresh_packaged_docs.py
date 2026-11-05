@@ -3,11 +3,13 @@ import argparse
 import hashlib
 import json
 import os
+import plistlib
 import struct
 import subprocess
 import sys
 import tarfile
 import tempfile
+import time
 from pathlib import Path
 
 
@@ -70,12 +72,40 @@ def snapshot(folder,mac=False):
         if not p.is_file():continue
         if relative.startswith('_internal/docs/') or relative in ('_internal/README.md','_internal/documentation-manifest.json'):continue
         if mac and (relative.startswith('Contents/Resources/docs/') or relative in ('Contents/Resources/README.md','Contents/Resources/documentation-manifest.json','Contents/_CodeSignature/CodeResources')):continue
-        value=unsigned_macho(p) if mac and relative in ('Contents/MacOS/DescriberWorkbench','Contents/MacOS/DescriberCLI') else digest(p)
+        if mac and relative=='Contents/Info.plist':
+            info=plistlib.loads(p.read_bytes())
+            assert info['CFBundleExecutable'] in ('DescriberCLI','DescriberWorkbench')
+            info['CFBundleExecutable']='DescriberWorkbench'
+            value=hashlib.sha256(plistlib.dumps(info,sort_keys=True)).hexdigest()
+        else:value=unsigned_macho(p) if mac and relative in ('Contents/MacOS/DescriberWorkbench','Contents/MacOS/DescriberCLI') else digest(p)
         result[relative]={'sha256':value,'mode':p.stat().st_mode & 0o777}
     return result
 
 
 def run(*args):subprocess.run(args,check=True)
+
+
+def launch_bundle(app,stage):
+    """Launch through LaunchServices, rather than directly invoking the GUI binary."""
+    expected=str(app/'Contents/MacOS/DescriberWorkbench')
+    query='ObjC.import("AppKit"); var xs=$.NSRunningApplication.runningApplicationsWithBundleIdentifier("org.describer.workbench"); var r=[]; for(var i=0;i<xs.count;i++){var a=xs.objectAtIndex(i);if(ObjC.unwrap(a.executableURL.path)==='+json.dumps(expected)+')r.push({pid:Number(a.processIdentifier),executable:ObjC.unwrap(a.executableURL.path)});} JSON.stringify(r);'
+    with (stage/'bundle-launch.log').open('wb') as log:
+        process=subprocess.Popen(['open','-n','-W',str(app)],stdout=log,stderr=log)
+        owned=None
+        try:
+            time.sleep(8)
+            matches=json.loads(subprocess.check_output(['osascript','-l','JavaScript','-e',query],text=True))
+            assert len(matches)==1 and process.poll() is None,(matches,process.poll())
+            owned=matches[0]
+            quit_script='ObjC.import("AppKit"); var a=$.NSRunningApplication.runningApplicationWithProcessIdentifier('+str(owned['pid'])+'); if(ObjC.unwrap(a.executableURL.path)!=='+json.dumps(expected)+')throw new Error("Owned process identity mismatch"); JSON.stringify({normal_quit:Boolean(a.terminate)});'
+            result=json.loads(subprocess.check_output(['osascript','-l','JavaScript','-e',quit_script],text=True))
+            assert result['normal_quit']
+            process.wait(timeout=30);assert process.returncode==0
+            return {'launch_services':True,'executable':owned['executable'].split('/Contents/',1)[1],'normal_quit':True}
+        finally:
+            if process.poll() is None:
+                if owned:subprocess.run(['osascript','-l','JavaScript','-e',quit_script],check=False)
+                process.terminate();process.wait(timeout=10)
 
 
 def main():
@@ -99,7 +129,13 @@ def main():
             try:run('ditto',str(mount/app.name),str(app))
             finally:run('hdiutil','detach',str(mount))
             before=snapshot(app,mac=True)
+            info_path=app/'Contents/Info.plist';info=plistlib.loads(info_path.read_bytes())
+            previous_entrypoint=info['CFBundleExecutable'];info['CFBundleExecutable']='DescriberWorkbench'
+            info_path.write_bytes(plistlib.dumps(info,sort_keys=False))
             install_docs(app/'Contents/Resources')
+            # The previous bundle incorrectly identified the CLI as its main executable.
+            # Remove its stale bundle binding, then seal the correct GUI entry point.
+            run('codesign','--force','--sign','-',str(app/'Contents/MacOS/DescriberCLI'))
             run('codesign','--force','--sign','-',str(app))
             run('codesign','--verify','--deep','--strict','--verbose=2',str(app))
             after=snapshot(app,mac=True)
@@ -107,6 +143,7 @@ def main():
             assert not differences,'Non-documentation app content changed: '+json.dumps(differences,sort_keys=True)
             # Validate actual executable launch after resealing, without opening an editor or provider.
             run(str(app/'Contents/MacOS/DescriberCLI'),'--help')
+            bundle_launch=launch_bundle(app,stage)
             (payload/'Applications').symlink_to('/Applications')
             (payload/'INSTALL.md').write_bytes(documents()['docs/UNIX-INSTALL.md'])
             run('hdiutil','create','-volname','Describer Workbench','-srcfolder',str(payload),'-format','UDZO',str(out/source.name))
@@ -134,6 +171,7 @@ def main():
                  'refreshed_package':{'name':source.name,'sha256':digest(out/source.name)},
                  'preservation':seal,'preserved_entries':len(before),'application_rebuilt':False}
         receipt['packaging_helper_source']=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+        if source.suffix=='.dmg':receipt['bundle_entrypoint']={'previous':previous_entrypoint,'current':'DescriberWorkbench','other_plist_fields_preserved':True,'acceptance':bundle_launch}
         (out/(source.name+'.docs.json')).write_text(json.dumps(receipt,indent=2)+'\n',encoding='utf-8')
 
 
