@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "describer-workbench"
 version = "0.6.1"
-description = "Shared audio-description engine, Windows workbench, CLI, HTTP and MCP"
+description = "Shared audio-description engine, desktop workbench, CLI, HTTP and MCP"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
@@ -13,7 +13,7 @@ license-files = ["LICENSE", "NOTICE", "THIRD-PARTY-NOTICES.md", "third-party-lic
 dependencies = ["portalocker>=3.2,<4"]
 
 [project.optional-dependencies]
-desktop = ["PySide6==6.12.0", "accessible-output2==0.17", "cryptography==50.0.2", "google-genai==2.34.0", "yt-dlp==2026.10.26", "numpy>=2,<3", "onnxruntime>=1.23,<2"]
+desktop = ["PySide6==6.12.0", "accessible-output2==0.17", "cryptography==50.0.2", "google-genai==2.34.0", "yt-dlp==2026.10.26", "numpy>=2,<3", "onnxruntime>=1.23,<2", "keyring==25.7.0; sys_platform != 'win32'"]
 http = ["fastapi>=0.162,<1", "uvicorn>=0.34,<1"]
 mcp = ["mcp>=1.20,<2"]
 local = ["numpy>=2,<3", "onnxruntime>=1.23,<2"]
@@ -41,7 +41,7 @@ packages = ["describer"]
 "assets" = "describer/resources"
 
 [tool.hatch.build.targets.sdist]
-include = [".github", "describer", "assets", "bin/FFmpeg-LICENSE.txt", "tests", "docs", "website", "tools", "run.py", "run_cli.py", "build.ps1", "DescriberWorkbench.spec", "requirements.txt", "README.md", "LICENSE", "NOTICE", "THIRD-PARTY-NOTICES.md", "third-party-licenses", "pyproject.toml"]
+include = [".github", "describer", "assets", "bin/FFmpeg-LICENSE.txt", "tests", "docs", "website", "tools", "run.py", "run_cli.py", "build.ps1", "DescriberWorkbench.spec", "DescriberUnix.spec", "requirements.txt", "README.md", "LICENSE", "NOTICE", "THIRD-PARTY-NOTICES.md", "third-party-licenses", "pyproject.toml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

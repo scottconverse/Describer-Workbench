@@ -16,6 +16,7 @@ from PySide6.QtMultimediaWidgets import QVideoWidget
 from PySide6.QtTextToSpeech import QTextToSpeech
 from .project import Project, Cue, seconds, stamp, import_subtitles,response_json
 from .services import Settings, generate, download, export_audio, synthesize
+from .platforms import narration_engines,speech_label,native_text
 from .i18n import LANGUAGES,apply_language
 
 
@@ -135,7 +136,7 @@ class Window(DesktopInterface, QMainWindow):
         glossary=QAction('Character glossary',self);glossary.triggered.connect(self.edit_glossary);menu.addAction(glossary)
         for label,fn in [('Recover interrupted jobs',self.recover_jobs),('Repair narration',self.repair_narration),('Install speech detector',self.install_detector),('Start developer API / MCP',self.start_api),('Stop developer API / MCP',self.stop_api)]:
             action=QAction(label,self);action.triggered.connect(fn);menu.addAction(action)
-        for label,fn in [('Manage presets',self.presets),('Manage voice presets',self.manage_voices),('Test selected export voice',self.test_voice),('Select Windows export voice',self.select_windows_voice),('Import original data',self.import_original),('Check for updates',self.check_updates)]:
+        for label,fn in [('Manage presets',self.presets),('Manage voice presets',self.manage_voices),('Test selected export voice',self.test_voice),(native_text('Select Windows export voice'),self.select_windows_voice),('Import original data',self.import_original),('Check for updates',self.check_updates)]:
             action=QAction(label,self);action.triggered.connect(fn);menu.addAction(action)
         connections=QAction('Manage AI connections',self);connections.triggered.connect(self.manage_connections);menu.addAction(connections)
         login=QAction('Subscription sign-in',self);login.triggered.connect(self.subscription_login);menu.addAction(login)
@@ -718,11 +719,11 @@ class Window(DesktopInterface, QMainWindow):
             if key.endswith('_key'):field.setEchoMode(QLineEdit.EchoMode.Password)
             form.addRow(label,field);fields[key]=field
         for key,label,lo,hi in [('chunk','Seconds per analysis chunk',15,1800),('fps','Frames per second (Gemini)',1,30),('ollama_frame_interval','Ollama seconds between frames (max 8 per request)',1,10),('ollama_timeout','Ollama request timeout (seconds)',30,1800),('analysis_timeout','Subscription/API timeout (seconds)',30,1800),('duck_db','Background ducking (dB)',-40,0),('speech_rate','Windows voice rate',-10,10),('speech_volume','Speech volume',0,100)]:
-            field=QSpinBox();field.setRange(lo,hi);field.setValue(self.settings.data[key]);form.addRow(label,field);fields[key]=field
-        engine=QComboBox();engine.addItems(['Windows','Windows 32-bit','Windows OneCore','OpenAI']);engine.setCurrentText(self.settings.data['voice_engine']);form.addRow('Audio export speech engine',engine)
+            field=QSpinBox();field.setRange(lo,hi);field.setValue(self.settings.data[key]);form.addRow(native_text(label),field);fields[key]=field
+        engine=QComboBox();engine.addItems(narration_engines());engine.setCurrentText(self.settings.data['voice_engine']);form.addRow('Audio export speech engine',engine)
         ui_language=QComboBox();ui_language.addItems(LANGUAGES);ui_language.setCurrentText(self.settings.data['ui_language']);form.addRow('Interface language',ui_language)
         choices={}
-        for key,label,items in [('verbosity','Description verbosity',['Short','Standard','Detailed']),('download_quality','YouTube download quality',['Best','360p','480p','720p','1080p']),('playback_output','Live text playback output',['Windows speech','Screen reader']),('logging_level','Diagnostic logging level',['DEBUG','INFO','WARNING','ERROR','CRITICAL'])]:
+        for key,label,items in [('verbosity','Description verbosity',['Short','Standard','Detailed']),('download_quality','YouTube download quality',['Best','360p','480p','720p','1080p']),('playback_output','Live text playback output',[speech_label(),'Screen reader']),('logging_level','Diagnostic logging level',['DEBUG','INFO','WARNING','ERROR','CRITICAL'])]:
             combo=QComboBox();combo.addItems(items);combo.setCurrentText(self.settings.data[key]);form.addRow(label,combo);choices[key]=combo
         voice_preset=QComboBox();voice_preset.addItems(['']+list(self.settings.data['voice_presets']));voice_preset.setCurrentText(self.settings.data['voice_preset']);form.addRow('OpenAI voice preset',voice_preset)
         flags={}
@@ -730,7 +731,7 @@ class Window(DesktopInterface, QMainWindow):
             flag=QCheckBox(label);flag.setChecked(bool(self.settings.data[key]));form.addRow(flag);flags[key]=flag
         temperature=QDoubleSpinBox();temperature.setRange(0,2);temperature.setSingleStep(.1);temperature.setValue(float(self.settings.data['temperature']));form.addRow('Gemini temperature',temperature)
         interrupt=QCheckBox('Allow new descriptions to interrupt speech');interrupt.setChecked(self.settings.data['interrupt']);form.addRow(interrupt)
-        voices=QComboBox();available=self.speech.availableVoices();voices.addItems([v.name() for v in available]);voices.setCurrentText(self.settings.data.get('playback_voice',''));form.addRow('Playback Windows voice',voices)
+        voices=QComboBox();available=self.speech.availableVoices();voices.addItems([v.name() for v in available]);voices.setCurrentText(self.settings.data.get('playback_voice',''));form.addRow(native_text('Playback Windows voice'),voices)
         buttons=QDialogButtonBox(QDialogButtonBox.StandardButton.Ok|QDialogButtonBox.StandardButton.Cancel);buttons.accepted.connect(d.accept);buttons.rejected.connect(d.reject);form.addRow(buttons)
         draft_voice={'id':self.settings.data['windows_voice']}
         engine.currentTextChanged.connect(lambda _:draft_voice.update(id=''))
@@ -771,12 +772,12 @@ class Window(DesktopInterface, QMainWindow):
         if self.busy():return
         selected=copy.deepcopy(settings if isinstance(settings,dict) else self.settings.data)
         engine=selected['voice_engine']
-        if engine=='OpenAI':self.error('Select a Windows engine in Settings first.');return
+        if engine=='OpenAI':self.error(native_text('Select a Windows engine in Settings first.'));return
         from .windows_speech import windows_speech
         def done(voices):
             if not voices:self.error('No voices are installed for this engine.');return
             labels=[v['name']+' — '+v['id'] for v in voices]
-            choice,ok=QInputDialog.getItem(self,'Windows export voice','Installed voices ('+engine+')',labels,0,False)
+            choice,ok=QInputDialog.getItem(self,native_text('Windows export voice'),'Installed voices ('+engine+')',labels,0,False)
             if ok:
                 voice=voices[labels.index(choice)]['id']
                 if on_selected:on_selected(voice)
@@ -855,7 +856,7 @@ class Window(DesktopInterface, QMainWindow):
             try:narration_preflight(draft,cancel)
             except InterruptedError:raise
             except Exception as exc:return 'Voice check: '+str(exc)+'\nChoose an installed replacement in Settings before narration.'
-            return 'The selected Windows voice is available.'
+            return native_text('The selected Windows voice is available.')
         def done(warning):
             preview='\n'.join(f'{key}: {value}' for key,value in sorted(data.items()))
             if 'speech_rate' in data:preview+='\nSpeech rate is the nearest supported setting; voices may differ from the original.'
@@ -868,6 +869,11 @@ class Window(DesktopInterface, QMainWindow):
         self.job(check,done)
     def check_updates(self):
         if self.busy():return
+        if sys.platform!='win32':
+            from PySide6.QtGui import QDesktopServices
+            if QMessageBox.question(self,'Platform add-on releases','Open the download page for macOS and Linux add-ons? Download the matching package, quit the app and install it manually. Keep your prior copy for rollback. Windows releases and updates remain separate.')==QMessageBox.StandardButton.Yes:
+                QDesktopServices.openUrl(QUrl('https://github.com/scottconverse/Describer-Workbench/releases'))
+            return
         feed=self.settings.data.get('update_feed','')
         from .updates import read_feed
         def done(data):

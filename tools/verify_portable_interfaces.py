@@ -22,7 +22,7 @@ def main():
     token=secrets.token_urlsafe(32);env=dict(os.environ,DESCRIBER_API_TOKEN=token)
     with socket.socket() as sock:sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
     with (out/'http.log').open('wb') as log:
-        proc=subprocess.Popen([str(exe),'--workspace',str(out/'http'),'serve','--port',str(port)],env=env,stdout=log,stderr=log,creationflags=0x08000000)
+        proc=subprocess.Popen([str(exe),'--workspace',str(out/'http'),'serve','--port',str(port)],env=env,stdout=log,stderr=log,creationflags=0x08000000 if os.name=='nt' else 0)
         try:
             started=time.monotonic()
             while True:

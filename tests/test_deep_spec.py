@@ -1,3 +1,4 @@
+from describer.platforms import native_engine
 """Regressions from the deeper original-spec audit; no live provider calls."""
 import json
 import threading
@@ -258,7 +259,7 @@ def test_settings_voice_preview_uses_draft_and_cancel_preserves_file(tmp_path):
     def interact():
         dialog=QApplication.activeModalWidget()
         try:
-            engine=next(x for x in dialog.findChildren(QComboBox) if x.findText('Windows OneCore')>=0)
+            engine=next(x for x in dialog.findChildren(QComboBox) if x.findText(native_engine())>=0)
             engine.setCurrentText('OpenAI')
             next(x for x in dialog.findChildren(QPushButton) if x.text()=='Test voice').click()
         except Exception as exc:errors.append(exc)
@@ -267,7 +268,7 @@ def test_settings_voice_preview_uses_draft_and_cancel_preserves_file(tmp_path):
         QTimer.singleShot(0,interact);window.edit_settings('Export voice')
         assert not errors and seen[0]['voice_engine']=='OpenAI'
         assert window.settings.path.read_bytes()==original
-        assert window.settings.data['voice_engine']=='Windows'
+        assert window.settings.data['voice_engine']==native_engine()
     finally:window.dirty=False;window.close()
 
 
@@ -302,7 +303,7 @@ def test_original_settings_preview_warns_missing_voice_and_cancel_preserves_sett
         assert 'Selected voice is missing' in prompt.call_args.args[2]
         assert 'nearest supported setting' in prompt.call_args.args[2]
         assert window.settings.path.read_bytes()==original
-        assert window.settings.data['voice_engine']=='Windows'
+        assert window.settings.data['voice_engine']==native_engine()
     finally:window.dirty=False;window.close()
 
 

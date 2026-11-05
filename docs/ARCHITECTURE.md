@@ -1,6 +1,8 @@
 # Architecture and implementation guide
 
-Describer Workbench **0.6.1**. Shared engine and native Windows workbench. The earlier signed0.5.2 package has its own [historical acceptance record](V052-ACCEPTANCE.md).
+Describer Workbench **0.6.1**. Shared engine and native desktop workbench. The earlier signed0.5.2 package has its own [historical acceptance record](V052-ACCEPTANCE.md).
+
+The separate [macOS/Linux add-ons](UNIX-INSTALL.md) retain the existing Windows release. `platforms.py` chooses host data folders, narration choices and explicit macOS Keychain/Linux Secret Service storage; settings retain only opaque keyring references, with no plaintext fallback. `unix_speech.py` synthesizes through macOS `say` or eSpeak NG into measured WAVs. `DescriberUnix.spec` and Unix install/package helpers are separate from the unchanged Windows build spec. Unix updates are manual; they do not enter Windows Authenticode staging. Existing providers, consent and native CLI authentication ownership remain shared.
 
 Version 0.6.1: [AI connections](AI-CONNECTIONS.md) adds gateway/native subscription and explicit API adapters behind the same service, with no automatic model fallback. Native/gateway routes send up to eight sampled timestamped images without audio. Timed narration retains independently measured WAVs and safe placement; the live-text reader preference does not change that scheduling. Cues record their synthesis volume so live gain and export gain can account for it; older unknown levels require repair. Earlier 0.5.2 packages retain their historical behavior.
 
@@ -12,11 +14,11 @@ The service centralizes provider validation and consent before queueing or resum
 
 ![Desktop and developer adapters share one headless engine.](diagrams/system.svg)
 
-The engine lives in Describer-Workbench. CivicCast remains a separate consumer; no release-candidate or live station data is part of this workspace. Desktop, Python, CLI, REST and MCP all call `DescriptionService`. A workspace has one process owner, an exclusive file lock and a serial job queue. Additional processes attach over HTTP rather than opening the same workspace. The headless imports do not require Qt. Native speech currently requires Windows; other speech adapters retain their platform/provider requirements.
+The engine lives in Describer-Workbench. CivicCast remains a separate consumer; no release-candidate or live station data is part of this workspace. Desktop, Python, CLI, REST and MCP all call `DescriptionService`. A workspace has one process owner, an exclusive file lock and a serial job queue. Additional processes attach over HTTP rather than opening the same workspace. The headless imports do not require Qt. Native speech uses Windows SAPI/OneCore, macOS voices or Linux eSpeak NG; OpenAI speech retains its explicit remote consent and credential requirements.
 
 ```mermaid
 flowchart TD
-    UI[Windows Qt workbench] --> E[DescriptionService]
+    UI[Native Qt workbench] --> E[DescriptionService]
     PY[Python and CLI] --> E
     REST[Bearer REST and OpenAPI] --> E
     MCP[MCP stdio or Streamable HTTP] --> E
@@ -85,9 +87,9 @@ Complete media exports first create an in-gap narrated bed. Pause events split t
 | MCP stdio | Dedicated workspace owner or proxy to existing HTTP owner;17 tools for the full public engine surface. |
 | MCP Streamable HTTP | Same owner/queue/job IDs, mounted at `/mcp/`, same bearer boundary. Legacy HTTP+SSE is not implemented. |
 
-The token grants access to the Windows user's readable media paths and configured providers. This is a trusted developer service, not a public multi-tenant upload endpoint. A public deployment requires a separate TLS/auth/egress and tenancy design. Do not expose the loopback process directly. No OAuth/account system is added.
+The token grants access to the running user's readable media paths and configured providers. This is a trusted developer service, not a public multi-tenant upload endpoint. A public deployment requires a separate TLS/auth/egress and tenancy design. Do not expose the loopback process directly. No OAuth/account system is added.
 
-Settings keys use current-user Windows DPAPI. Projects include absolute source paths, cues, coverage and analysis; planned cues reference workspace audio files. Back up the source, project and workspace together. Logs/status can contain file paths and error text. Provider transmissions occur only on explicit operations with remote allowance/GUI consent; opening a file makes no provider request. Asset provisioning is explicit and verifies the pinned hash.
+Settings keys use current-user Windows DPAPI, macOS Keychain or Linux Secret Service according to the host. Unix settings retain opaque references; a locked/missing keyring blocks secret saving instead of falling back to plaintext. Projects include absolute source paths, cues, coverage and analysis; planned cues reference workspace audio files. Back up the source, project and workspace together. Logs/status can contain file paths and error text. Provider transmissions occur only on explicit operations with remote allowance/GUI consent; opening a file makes no provider request. Asset provisioning is explicit and verifies the pinned hash.
 
 No application analytics is configured. ONNX telemetry is disabled; Hugging Face/OTEL telemetry-off defaults are set before optional adapters load. FastAPI tracing, metrics, telemetry logs and automatic exporter setup are explicitly disabled. These controls do not claim to change a separately operated provider/server's own behavior.
 
@@ -103,7 +105,7 @@ Version 0.6.1 retains the 0.6.0 engine and connection inventory and fixes the ei
 
 ## Evidence limits
 
-Automated checks cover structural behavior, real MCP initialization, HTTP boundaries, old-project compatibility, checkpoint reuse and real FFmpeg pause exports. The three native Blender samples exercise the real local vision, classifier and speech pipeline. Neither cue counts nor successful playback establish a percentage visual-accuracy score, WCAG compliance or complete essential-information coverage. Bounded native Codex/Claude/Antigravity and gateway Codex/Claude/Gemini requests passed; reported model identities and remaining keyed/local-server testing limits are in [AI connections](AI-CONNECTIONS.md). Linux/macOS native speech, active NVDA/JAWS and full-film semantic quality remain outside verified acceptance. Historical audits apply only to their recorded candidates.
+Automated checks cover structural behavior, real MCP initialization, HTTP boundaries, old-project compatibility, checkpoint reuse and real FFmpeg pause exports. The three native Blender samples exercise the real local vision, classifier and speech pipeline. Neither cue counts nor successful playback establish a percentage visual-accuracy score, WCAG compliance or complete essential-information coverage. Bounded native Codex/Claude/Antigravity and gateway Codex/Claude/Gemini requests passed; reported model identities and remaining keyed/local-server testing limits are in [AI connections](AI-CONNECTIONS.md). The separate Unix release receipts cover automated native speech and package acceptance; active NVDA/JAWS/VoiceOver/Orca use, human-listening review and full-film semantic quality remain outside verified acceptance. Historical audits apply only to their recorded candidates.
 
 ## Industry desktop presentation
 

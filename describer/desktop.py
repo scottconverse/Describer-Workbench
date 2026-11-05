@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (QWidget, QFrame, QVBoxLayout, QHBoxLayout, QLabel
     QFormLayout, QFileDialog, QApplication, QSlider, QSizePolicy, QScrollBar, QListWidgetItem, QStyledItemDelegate, QStyle, QGridLayout)
 from .project import Cue, seconds, response_json
 from .services import asset_path
+from .platforms import narration_engines,native_text
 
 
 def clock(value):
@@ -271,7 +272,7 @@ class DesktopInterface:
         button(transport,'−10 s',lambda:self.seek(self.player.position()-10000))
         self.play_button=button(transport,'Play / Pause',self.toggle,True,icon_only=True);button(transport,'+10 s',lambda:self.seek(self.player.position()+10000))
         self.clock=QLabel('00:00.0 / 00:00.0');transport.addWidget(self.clock);transport.addStretch();transport.addWidget(self.speak_check)
-        self.speak_check.setToolTip('Timed descriptions use measured narration audio (Windows by default). The Screen reader preference applies to live text and Scene answers; it does not replace timed narration.')
+        self.speak_check.setToolTip(native_text('Timed descriptions use measured narration audio (Windows by default). The Screen reader preference applies to live text and Scene answers; it does not replace timed narration.'))
         transport.addWidget(QLabel('Video'));transport.addWidget(self.volume)
         self.speech_volume=QSlider(Qt.Horizontal);self.speech_volume.setRange(0,100);self.speech_volume.setValue(self.settings.data['speech_volume']);self.speech_volume.setMaximumWidth(90);self.speech_volume.setAccessibleName('Speech volume')
         self.speech_volume.valueChanged.connect(self.change_speech_volume);transport.addWidget(QLabel('Speech'));transport.addWidget(self.speech_volume)
@@ -332,7 +333,7 @@ class DesktopInterface:
         self.recents=QListWidget();right.addWidget(self.recents);self.recents.itemActivated.connect(lambda item:self.open_recent(item.data(Qt.UserRole)))
         right.addSpacing(28);right.addWidget(section('SETUP CHECKLIST'));self.setup_checks={};self.setup_actions={}
         for title,group in [('Speech detector','Updates'),('Ollama','Keys & privacy'),('Windows voices','Speech & playback'),('Gemini key','Keys & privacy')]:
-            line=QHBoxLayout();right.addLayout(line);check=QCheckBox(title);check.setAttribute(Qt.WA_TransparentForMouseEvents);check.setFocusPolicy(Qt.NoFocus);line.addWidget(check);self.setup_checks[title]=check;line.addStretch();action=button(line,'Set up',lambda checked=False,s=group:self.edit_settings(s),role='link');self.setup_actions[title]=action
+            line=QHBoxLayout();right.addLayout(line);check=QCheckBox(native_text(title));check.setAttribute(Qt.WA_TransparentForMouseEvents);check.setFocusPolicy(Qt.NoFocus);line.addWidget(check);self.setup_checks[title]=check;line.addStretch();action=button(line,'Set up',lambda checked=False,s=group:self.edit_settings(s),role='link');self.setup_actions[title]=action
         right.addStretch();return page
     def show_start(self):
         if not self.busy():self.pages.setCurrentIndex(0);self.editor_toolbar.hide()
@@ -406,7 +407,7 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
         statuses={'Speech detector':detector,'Ollama':'verified' if model_ready else 'configured (not verified)' if self.settings.data.get('ollama_model') else 'missing',
                   'Windows voices':'verified' if voice_ready else 'selected engine not verified', 'Gemini key':'configured' if self.settings.data.get('gemini_key') else 'missing'}
         for key,status in statuses.items():
-            self.setup_checks[key].setChecked(status=='verified');self.setup_checks[key].setText(key+' - '+status);self.setup_actions[key].setVisible(True)
+            self.setup_checks[key].setChecked(status=='verified');self.setup_checks[key].setText(native_text(key)+' - '+status);self.setup_actions[key].setVisible(True)
         self.setup_checks['Windows voices'].setToolTip('Selected export engine: '+self.settings.data.get('voice_engine','Windows'))
         self.setup_checks['Ollama'].setToolTip('Verification is for this server/model in this session. Draft checks again before inference.')
         self.state_label.setText(f"Speech detector: {detector}  |  {'Working' if running else 'Engine idle'}     {('In gap '+str(counts['in-gap']-sped_up)+' · Sped up '+str(sped_up)+' · Pauses '+str(counts['pause'])+' · Review '+str(counts['unresolved'])) if self.pages.currentIndex()==1 else ''}     Voice: {self.settings.data.get('playback_voice') or 'System default'}     API: {'running' if getattr(self,'api_ready',False) and self.api_thread and self.api_thread.is_alive() else 'starting/stopping' if self.api_thread and self.api_thread.is_alive() else 'off'}")
@@ -767,11 +768,11 @@ def organize_settings(window,dialog,outer,scroll,content,form,buttons,section=No
         for label,field in rows[group]:
             if label:f.addRow(label,field)
             elif field:f.addRow(field)
-        if group=='Keys & privacy':f.addRow(QLabel('API keys are protected with Windows DPAPI. Cloud use requires confirmation.'))
+        if group=='Keys & privacy':f.addRow(QLabel(native_text('API keys are protected with Windows DPAPI. Cloud use requires confirmation.')))
         if group=='Speech & playback':
-            policy=QLabel('Timed in-gap and pause cues use measured narration audio from the export voice (Windows by default), so playback can resume safely. Screen reader applies to live text and Scene answers. If no reader is active, live text uses Windows speech. Reader volume/rate remain controlled by the reader.');policy.setWordWrap(True);policy.setAccessibleName('Screen reader and timed narration policy');f.addRow(policy)
+            policy=QLabel(native_text('Timed in-gap and pause cues use measured narration audio from the export voice (Windows by default), so playback can resume safely. Screen reader applies to live text and Scene answers. If no reader is active, live text uses Windows speech. Reader volume/rate remain controlled by the reader.'));policy.setWordWrap(True);policy.setAccessibleName('Screen reader and timed narration policy');f.addRow(policy)
         if group=='Export voice':
-            controls=QHBoxLayout();f.addRow(controls);button(controls,'Test voice',lambda:window.test_voice(draft_settings() if draft_settings else None));button(controls,'Manage voice presets',window.manage_voices);button(controls,'Select Windows voice',lambda:window.select_windows_voice(draft_settings() if draft_settings else None,on_voice))
+            controls=QHBoxLayout();f.addRow(controls);button(controls,'Test voice',lambda:window.test_voice(draft_settings() if draft_settings else None));button(controls,'Manage voice presets',window.manage_voices);button(controls,native_text('Select Windows voice'),lambda:window.select_windows_voice(draft_settings() if draft_settings else None,on_voice))
         if group=='Updates':
             controls=QHBoxLayout();f.addRow(controls);button(controls,'Check now',window.check_updates);button(controls,'Install speech detector',window.install_detector)
         if group=='Developer API':
@@ -823,7 +824,7 @@ class ExportVoices(QWidget):
     def __init__(self,window,parent):
         super().__init__(parent);self.window=window;self.thread=None;self.worker=None;self.loading=False;self.closing=False;self.requested='';self.loaded=''
         layout=QVBoxLayout(self);layout.setContentsMargins(0,0,0,0);layout.setSpacing(8)
-        layout.addWidget(QLabel('Narration engine'));self.engine=QComboBox();self.engine.setAccessibleName('Export narration engine');self.engine.addItems(['Windows','Windows 32-bit','Windows OneCore','OpenAI']);self.engine.setCurrentText(window.settings.data['voice_engine']);layout.addWidget(self.engine)
+        layout.addWidget(QLabel('Narration engine'));self.engine=QComboBox();self.engine.setAccessibleName('Export narration engine');self.engine.addItems(narration_engines());self.engine.setCurrentText(window.settings.data['voice_engine']);layout.addWidget(self.engine)
         layout.addWidget(QLabel('Narration voice'));self.voice=QComboBox();self.voice.setAccessibleName('Export narration voice');layout.addWidget(self.voice)
         self.note=QLabel();self.note.setWordWrap(True);layout.addWidget(self.note)
         self.retry=QPushButton('Retry voice discovery');layout.addWidget(self.retry);self.retry.clicked.connect(lambda:self.request(self.engine.currentText()))
@@ -850,7 +851,7 @@ class ExportVoices(QWidget):
         if self.closing or self.requested!=self.loaded:return
         self.voice.clear()
         rows=[r for r in rows if isinstance(r,dict) and r.get('id') and r.get('name')]
-        if not rows:self.failed('No usable voices found. Retry, select another engine, or install a Windows voice in Windows Settings.');return
+        if not rows:self.failed(native_text('No usable voices found. Retry, select another engine, or install a Windows voice in Windows Settings.'));return
         self.voice.addItem('Default available voice  -  '+rows[0]['name'],{'windows_voice':rows[0]['id']})
         for row in rows:self.voice.addItem(row['name'],{'windows_voice':row['id']})
         selected=self.window.settings.data.get('windows_voice','') if self.loaded==self.window.settings.data['voice_engine'] else ''

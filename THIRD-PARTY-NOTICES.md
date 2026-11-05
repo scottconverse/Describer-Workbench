@@ -2,6 +2,12 @@
 
 This project uses the components below. Original license texts are retained under third-party-licenses. Refer to each upstream license for redistribution obligations.
 
+## macOS/Linux add-ons
+
+The unchanged Windows release retains its original dependency/signing identity. Unix desktop packages additionally use keyring 25.7.0 (MIT, https://github.com/jaraco/keyring), with macOS Keychain or Linux Secret Service; Linux backend dependencies include SecretStorage and jeepney. Native macOS `say` is supplied by macOS. Linux FFmpeg/eSpeak NG/speech-dispatcher are package-manager dependencies, not bundled executables; consult their distribution license/source packages.
+
+Mac packages bundle separately executed FFmpeg 9.0.2 linked statically with x264 revision31e19f92f00c7003fa115047ce50978bc98c3a0d (GPLv2) and LAME 3.100 (LGPL). All are built from hash-pinned corresponding source; the resulting FFmpeg build uses GPLv2 terms. Exact source archives, build script, configurations and retained license texts accompany each architecture's `unix-media-sources-<arch>.tar.gz`; the app also includes `unix-media/licenses` and `unix-media/build-receipt.json`. Upstream source: https://ffmpeg.org/releases/ and https://code.videolan.org/videolan/x264 . This does not change the Apache-2.0 license of the separate Workbench application.
+
 - PySide6 6.12.0: LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 - PySide6_Essentials 6.12.0: LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 - PySide6_Addons 6.12.0: LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only

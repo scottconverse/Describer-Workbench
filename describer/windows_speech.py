@@ -39,6 +39,9 @@ if ($d.engine -eq 'Windows OneCore') {
 '''
 
 def windows_speech(engine='Windows', text='', output='', voice='', rate=0, cancel=None, listing=False, volume=100):
+    if engine in ('macOS','eSpeak NG'):
+        from .unix_speech import unix_speech
+        return unix_speech(engine,text,output,voice,rate,cancel,listing,volume)
     from .services import run
     root=Path(os.environ.get('WINDIR',r'C:\Windows'))
     shell=root/('SysWOW64' if engine=='Windows 32-bit' else 'System32')/'WindowsPowerShell/v1.0/powershell.exe'

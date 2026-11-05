@@ -1,0 +1,203 @@
+name: macOS and Linux add-ons
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        type: choice
+        options: [all, linux-x64, macos-arm64, macos-x64]
+        default: all
+        description: Native platform to execute
+      test_scope:
+        type: choice
+        options: [full, frames, media-export]
+        default: full
+        description: Use frames only when unchanged suite evidence is already recorded
+      candidate_run:
+        type: string
+        description: Existing artifact run ID for acceptance only (no rebuild)
+      candidate_sha:
+        type: string
+        description: Existing artifact source SHA (required with candidate_run)
+      acceptance_scope:
+        type: choice
+        options: [full, source-install]
+        default: full
+        description: Use source-install only with recorded passing package evidence
+  pull_request:
+    paths: ['describer/**', 'tests/**', 'tools/**', 'DescriberUnix.spec', 'pyproject.toml', '.github/workflows/unix-addons.yml']
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  native:
+    if: inputs.candidate_run == ''
+    name: ${{ matrix.target }} native install and acceptance
+    timeout-minutes: 65
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include: ${{ fromJSON(inputs.target == 'linux-x64' && '[{"target":"linux-x64","runner":"ubuntu-24.04"}]' || inputs.target == 'macos-arm64' && '[{"target":"macos-arm64","runner":"macos-15"}]' || inputs.target == 'macos-x64' && '[{"target":"macos-x64","runner":"macos-15-intel"}]' || '[{"target":"linux-x64","runner":"ubuntu-24.04"},{"target":"macos-arm64","runner":"macos-15"},{"target":"macos-x64","runner":"macos-15-intel"}]') }}
+    runs-on: ${{ matrix.runner }}
+    env:
+      HF_HUB_DISABLE_TELEMETRY: '1'
+      OTEL_SDK_DISABLED: 'true'
+      DO_NOT_TRACK: '1'
+      DESCRIBER_HOME: /tmp/describer-native-${{ matrix.target }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.13'
+          cache: pip
+      - name: Record resource headroom
+        run: df -h
+      - name: Linux desktop dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg espeak-ng speech-dispatcher gnome-keyring dbus-x11 xvfb xterm openbox wmctrl libxcb-cursor0 libxkbcommon-x11-0 libegl1 libopengl0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-xinerama0 libxcb-xkb1 libxcb-randr0 libxcb-shape0 libxcb-xfixes0 libxcb-sync1 libx11-xcb1 libfontconfig1 libfreetype6 libglib2.0-0t64 libatspi2.0-0t64
+      - name: Mac ephemeral acceptance keychain
+        if: runner.os == 'macOS'
+        run: |
+          security create-keychain -p ci-only "$RUNNER_TEMP/describer.keychain-db"
+          security default-keychain -s "$RUNNER_TEMP/describer.keychain-db"
+          security list-keychains -d user -s "$RUNNER_TEMP/describer.keychain-db" login.keychain-db
+          security set-keychain-settings -lut 21600 "$RUNNER_TEMP/describer.keychain-db"
+          security unlock-keychain -p ci-only "$RUNNER_TEMP/describer.keychain-db"
+      - name: Python desktop and build dependencies
+        run: python -m pip install -e ".[desktop,http,mcp,dev]" -r docs/requirements.txt pyinstaller==6.22.3
+      - name: Build pinned Mac media tools
+        if: runner.os == 'macOS'
+        run: |
+          python tools/build_unix_media.py
+          echo "$PWD/unix-media/bin" >> "$GITHUB_PATH"
+      - name: Affected lint
+        run: python -m ruff check --select F describer/engine describer/adapters describer/cli.py tests/test_engine.py tests/test_protocols.py tests/test_media_exports.py tools tests/test_platforms.py
+      - name: Diagnose Linux native Qt loader
+        if: runner.os == 'Linux'
+        run: xvfb-run -a python tools/verify_linux_qt.py
+      - name: Linux native tests
+        if: runner.os == 'Linux'
+        timeout-minutes: 8
+        env:
+          TEST_SCOPE: ${{ inputs.test_scope || 'full' }}
+        run: |
+          # Variables intentionally expand inside the dbus session's shell.
+          # shellcheck disable=SC2016
+          xvfb-run -a dbus-run-session -- sh -c 'printf "ci-only" | gnome-keyring-daemon --unlock --components=secrets; if [ "$TEST_SCOPE" = frames ]; then set -- tests/test_frames.py; else set --; fi; python -m pytest -vv -o faulthandler_timeout=45 "$@" --junitxml="$RUNNER_TEMP/native-tests.xml"'
+      - name: Mac native tests
+        if: runner.os == 'macOS'
+        timeout-minutes: 8
+        env:
+          TEST_SCOPE: ${{ inputs.test_scope || 'full' }}
+        run: |
+          if [ "$TEST_SCOPE" = media-export ]; then
+            python -m pytest -vv tests/test_media_exports.py --junitxml="$RUNNER_TEMP/native-tests.xml"
+          else
+            python -m pytest -vv -o faulthandler_timeout=45 --junitxml="$RUNNER_TEMP/native-tests.xml"
+          fi
+      - name: Freeze platform add-on
+        run: python -m PyInstaller --noconfirm --distpath dist-unix --workpath build-unix/frozen DescriberUnix.spec
+      - name: Package installers
+        run: python tools/package_unix.py --output unix-packages
+      - name: Retain native candidate and test evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: unix-${{ matrix.target }}-${{ github.sha }}
+          path: |
+            unix-packages/*.dmg
+            unix-packages/*.deb
+            unix-packages/*.tar.gz
+            unix-packages/*.json
+            unix-packages/*.txt
+            ${{ runner.temp }}/native-tests.xml
+          if-no-files-found: warn
+
+  acceptance:
+    if: ${{ !cancelled() && (needs.native.result == 'success' || inputs.candidate_run != '') }}
+    name: ${{ matrix.target }} installed acceptance
+    needs: native
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include: ${{ fromJSON(inputs.target == 'linux-x64' && '[{"target":"linux-x64","runner":"ubuntu-24.04"}]' || inputs.target == 'macos-arm64' && '[{"target":"macos-arm64","runner":"macos-15"}]' || inputs.target == 'macos-x64' && '[{"target":"macos-x64","runner":"macos-15-intel"}]' || '[{"target":"linux-x64","runner":"ubuntu-24.04"},{"target":"macos-arm64","runner":"macos-15"},{"target":"macos-x64","runner":"macos-15-intel"}]') }}
+    runs-on: ${{ matrix.runner }}
+    env:
+      HF_HUB_DISABLE_TELEMETRY: '1'
+      OTEL_SDK_DISABLED: 'true'
+      DO_NOT_TRACK: '1'
+      DESCRIBER_HOME: /tmp/describer-native-${{ matrix.target }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.13'
+          cache: pip
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: unix-${{ matrix.target }}-${{ inputs.candidate_sha || github.sha }}
+          run-id: ${{ inputs.candidate_run || github.run_id }}
+          github-token: ${{ github.token }}
+          path: candidate
+      - name: Linux desktop dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg espeak-ng speech-dispatcher gnome-keyring dbus-x11 xvfb xterm openbox wmctrl libxcb-cursor0 libxkbcommon-x11-0 libegl1 libopengl0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-xinerama0 libxcb-xkb1 libxcb-randr0 libxcb-shape0 libxcb-xfixes0 libxcb-sync1 libx11-xcb1 libfontconfig1 libfreetype6 libglib2.0-0t64 libatspi2.0-0t64
+      - name: Mac ephemeral acceptance keychain
+        if: runner.os == 'macOS'
+        run: |
+          security create-keychain -p ci-only "$RUNNER_TEMP/describer.keychain-db"
+          security default-keychain -s "$RUNNER_TEMP/describer.keychain-db"
+          security list-keychains -d user -s "$RUNNER_TEMP/describer.keychain-db" login.keychain-db
+          security set-keychain-settings -lut 21600 "$RUNNER_TEMP/describer.keychain-db"
+          security unlock-keychain -p ci-only "$RUNNER_TEMP/describer.keychain-db"
+      - name: Acceptance dependencies
+        run: python -m pip install -e ".[desktop,http,mcp,dev]" pyinstaller==6.22.3
+      - name: Locate and authenticate the retained candidate
+        run: |
+          mkdir unix-packages
+          find candidate -type f \( -name '*.dmg' -o -name '*.deb' -o -name '*.tar.gz' -o -name 'SHA256SUMS.txt' \) -exec cp {} unix-packages/ \;
+          cd unix-packages
+          shasum -a 256 -c SHA256SUMS.txt
+      - name: Linux install and acceptance
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y ./unix-packages/*.deb
+          # Variables intentionally expand inside the dbus session's shell.
+          # shellcheck disable=SC2016
+          xvfb-run -a dbus-run-session -- sh -c 'printf "ci-only" | gnome-keyring-daemon --unlock --components=secrets; openbox > "$RUNNER_TEMP/openbox.log" 2>&1 & python tools/verify_unix.py --payload /opt/describer-workbench --output "$RUNNER_TEMP/unix-acceptance" --source-install'
+          sudo apt-get remove -y describer-workbench
+          test ! -e /usr/bin/describer-workbench
+          test -f "$RUNNER_TEMP/unix-acceptance/receipt.json"
+      - name: Mac DMG install and acceptance
+        if: runner.os == 'macOS'
+        env:
+          ACCEPTANCE_SCOPE: ${{ inputs.acceptance_scope || 'full' }}
+        run: |
+          mkdir "$RUNNER_TEMP/describer-mount" "$RUNNER_TEMP/installed"
+          hdiutil attach unix-packages/*.dmg -mountpoint "$RUNNER_TEMP/describer-mount" -nobrowse
+          ditto "$RUNNER_TEMP/describer-mount/Describer Workbench.app" "$RUNNER_TEMP/installed/Describer Workbench.app"
+          hdiutil detach "$RUNNER_TEMP/describer-mount"
+          export PATH="$RUNNER_TEMP/installed/Describer Workbench.app/Contents/Frameworks/bin:$PATH"
+          if [ "$ACCEPTANCE_SCOPE" = source-install ]; then set -- --source-install-only; else set -- --source-install; fi
+          python tools/verify_unix.py --payload "$RUNNER_TEMP/installed/Describer Workbench.app" --output "$RUNNER_TEMP/unix-acceptance" "$@"
+      - name: Retain installation evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: unix-acceptance-${{ matrix.target }}-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/unix-acceptance/receipt.json
+            ${{ runner.temp }}/unix-acceptance/source-install-receipt.json
+            ${{ runner.temp }}/unix-acceptance/packaged-gui.log
+            ${{ runner.temp }}/unix-acceptance/interfaces/receipt.json
+            ${{ runner.temp }}/unix-acceptance/interfaces/http.log
+          if-no-files-found: warn

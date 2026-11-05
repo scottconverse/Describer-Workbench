@@ -11,7 +11,8 @@ _VERIFIED = {}
 
 
 def default_root() -> Path:
-    return Path(os.environ.get('DESCRIBER_HOME', Path(os.environ.get('LOCALAPPDATA', Path.home())) / 'DescriberWorkbench'))
+    from ..platforms import data_directory
+    return Path(os.environ.get('DESCRIBER_HOME', data_directory()))
 
 
 def speech_model(settings: dict) -> Path:
