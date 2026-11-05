@@ -19,6 +19,11 @@ on:
       candidate_sha:
         type: string
         description: Existing artifact source SHA (required with candidate_run)
+      acceptance_scope:
+        type: choice
+        options: [full, source-install]
+        default: full
+        description: Use source-install only with recorded passing package evidence
   pull_request:
     paths: ['describer/**', 'tests/**', 'tools/**', 'DescriberUnix.spec', 'pyproject.toml', '.github/workflows/unix-addons.yml']
 
@@ -174,13 +179,16 @@ jobs:
           test -f "$RUNNER_TEMP/unix-acceptance/receipt.json"
       - name: Mac DMG install and acceptance
         if: runner.os == 'macOS'
+        env:
+          ACCEPTANCE_SCOPE: ${{ inputs.acceptance_scope || 'full' }}
         run: |
           mkdir "$RUNNER_TEMP/describer-mount" "$RUNNER_TEMP/installed"
           hdiutil attach unix-packages/*.dmg -mountpoint "$RUNNER_TEMP/describer-mount" -nobrowse
           ditto "$RUNNER_TEMP/describer-mount/Describer Workbench.app" "$RUNNER_TEMP/installed/Describer Workbench.app"
           hdiutil detach "$RUNNER_TEMP/describer-mount"
           export PATH="$RUNNER_TEMP/installed/Describer Workbench.app/Contents/Frameworks/bin:$PATH"
-          python tools/verify_unix.py --payload "$RUNNER_TEMP/installed/Describer Workbench.app" --output "$RUNNER_TEMP/unix-acceptance" --source-install
+          if [ "$ACCEPTANCE_SCOPE" = source-install ]; then set -- --source-install-only; else set -- --source-install; fi
+          python tools/verify_unix.py --payload "$RUNNER_TEMP/installed/Describer Workbench.app" --output "$RUNNER_TEMP/unix-acceptance" "$@"
       - name: Retain installation evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -188,6 +196,7 @@ jobs:
           name: unix-acceptance-${{ matrix.target }}-${{ github.sha }}
           path: |
             ${{ runner.temp }}/unix-acceptance/receipt.json
+            ${{ runner.temp }}/unix-acceptance/source-install-receipt.json
             ${{ runner.temp }}/unix-acceptance/packaged-gui.log
             ${{ runner.temp }}/unix-acceptance/interfaces/receipt.json
             ${{ runner.temp }}/unix-acceptance/interfaces/http.log

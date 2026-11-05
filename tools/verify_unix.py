@@ -58,10 +58,26 @@ def packaged_gui(exe,out):
     return {'startup_survived':True,'normal_quit_exit':process.returncode,'native_quit':quit_detail}
 
 
+def install_source(out):
+    mac=sys.platform=='darwin';home=out/'source-home';home.mkdir()
+    env=dict(os.environ,HOME=str(home),XDG_DATA_HOME=str(home/'.local/share'))
+    # Isolate application data without hiding the preinstalled build toolchain.
+    # Rustup normally locates its toolchain relative to the caller's real HOME.
+    for name,folder in [('RUSTUP_HOME','.rustup'),('CARGO_HOME','.cargo')]:env.setdefault(name,str(Path.home()/folder))
+    command([sys.executable,'tools/install_unix.py'],env=env,timeout=600)
+    root=home/('Library/Application Support/DescriberWorkbench/source-install' if mac else '.local/share/DescriberWorkbench/source-install')
+    assert command([root/'venv/bin/describer','--version'],env=env).strip()=='0.6.1'
+    launcher=home/('Applications/Describer Workbench.app/Contents/MacOS/DescriberWorkbench' if mac else '.local/share/applications/describer-workbench.desktop')
+    assert launcher.is_file();return {'cli_version':'0.6.1','launcher':str(launcher)}
+
+
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--payload',type=Path,required=True);parser.add_argument('--output',type=Path,required=True);parser.add_argument('--source-install',action='store_true');args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--payload',type=Path,required=True);parser.add_argument('--output',type=Path,required=True);parser.add_argument('--source-install',action='store_true');parser.add_argument('--source-install-only',action='store_true');args=parser.parse_args()
     assert sys.platform in ('darwin','linux')
     out=args.output.resolve();out.mkdir(parents=True,exist_ok=True);payload=args.payload.resolve()
+    if args.source_install_only:
+        result={'platform':sys.platform,'scope':'source-install-only','source_install':install_source(out)}
+        (out/'source-install-receipt.json').write_text(json.dumps(result,indent=2));print(json.dumps(result));return
     mac=sys.platform=='darwin'
     cli=payload/'Contents/MacOS/DescriberCLI' if mac else payload/'DescriberCLI'
     gui=payload/'Contents/MacOS/DescriberWorkbench' if mac else payload/'DescriberWorkbench'
@@ -120,14 +136,7 @@ def main():
     frozen_gui=packaged_gui(gui,out)
     if mac:
         command(['codesign','--verify','--deep','--strict',payload])
-    source_install=None
-    if args.source_install:
-        home=out/'source-home';home.mkdir();env=dict(os.environ,HOME=str(home),XDG_DATA_HOME=str(home/'.local/share'))
-        command([sys.executable,'tools/install_unix.py'],env=env,timeout=600)
-        root=home/('Library/Application Support/DescriberWorkbench/source-install' if mac else '.local/share/DescriberWorkbench/source-install')
-        assert command([root/'venv/bin/describer','--version'],env=env).strip()=='0.6.1'
-        launcher=home/('Applications/Describer Workbench.app/Contents/MacOS/DescriberWorkbench' if mac else '.local/share/applications/describer-workbench.desktop')
-        assert launcher.is_file();source_install={'cli_version':'0.6.1','launcher':str(launcher)}
+    source_install=install_source(out) if args.source_install else None
     result={'platform':sys.platform,'frozen_modules':modules,'secure_keyring_roundtrip':True,'native_voice':voices[0],'speech_detector_sha256':hashlib.sha256(Path(detector['speech_model']).read_bytes()).hexdigest(),'speech_seconds':duration,'extended_export_seconds':export_duration,'source_gui_media':source_gui,'packaged_gui':frozen_gui,'source_install':source_install,'publisher_certificate':False,'notarized':False,'limits':['CI virtual display/audio; no human listening or VoiceOver/Orca acceptance claimed.','Existing AI transports regression-tested; no live subscription inference on CI.']}
     (out/'receipt.json').write_text(json.dumps(result,indent=2));print(json.dumps(result))
 
