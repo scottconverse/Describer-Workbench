@@ -21,11 +21,15 @@ def test_complete_export_extends_audio_and_video_without_touching_original(tmp_p
         Cue(0,1,'First.',event_id='one',event_start=0,event_end=1,disposition='in-gap',audio=str(narration),speech_seconds=1,audio_volume=100),
         Cue(2,3,'Second.',event_id='two',event_start=2,event_end=3,disposition='pause',audio=str(narration),speech_seconds=1,audio_volume=100)])
     for cue in project.cues:cue.validate(4)
+    from describer.export_preview import plan_stamp,outcome
+    project.analysis['export_plan_stamp']=plan_stamp(project,{'duck_db':-15})
+    predicted=outcome(project,{'duck_db':-15},'mp4')
+    assert predicted['measured'] and predicted['finished_seconds']==5
     for suffix in ('wav','mp4'):
         target=tmp_path/('complete.'+suffix)
         receipt=export(project,target,{'duck_db':-15},threading.Event(),lambda _:None)
         info=json.loads(run([tool('ffprobe'),'-v','error','-show_format','-of','json',str(target)]))
-        assert float(info['format']['duration'])==pytest.approx(5,abs=.15)
+        assert float(info['format']['duration'])==pytest.approx(predicted['finished_seconds'],abs=.15)
         assert receipt['complete'] and receipt['pause_descriptions']==1
         assert Path(str(target)+'.coverage.json').is_file()
         # Require decode, not merely an existing container.

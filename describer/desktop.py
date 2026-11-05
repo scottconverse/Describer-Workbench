@@ -1,8 +1,9 @@
 """Industry desktop presentation; all media/model work remains in Window services."""
+from .editor_history import CueEdit, GlossaryEdit, ProjectUndoKeys
 import copy
 from pathlib import Path
 from PySide6.QtCore import Qt, QRectF, QPointF, QTimer, QProcess, QSize, QObject, QThread, Signal
-from PySide6.QtGui import QColor, QPainter, QPen, QBrush, QPolygonF, QFont, QFontDatabase, QUndoStack, QUndoCommand, QPixmap, QIcon
+from PySide6.QtGui import QColor, QPainter, QPen, QBrush, QPolygonF, QFont, QFontDatabase, QUndoStack, QPixmap, QIcon
 from PySide6.QtWidgets import (QWidget, QFrame, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QStackedWidget, QTabWidget, QScrollArea, QSplitter, QDialog, QDialogButtonBox,
     QPlainTextEdit, QLineEdit, QComboBox, QCheckBox, QListWidget, QRadioButton, QButtonGroup, QProgressBar, QDockWidget,
@@ -57,7 +58,6 @@ class BlueprintDialog(QDialog):
 
 class FlatSelectionDelegate(QStyledItemDelegate):
     def paint(self,painter,option,index):
-        option.state &= ~QStyle.State_HasFocus
         super().paint(painter,option,index)
 
 
@@ -76,8 +76,11 @@ class CueDelegate(QStyledItemDelegate):
             tag=cue_status(cue);width=painter.fontMetrics().horizontalAdvance(tag)+16;tag_rect=QRectF(r.x(),r.bottom()-19,width,20)
             pen=QPen(QColor('#5980a6') if cue.speed>1 or cue.disposition=='pause' else option.palette.text().color(),1)
             if cue.disposition=='unresolved':pen.setStyle(Qt.DashLine)
-            if cue.disposition=='pause':painter.fillRect(tag_rect,QColor('#5980a6'))
-            painter.setPen(pen);painter.drawRect(tag_rect);painter.setPen(option.palette.text().color());painter.drawText(tag_rect,Qt.AlignCenter,tag)
+            if cue.disposition=='pause':painter.fillRect(tag_rect,QColor('#416180'))
+            painter.setPen(pen);painter.drawRect(tag_rect);painter.setPen(QColor('#ffffff') if cue.disposition=='pause' else option.palette.text().color());painter.drawText(tag_rect,Qt.AlignCenter,tag)
+        if option.state & QStyle.State_HasFocus:
+            painter.setPen(QPen(option.palette.text().color(),2,Qt.DotLine));painter.setBrush(Qt.NoBrush)
+            painter.drawRect(option.rect.adjusted(3,3,-4,-4))
         painter.restore()
 
 
@@ -86,6 +89,10 @@ def cue_status(cue):
     if cue.disposition=='pause':return f'Pause {cue.speech_seconds:.1f}s' if cue.speech_seconds else 'Pauses picture'
     if cue.speed>1:return f'Sped up · {cue.speed:.2f}×'
     return 'In gap' if cue.disposition=='in-gap' else 'Not yet placed'
+
+
+def cue_accessible(cue,index):
+    return f'Description {index+1}, {clock(cue.start)} to {clock(cue.end)}, {cue_status(cue)}, {cue.review_status}. {cue.text}'+(' Uncertainty: '+cue.uncertainty if cue.uncertainty else '')
 
 
 class BlueprintFrame(QFrame):
@@ -150,7 +157,7 @@ class Timeline(QWidget):
         self.blocks = []
         for i, cue in enumerate(self.window.project.cues):
             b = TimelineBlock(str(i+1), self,striped=cue.speed>1)
-            b.setAccessibleName(f'Description {i+1}, {clock(cue.start)} to {clock(cue.end)}, {cue.disposition}')
+            b.setAccessibleName(cue_accessible(cue,i))
             b.setToolTip(cue.text)
             b.clicked.connect(lambda checked=False, index=i: self.window.choose(index))
             b.setProperty('role','primary' if cue.disposition=='pause' else 'secondary')
@@ -226,17 +233,6 @@ class Timeline(QWidget):
         p.drawPolygon(QPolygonF([QPointF(x,25),QPointF(x+4,29),QPointF(x,33),QPointF(x-4,29)]));p.restore()
 
 
-class CueEdit(QUndoCommand):
-    def __init__(self, window, before, after, title):
-        super().__init__(title);self.window=window;self.before=before;self.after=after
-    def apply(self, data):
-        self.window.project.cues=copy.deepcopy(data);self.window.dirty=True
-        self.window.refresh();self.window.last_spoken=None
-        if not getattr(self.window,'_typing',False) and self.window.project.cues:self.window.choose(min(max(0,self.window.table.currentRow()),len(data)-1))
-    def undo(self):self.apply(self.before)
-    def redo(self):self.apply(self.after)
-
-
 class DesktopInterface:
     """Presentation mixin. Window retains ownership of jobs and existing safeguards."""
     def build_interface(self):
@@ -244,13 +240,17 @@ class DesktopInterface:
         QApplication.instance().setFont(QFont('Barlow',11))
         self.resize(1440,900);self.setMinimumSize(960,650)
         self.undo_stack=QUndoStack(self);self._syncing=False;self._selected_cue=None
+        self.project_undo_keys=ProjectUndoKeys(self);self.text.installEventFilter(self.project_undo_keys)
+        self.text.setUndoRedoEnabled(False)
+        self.text.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.text.customContextMenuRequested.connect(self.text_context_menu)
         self.setAcceptDrops(True)
         self.pages=QStackedWidget();root=QWidget();outer=QVBoxLayout(root);outer.setContentsMargins(20,8,20,8)
         old=self.takeCentralWidget()
         # Reparent the live widgets before disposing of the superseded layout.
         for w in (self.video,self.model_picker,self.start,self.end,self.text,self.preset,self.prompt,
-                  self.volume,self.speak_check,self.current,self.log_view,self.cancel_button,self.table,self.slider,self.file_label):w.setParent(root)
-        self.table.hide();self.slider.hide();self.model_picker.hide();self.cancel_button.hide();self.file_label.hide();self.preset.hide();self.prompt.hide()
+                  self.volume,self.speak_check,self.current,self.log_view,self.cancel_button,self.slider,self.file_label):w.setParent(root)
+        self.slider.hide();self.model_picker.hide();self.cancel_button.hide();self.file_label.hide();self.preset.hide();self.prompt.hide()
         bar=QHBoxLayout();outer.addLayout(bar)
         bar.addWidget(BrandMark());brand=QLabel('DESCRIBER WORKBENCH');brand.setObjectName('brand');bar.addWidget(brand)
         self.project_title=QLabel('New project');bar.addWidget(self.project_title);bar.addStretch()
@@ -331,6 +331,8 @@ class DesktopInterface:
         right=QVBoxLayout();right.setAlignment(Qt.AlignTop);layout.addLayout(right,1);right.addWidget(section('RECENT PROJECTS'))
         self.recent_empty=QLabel('No recent projects yet.\nOpen a video and save your first project.');self.recent_empty.setWordWrap(True);right.addWidget(self.recent_empty)
         self.recents=QListWidget();right.addWidget(self.recents);self.recents.itemActivated.connect(lambda item:self.open_recent(item.data(Qt.UserRole)))
+        self.recovery_button=button(right,'Recover unsaved drafts',self.recover_unsaved)
+        self.recovery_button.setVisible(bool(self.draft_store.entries()))
         right.addSpacing(28);right.addWidget(section('SETUP CHECKLIST'));self.setup_checks={};self.setup_actions={}
         for title,group in [('Speech detector','Updates'),('Ollama','Keys & privacy'),('Windows voices','Speech & playback'),('Gemini key','Keys & privacy')]:
             line=QHBoxLayout();right.addLayout(line);check=QCheckBox(native_text(title));check.setAttribute(Qt.WA_TransparentForMouseEvents);check.setFocusPolicy(Qt.NoFocus);line.addWidget(check);self.setup_checks[title]=check;line.addStretch();action=button(line,'Set up',lambda checked=False,s=group:self.edit_settings(s),role='link');self.setup_actions[title]=action
@@ -347,7 +349,7 @@ QPushButton {{border:1px solid {border};padding:7px 10px;background:transparent;
 QLineEdit,QComboBox,QPlainTextEdit,QListWidget {{border:1px solid {border};padding:7px;selection-background-color:rgba(89,128,166,24);selection-color:{fg};}}
 QPushButton:hover {{background:rgba(89,128,166,20);border-color:#5980a6;}}
 QPushButton:focus,QLineEdit:focus,QPlainTextEdit:focus {{border:2px solid #5980a6;}}
-QPushButton[role="primary"] {{background:#5980a6;color:#10171e;border:1px solid #5980a6;}}
+QPushButton[role="primary"] {{background:#416180;color:#ffffff;border:1px solid #416180;}}
 QPushButton[role="ghost"],QPushButton[role="link"] {{border:1px solid transparent;background:transparent;}}
 QPushButton[role="link"] {{color:{'#b5d9fd' if dark else '#416180'};font-size:12px;padding:3px;}}
 QPushButton[role="ghost"]:hover,QPushButton[role="link"]:hover {{background:rgba(89,128,166,20);}}
@@ -357,6 +359,7 @@ QListWidget::item {{padding:10px;border:0;border-bottom:1px solid {border};borde
 QListWidget::item:selected {{background:rgba(89,128,166,24);color:{fg};border-left:3px solid #5980a6;}}
 QListWidget::item:hover {{background:rgba(89,128,166,15);}}
 QFrame[providerCard="true"] {{border:0;}} QFrame[providerCard="true"][selected="true"] {{border:0;}}
+QPushButton:focus,QPushButton[role="primary"]:focus,QPushButton[role="ghost"]:focus,QPushButton[role="link"]:focus,QComboBox:focus,QListWidget:focus,QTabBar:focus,QSlider:focus {{border:2px solid {fg};}}
 QFrame[providerCard="true"] QRadioButton {{background:transparent;}}
 QSlider::groove:horizontal {{height:4px;background:{surface};border:1px solid {border};}}
 QSlider::sub-page:horizontal {{background:#5980a6;}} QSlider::add-page:horizontal {{background:{surface};}}
@@ -423,17 +426,53 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
         for i,c in enumerate(self.project.cues):
             if self.cue_filter.currentIndex()==1 and c.disposition!='unresolved':continue
             if self.cue_filter.currentIndex()==2 and c.disposition!='pause':continue
-            item=QListWidgetItem(c.text);item.setData(Qt.UserRole,c);item.setData(Qt.UserRole+1,i+1);item.setToolTip(cue_status(c)+': '+c.text);item.setSizeHint(QSize(250,108));self.cue_list.addItem(item);self.visible_indices.append(i)
+            item=QListWidgetItem(c.text);item.setData(Qt.UserRole,c);item.setData(Qt.UserRole+1,i+1);item.setData(Qt.AccessibleTextRole,cue_accessible(c,i));item.setToolTip(cue_status(c)+': '+c.text);item.setSizeHint(QSize(250,108));self.cue_list.addItem(item);self.visible_indices.append(i)
+        selected=self.selected_index()
+        if selected in self.visible_indices:self.cue_list.setCurrentRow(self.visible_indices.index(selected))
         self.cue_list.blockSignals(False);self.tabs.setTabText(0,f'Descriptions · {len(self.project.cues)}');self.empty.setVisible(not self.project.cues);self.cue_list.setVisible(bool(self.project.cues));self.inline_scroll.setVisible(bool(self.project.cues))
         self.timeline.sync();self.update_status()
     def list_selected(self,row):
         if 0<=row<len(self.visible_indices):self.choose(self.visible_indices[row])
     def choose(self,index):
         if not 0<=index<len(self.project.cues):return
-        self._selected_cue=self.project.cues[index];self.table.setCurrentCell(index,0);self.select_cue();self.inline.show()
+        self._typing_session=getattr(self,'_typing_session',0)+1
+        self.cue_selection.select(self.project.cues,index);self._selected_cue=self.project.cues[index];self.select_cue();self.inline.show()
         if index in self.visible_indices:
             self.cue_list.blockSignals(True);self.cue_list.setCurrentRow(self.visible_indices.index(index));self.cue_list.blockSignals(False)
         self.timeline.ensure_visible(self.project.cues[index].start);self.update_fit()
+    def text_context_menu(self,position):
+        menu=self.text.createStandardContextMenu()
+        # Qt's standard text menu starts with Undo and Redo. Route both through
+        # project history, retaining the native cut/copy/paste/select actions.
+        for action,enabled,callback in zip(menu.actions()[:2],(self.undo_stack.canUndo(),self.undo_stack.canRedo()),(self.undo_stack.undo,self.undo_stack.redo)):
+            action.setEnabled(enabled);action.triggered.disconnect();action.triggered.connect(callback)
+        menu.exec(self.text.mapToGlobal(position));menu.deleteLater()
+    def update_cue(self,index,old):
+        """Update live text without replacing the list, editor or timeline buttons."""
+        cue=self.project.cues[index]
+        mode=self.cue_filter.currentIndex()
+        visible=mode==0 or (mode==1 and cue.disposition=='unresolved') or (mode==2 and cue.disposition=='pause')
+        self.cue_list.blockSignals(True)
+        try:
+            row=self.visible_indices.index(index) if index in self.visible_indices else None
+            if row is not None and not visible:
+                self.cue_list.takeItem(row);self.visible_indices.pop(row)
+            elif visible:
+                if row is None:
+                    row=next((i for i,value in enumerate(self.visible_indices) if value>index),len(self.visible_indices))
+                    item=QListWidgetItem();item.setSizeHint(QSize(250,108));self.cue_list.insertItem(row,item);self.visible_indices.insert(row,index)
+                item=self.cue_list.item(row);item.setText(cue.text);item.setData(Qt.UserRole,cue);item.setData(Qt.UserRole+1,index+1);item.setData(Qt.AccessibleTextRole,cue_accessible(cue,index));item.setToolTip(cue_status(cue)+': '+cue.text)
+        finally:self.cue_list.blockSignals(False)
+        block=self.timeline.blocks[index];block.setToolTip(cue.text);block.striped=cue.speed>1
+        block.setAccessibleName(cue_accessible(cue,index))
+        block.setProperty('role','primary' if cue.disposition=='pause' else 'secondary')
+        block.setStyleSheet('border:1px dashed palette(text);' if cue.disposition=='unresolved' else '')
+        block.update()
+        self._selected_cue=cue;self.update_fit()
+        if old.disposition!=cue.disposition:
+            self.cue_filter.setItemText(1,f"Needs review · {sum(c.disposition=='unresolved' for c in self.project.cues)}")
+            self.cue_filter.setItemText(2,f"Pauses · {sum(c.disposition=='pause' for c in self.project.cues)}")
+        self.update_status()
     def update_fit(self):
         try:
             slot=seconds(self.end.text())-seconds(self.start.text());speech=len(self.text.toPlainText().split())/2.6
@@ -455,9 +494,9 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
         try:field.setText(str(round(max(0,seconds(field.text())+delta),1)))
         except ValueError:pass
     def mark_checked(self):
-        i=self.table.currentRow()
+        i=self.selected_index()
         if self.busy() or i<0:return
-        cues=copy.deepcopy(self.project.cues);cues[i].uncertainty='';cues[i].disposition='unplanned';self.commit_cues(cues,'Mark checked');self.choose(i)
+        cues=copy.deepcopy(self.project.cues);cues[i]=cues[i].reviewed();self.commit_cues(cues,'Mark checked');self.choose(i)
     def preview_context(self):
         try:self.seek(round(max(0,seconds(self.start.text())-2)*1000));self.player.play()
         except ValueError:pass
@@ -531,11 +570,19 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
     def make_glossary(self):
         page=QWidget();v=QVBoxLayout(page);v.setAlignment(Qt.AlignTop);v.setSpacing(10);self.tabs.addTab(page,'Glossary');host=QWidget();host.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Maximum);self.glossary_list=QVBoxLayout(host);self.glossary_list.setContentsMargins(0,0,0,0);self.glossary_list.setAlignment(Qt.AlignTop);self.glossary_list.setSpacing(10);v.addWidget(host);button(v,'Add character',lambda:self.glossary_card('',''));v.addStretch()
     def glossary_card(self,name,description):
-        card=BlueprintFrame();card.setFixedHeight(166);v=QVBoxLayout(card);v.setContentsMargins(16,16,16,16);v.setSpacing(8);n=QLineEdit(name);n.setPlaceholderText('Character name');n.setAccessibleName('Character name');d=QPlainTextEdit(description);d.setPlaceholderText('Visible identifying details');d.setFixedHeight(80);d.setAccessibleName('Character description');v.addWidget(n);v.addWidget(d);self.glossary_list.addWidget(card)
+        card=BlueprintFrame();card.setFixedHeight(206);v=QVBoxLayout(card);v.setContentsMargins(16,16,16,16);v.setSpacing(8);n=QLineEdit(name);n.setPlaceholderText('Character name');n.setAccessibleName('Character name');d=QPlainTextEdit(description);d.setPlaceholderText('Visible identifying details');d.setFixedHeight(80);d.setAccessibleName('Character description');v.addWidget(n);v.addWidget(d);self.glossary_list.addWidget(card)
         def save():
             if self._syncing or self.busy():return
             self.project.glossary='\n'.join(f'{a.text()}: {b.toPlainText()}' for a,b in self.glossary_fields);self._glossary_snapshot=self.project.glossary;self.dirty=True
         self.glossary_fields.append((n,d));n.textEdited.connect(save);d.textChanged.connect(save)
+        controls=QHBoxLayout();v.addLayout(controls)
+        def remove():
+            if self.busy():return
+            index=next(i for i,(a,b) in enumerate(self.glossary_fields) if a is n)
+            lines=self.project.glossary.splitlines()
+            after='\n'.join(lines[:index]+lines[index+1:])
+            self.undo_stack.push(GlossaryEdit(self,after))
+        button(controls,'Delete character',remove).setAccessibleName('Delete character '+(name or 'unnamed'))
     def sync_glossary(self):
         if getattr(self,'_glossary_snapshot',None)==self.project.glossary:return
         self._glossary_snapshot=self.project.glossary
@@ -576,26 +623,43 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
     def draft_dialog(self):
         if self.busy() or not self.project.video:return
         self.model_picker.begin_draft();original_prompt=self.prompt.toPlainText();original_preset=self.preset.currentText()
-        d=BlueprintDialog(self);d.setWindowTitle('DRAFT WITH AI');d.resize(760,840);v=QVBoxLayout(d);v.setContentsMargins(20,20,20,20);dialog_header(v,'DRAFT WITH AI','Choose a model, analysis range and editorial guidance.')
+        d=BlueprintDialog(self);d.setWindowTitle('DRAFT WITH AI');d.resize(760,600);outer=QVBoxLayout(d);outer.setContentsMargins(20,20,20,20);dialog_header(outer,'DRAFT WITH AI','Choose your connection and the section to draft. Review the result before export.')
+        from .providers import PROVIDERS,model_id
+        connection=QComboBox();connection.setAccessibleName('Draft connection');connection.addItems(PROVIDERS);connection.setCurrentText(self.model_picker.provider.currentText())
+        outer.addWidget(QLabel('Use this connection'));outer.addWidget(connection)
+        selected_summary=QLabel();selected_summary.setWordWrap(True);selected_summary.setAccessibleName('Selected draft model');outer.addWidget(selected_summary)
+        outer.addWidget(QLabel('Section to draft'))
+        scope=QComboBox();scope.setAccessibleName('Analysis range');scope.addItems([f'Whole video · {clock(self.project.duration)}',f'Next 20 s from {clock(self.player.position()/1000)}',f'Next 60 s from {clock(self.player.position()/1000)}']);scope.setCurrentIndex(self.model_picker.scope.currentIndex());outer.addWidget(scope)
+        advanced=QCheckBox('Advanced — models, connection tests and editorial controls');advanced.setAccessibleName('Show advanced draft controls');outer.addWidget(advanced)
+        advanced_scroll=QScrollArea();advanced_scroll.setWidgetResizable(True);advanced_scroll.setMinimumHeight(180)
+        advanced_body=QWidget();v=QVBoxLayout(advanced_body);advanced_scroll.setWidget(advanced_body);outer.addWidget(advanced_scroll,1);advanced_scroll.hide()
+        def expand(visible):advanced_scroll.setVisible(visible);d.resize(760,min(850 if visible else 600,max(500,d.screen().availableGeometry().height()-60)))
+        advanced.toggled.connect(expand)
+        connection.currentTextChanged.connect(self.model_picker.provider.setCurrentText)
         v.addWidget(section('1 · PROVIDER'))
         providers=QGridLayout();providers.setSpacing(10);v.addLayout(providers);provider_group=QButtonGroup(d)
-        from .providers import PROVIDERS,model_id
+        provider_buttons={}
         for index,provider in enumerate(PROVIDERS):
             card=BlueprintFrame();cv=QVBoxLayout(card);choice=QRadioButton(provider);choice.setAccessibleName(provider);choice.setChecked(self.model_picker.provider.currentText()==provider);provider_group.addButton(choice);cv.addWidget(choice);providers.addWidget(card,index//4,index%4);card.setProperty('providerCard',True);card.setProperty('selected',choice.isChecked());card.setMinimumHeight(60)
             choice.toggled.connect(lambda checked,c=card:(c.setProperty('selected',checked),c.style().unpolish(c),c.style().polish(c),c.update()))
             choice.toggled.connect(lambda checked,p=provider:self.model_picker.provider.setCurrentText(p) if checked else None)
+            provider_buttons[provider]=choice
         v.addWidget(section('2 · EXACT MODEL'))
         model_list=QListWidget();model_list.setItemDelegate(FlatSelectionDelegate(model_list));model_list.setAccessibleName('Discovered exact models');v.addWidget(model_list)
         exact_model=QLineEdit();exact_model.setAccessibleName('Exact analysis model ID');v.addWidget(exact_model)
+        exact_model.textChanged.connect(lambda text:selected_summary.setText('Selected model: '+(text or 'None selected — open Advanced to choose a model.')))
         def sync_models(*args):
             model_list.blockSignals(True);model_list.clear()
             for i in range(self.model_picker.model.count()):
                 item=QListWidgetItem(self.model_picker.model.itemText(i));item.setData(Qt.UserRole,self.model_picker.model.itemData(i) or item.text());model_list.addItem(item)
             selected=model_id(self.model_picker.data)
-            if not any(model_list.item(i).data(Qt.UserRole)==selected for i in range(model_list.count())):
+            if selected and not any(model_list.item(i).data(Qt.UserRole)==selected for i in range(model_list.count())):
                 item=QListWidgetItem(selected);item.setData(Qt.UserRole,selected);model_list.addItem(item)
             model_list.setCurrentRow(next((i for i in range(model_list.count()) if model_list.item(i).data(Qt.UserRole)==selected),-1));model_list.blockSignals(False)
             exact_model.setText(selected)
+            connection.blockSignals(True);connection.setCurrentText(self.model_picker.provider.currentText());connection.blockSignals(False)
+            provider_buttons[self.model_picker.provider.currentText()].setChecked(True)
+            selected_summary.setText('Selected model: '+(selected or 'None selected — open Advanced to choose a model.'))
         def selected_model(i):
             if i>=0:
                 name=model_list.item(i).data(Qt.UserRole);self.model_picker.store_model(name);exact_model.setText(name)
@@ -616,20 +680,21 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
         timer=QTimer(d);timer.timeout.connect(lambda:status.setText(self.model_picker.help.text()));timer.start(300)
         self.model_picker.reloaded.connect(sync_models)
         self.model_picker.provider.currentTextChanged.connect(sync_models)
-        v.addWidget(section('3 · RANGE'))
-        scope=QComboBox();scope.addItems([f'Whole video · {clock(self.project.duration)}',f'Next 20 s from {clock(self.player.position()/1000)}',f'Next 60 s from {clock(self.player.position()/1000)}']);scope.setCurrentIndex(self.model_picker.scope.currentIndex());v.addWidget(scope)
         v.addWidget(QLabel('Request count depends on range, frame interval and detected visual events.'))
         v.addWidget(section('4 · EDITORIAL INSTRUCTIONS'));v.addWidget(QLabel('Preset'));v.addWidget(self.preset);self.preset.show();v.addWidget(QLabel('Editorial prompt'));v.addWidget(self.prompt);self.prompt.show()
         verbosity=QComboBox();verbosity.addItems(['Short','Standard','Detailed']);verbosity.setCurrentText(self.settings.data['verbosity']);v.addWidget(QLabel('Verbosity'));v.addWidget(verbosity)
         glossary=QCheckBox('Recognize characters and update the glossary');glossary.setChecked(self.settings.data['auto_glossary']);v.addWidget(glossary)
-        note=QLabel();note.setWordWrap(True);v.addWidget(note)
+        note=QLabel();note.setWordWrap(True);note.setAccessibleName('Draft transmission and preservation');outer.addWidget(note)
         def update_note():
             from .providers import destination
             try:message=destination(self.model_picker.data)
             except ValueError as exc:message=str(exc)
-            note.setText(message+'. External processing requires confirmation and may use allowance or API credit.'+f' Range analysis replaces the {len(self.project.cues)} current descriptions.')
+            note.setText(message+'. External processing requires confirmation and may use allowance or API credit.'+f' Your {len(self.project.cues)} existing descriptions are kept unless you explicitly approve replacements after drafting.')
         update_note();self.model_picker.provider.currentTextChanged.connect(update_note)
-        actions=QDialogButtonBox(QDialogButtonBox.Cancel);actions.addButton('Start draft',QDialogButtonBox.AcceptRole).setProperty('role','primary');actions.accepted.connect(d.accept);actions.rejected.connect(d.reject);v.addWidget(actions)
+        def start_draft():
+            if not exact_model.text().strip():self.error('Choose a model in Advanced before drafting.');return
+            if self.model_picker.store_model(exact_model.text().strip()):d.accept()
+        actions=QDialogButtonBox(QDialogButtonBox.Cancel);actions.addButton('Start draft',QDialogButtonBox.AcceptRole).setProperty('role','primary');actions.accepted.connect(start_draft);actions.rejected.connect(d.reject);outer.addWidget(actions)
         accepted=d.exec();timer.stop();self.model_picker.provider.currentTextChanged.disconnect(update_note);self.model_picker.provider.currentTextChanged.disconnect(sync_models);self.model_picker.reloaded.disconnect(sync_models)
         for widget in (self.model_picker,self.preset,self.prompt):widget.setParent(self.centralWidget());widget.hide()
         self.model_picker.provider.currentTextChanged.disconnect(provider_actions)
@@ -639,7 +704,8 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
             self.model_picker.scope.setCurrentIndex(scope.currentIndex())
             self.settings.data.update(verbosity=verbosity.currentText(),auto_glossary=glossary.isChecked());self.settings.save()
             self.job_label.setText('Drafting descriptions');self.analyze()
-    def export(self):
+        d.deleteLater()
+    def export(self,*,initial_voice=None,initial_format=None,initial_path=None):
         if self.busy() or not self.project.cues:return
         d=BlueprintDialog(self);d.setWindowTitle('EXPORT');d.resize(920,780);v=QVBoxLayout(d);v.setContentsMargins(20,20,20,20);dialog_header(v,'EXPORT','Choose an output format and review narration coverage.');row=QHBoxLayout();v.addLayout(row)
         formats=QListWidget();formats.setItemDelegate(FlatSelectionDelegate(formats));formats.setObjectName('formatCards');formats.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff);formats.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -648,8 +714,13 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
         formats.setFixedHeight(520);formats.setMinimumWidth(340);row.addWidget(formats,0,Qt.AlignTop)
         right=QVBoxLayout();row.addLayout(right);counts={k:sum(c.disposition==k for c in self.project.cues) for k in ('in-gap','pause','unresolved')};right.addWidget(section('COVERAGE'));right.addWidget(QLabel(f"In gap: {sum(c.disposition=='in-gap' and c.speed<=1 for c in self.project.cues)}\nSped up: {sum(c.speed>1 for c in self.project.cues)}\nPauses picture: {counts['pause']}\nNeeds review: {counts['unresolved']}"))
         warning=QLabel('Unresolved visual facts block media exports.');warning.setWordWrap(True);right.addWidget(warning)
-        review=button(right,'Review now',lambda:(d.reject(),self.tabs.setCurrentIndex(0),self.cue_filter.setCurrentIndex(1),self.choose(next(i for i,c in enumerate(self.project.cues) if c.disposition=='unresolved'))))
-        voice_picker=ExportVoices(self,d);right.addWidget(voice_picker)
+        review=button(right,'Review now',lambda:(d.reject(),self.tabs.setCurrentIndex(0),self.cue_filter.setCurrentIndex(0),self.choose(next(i for i,c in enumerate(self.project.cues) if c.disposition=='unresolved' or c.uncertainty or c.review_status=='needs-review'))))
+        voice_picker=ExportVoices(self,d,initial_voice);right.addWidget(voice_picker)
+        preview=QLabel();preview.setWordWrap(True);preview.setAccessibleName('Export outcome preview');right.addWidget(preview)
+        requested_preview=[]
+        def measure():
+            requested_preview.append((voice_picker.selection(),extensions[formats.currentRow()],path.text()));d.reject()
+        measure_button=button(right,'Measure narration',measure)
         right.addWidget(QLabel('Save to'));path=QLineEdit();path.setPlaceholderText('Choose an output file…');path.setAccessibleName('Export save path');right.addWidget(path)
         extensions=['mp4','mp3','wav','srt','vtt','txt','json']
         def browse():
@@ -667,10 +738,14 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
             d.accept()
         actions.accepted.connect(accept_export)
         def state():
-            media=formats.currentRow()<3;blocked=media and bool(counts['unresolved']);warning.setVisible(blocked);review.setVisible(blocked);voice_picker.setVisible(media);go.setEnabled(bool(path.text()) and not blocked and (not media or voice_picker.usable()))
-        formats.currentRowChanged.connect(lambda _:state());path.textChanged.connect(state);formats.setCurrentRow(0);state()
+            from .export_preview import outcome
+            media=formats.currentRow()<3;result=outcome(self.project,dict(self.settings.data,**voice_picker.selection()),extensions[formats.currentRow()]);blocked=media and result['blocked'];preview.setText(result['text']);warning.setVisible(blocked);review.setVisible(blocked);voice_picker.setVisible(media);measure_button.setVisible(media);measure_button.setEnabled(not blocked and voice_picker.usable());go.setEnabled(bool(path.text()) and not blocked and (not media or voice_picker.usable()))
+        formats.currentRowChanged.connect(lambda _:state());path.textChanged.connect(state);formats.setCurrentRow(extensions.index(initial_format) if initial_format in extensions else 0);path.setText(initial_path or '');state()
         voice_picker.changed.connect(state)
         accepted=d.exec();voice_picker.shutdown(5000)
+        if requested_preview:
+            selection,ext,destination=requested_preview[0]
+            self.repair_narration(settings_override=dict(self.settings.data,**selection),completed=lambda:self.export(initial_voice=selection,initial_format=ext,initial_path=destination));return
         if accepted:
             ext=extensions[formats.currentRow()]
             if Path(path.text()).suffix.lower()!='.'+ext:self.error('Save path extension must match the selected format.');return
@@ -756,7 +831,7 @@ def organize_settings(window,dialog,outer,scroll,content,form,buttons,section=No
         if any(k in lower for k in ('api key','server address')):target='Keys & privacy'
         elif any(k in lower for k in ('update','feed')):target='Updates'
         elif any(k in lower for k in ('export','openai','speech model')):target='Export voice'
-        elif any(k in lower for k in ('playback','volume','ducking','interrupt','windows voice')):target='Speech & playback'
+        elif any(k in lower for k in ('playback','volume','ducking','interrupt','windows voice','native voice')):target='Speech & playback'
         elif any(k in lower for k in ('interface','youtube','logging','notification')):target='Interface'
         rows[target].append((label,field))
     dialog_header(outer,'SETTINGS','Configure analysis, speech, privacy and developer access.');outer.setContentsMargins(20,20,20,20)
@@ -821,10 +896,11 @@ class VoiceDiscovery(QObject):
 
 class ExportVoices(QWidget):
     changed=Signal()
-    def __init__(self,window,parent):
+    def __init__(self,window,parent,selection=None):
         super().__init__(parent);self.window=window;self.thread=None;self.worker=None;self.loading=False;self.closing=False;self.requested='';self.loaded=''
+        self.preferences=dict(window.settings.data,**(selection or {}))
         layout=QVBoxLayout(self);layout.setContentsMargins(0,0,0,0);layout.setSpacing(8)
-        layout.addWidget(QLabel('Narration engine'));self.engine=QComboBox();self.engine.setAccessibleName('Export narration engine');self.engine.addItems(narration_engines());self.engine.setCurrentText(window.settings.data['voice_engine']);layout.addWidget(self.engine)
+        layout.addWidget(QLabel('Narration engine'));self.engine=QComboBox();self.engine.setAccessibleName('Export narration engine');self.engine.addItems(narration_engines());self.engine.setCurrentText(self.preferences['voice_engine']);layout.addWidget(self.engine)
         layout.addWidget(QLabel('Narration voice'));self.voice=QComboBox();self.voice.setAccessibleName('Export narration voice');layout.addWidget(self.voice)
         self.note=QLabel();self.note.setWordWrap(True);layout.addWidget(self.note)
         self.retry=QPushButton('Retry voice discovery');layout.addWidget(self.retry);self.retry.clicked.connect(lambda:self.request(self.engine.currentText()))
@@ -838,7 +914,7 @@ class ExportVoices(QWidget):
         import threading
         engine=self.requested;self.voice.clear();self.loaded=engine
         if engine=='OpenAI':
-            settings=self.window.settings.data;self.voice.addItem('Base voice · '+settings['voice'],{'voice':settings['voice'],'voice_preset':''})
+            settings=self.preferences;self.voice.addItem('Base voice · '+settings['voice'],{'voice':settings['voice'],'voice_preset':''})
             for name,preset in settings['voice_presets'].items():self.voice.addItem(name+' · '+preset['base_voice'],{'voice':preset['base_voice'],'voice_preset':name})
             index=next((i for i in range(self.voice.count()) if self.voice.itemData(i)['voice_preset']==settings.get('voice_preset')),0);self.voice.setCurrentIndex(index)
             self.loading=False;self.voice.setEnabled(True);self.note.setText('OpenAI narration sends description text for paid synthesis. Draft and export ask for consent before sending.');self.changed.emit();return
@@ -854,7 +930,7 @@ class ExportVoices(QWidget):
         if not rows:self.failed(native_text('No usable voices found. Retry, select another engine, or install a Windows voice in Windows Settings.'));return
         self.voice.addItem('Default available voice  -  '+rows[0]['name'],{'windows_voice':rows[0]['id']})
         for row in rows:self.voice.addItem(row['name'],{'windows_voice':row['id']})
-        selected=self.window.settings.data.get('windows_voice','') if self.loaded==self.window.settings.data['voice_engine'] else ''
+        selected=self.preferences.get('windows_voice','') if self.loaded==self.preferences['voice_engine'] else ''
         if selected and not any(r['id']==selected for r in rows):
             self.voice.insertItem(0,'Saved voice is missing  -  select a voice',None);self.voice.setCurrentIndex(0)
         else:

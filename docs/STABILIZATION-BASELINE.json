@@ -1,0 +1,491 @@
+{
+  "source": "918b47065af494f9f6b8b48a334015e343ef5eae",
+  "platform": "Windows native Qt",
+  "protocol": "Actual playback/segment/detector; controlled one-cue-per-ten-seconds editor load,20 keystrokes. No live AI baseline.",
+  "media_limits": "NASA Apollo library short;30m and2h excerpts of the SAME City Council Study Session September29,2026 (YouTube fWMTQj830Ho). Long excerpts are not independent genres. Originals unchanged; copy-trim offsets reflected in actual durations.",
+  "helper_correction": "Initial ctypes memory handle width returned invalid zeros. Retained initial processing timings; reran only affected GUI/memory measurements before app changes. Do not interpret between-run latency variation as an improvement.",
+  "failures_or_limits": [
+    "No full-provider processing/accuracy baseline; reported processing is independent speech detection and20s visual segmentation.",
+    "Memory covers the Python/Qt process, excludes FFmpeg child memory.",
+    "Qt decoded long media with Late SEI warnings; playback progressed.",
+    "New preservation tests initially failed because proposal/review fields did not exist."
+  ],
+  "cases": [
+    {
+      "label": "short",
+      "media_sha256": "a6145154aee091019c2fc91def46b6e661a73be4da062a8463098e1115ee2e8c",
+      "actual_duration": 120.166667,
+      "editor": {
+        "cue_count": 12,
+        "samples_ms": [
+          39.58809992764145,
+          30.30469990335405,
+          41.911000036634505,
+          97.24579995963722,
+          76.10299997031689,
+          67.65330000780523,
+          68.83030000608414,
+          78.81340000312775,
+          77.1059999242425,
+          82.00349996332079,
+          51.11560004297644,
+          42.31900000013411,
+          50.04220001865178,
+          41.55989992432296,
+          39.21519999857992,
+          40.5880999751389,
+          57.307900045998394,
+          47.1866000443697,
+          56.10950000118464,
+          58.088600053451955
+        ],
+        "median_ms": 53.61255002208054,
+        "max_ms": 97.24579995963722,
+        "undo_commands": 20,
+        "memory": {
+          "working_bytes": 268414976,
+          "process_peak_bytes": 268414976
+        }
+      },
+      "open_to_play_seconds": 0.849059300031513,
+      "whole_media_speech_seconds": 5.295779599924572,
+      "visual_20s_segment_seconds": 0.719388399971649,
+      "failures": []
+    },
+    {
+      "label": "program",
+      "media_sha256": "e6bcff3e9d51beee13d094d40533b9ec5a73d62c7be479c4e332151a59225329",
+      "actual_duration": 1800.212,
+      "editor": {
+        "cue_count": 180,
+        "samples_ms": [
+          129.98930003959686,
+          156.5980000887066,
+          153.98129995446652,
+          115.53139996249229,
+          122.0457999734208,
+          129.19250002596527,
+          157.28819998912513,
+          112.01860010623932,
+          140.79910004511476,
+          152.3344999877736,
+          122.88859998807311,
+          170.8957999944687,
+          152.85419998690486,
+          131.51779992040247,
+          133.82859993726015,
+          135.41520002763718,
+          153.2543000066653,
+          156.0017999727279,
+          151.51320002041757,
+          165.14749999623746
+        ],
+        "median_ms": 146.15615003276616,
+        "max_ms": 170.8957999944687,
+        "undo_commands": 20,
+        "memory": {
+          "working_bytes": 399044608,
+          "process_peak_bytes": 399048704
+        }
+      },
+      "open_to_play_seconds": 0.4697458000155166,
+      "whole_media_speech_seconds": 5.449576599989086,
+      "visual_20s_segment_seconds": 0.7554815999465063,
+      "failures": []
+    },
+    {
+      "label": "meeting",
+      "media_sha256": "ba534aadbbb04a8e91f3b433e9dc436a2e8be93501e611e65dabedb6db529f6b",
+      "actual_duration": 7210.012,
+      "editor": {
+        "cue_count": 721,
+        "samples_ms": [
+          385.6961999554187,
+          385.81720006186515,
+          368.92400006763637,
+          399.8936000280082,
+          382.4917000019923,
+          407.63219993095845,
+          438.4149999823421,
+          522.5947999861091,
+          454.14779998827726,
+          420.31940002925694,
+          431.8417999893427,
+          437.1604999760166,
+          426.0273000691086,
+          502.39850010257214,
+          385.5936999898404,
+          390.37829998414963,
+          444.09150001592934,
+          397.75459992233664,
+          399.1315000457689,
+          412.8999999957159
+        ],
+        "median_ms": 410.2660999633372,
+        "max_ms": 522.5947999861091,
+        "undo_commands": 20,
+        "memory": {
+          "working_bytes": 715763712,
+          "process_peak_bytes": 715767808
+        }
+      },
+      "open_to_play_seconds": 0.8192659000633284,
+      "whole_media_speech_seconds": 20.385935200029053,
+      "visual_20s_segment_seconds": 0.4626189999980852,
+      "failures": []
+    }
+  ],
+  "package_2": {
+    "source_base": "a491af1",
+    "working_candidate": true,
+    "cases": [
+      {
+        "label": "short",
+        "sha256": "a6145154aee091019c2fc91def46b6e661a73be4da062a8463098e1115ee2e8c",
+        "duration": 120.166667,
+        "editing": {
+          "cue_count": 12,
+          "samples_ms": [
+            19.884199951775372,
+            34.22469994984567,
+            9.969900012947619,
+            9.959600050933659,
+            9.672299958765507,
+            8.889699936844409,
+            89.84379994217306,
+            15.00859996303916,
+            17.512100050225854,
+            18.000699928961694,
+            13.59840005170554,
+            14.370499993674457,
+            12.97869998961687,
+            104.32499996386468,
+            30.698399990797043,
+            33.86199998203665,
+            35.46990000177175,
+            19.796699983999133,
+            12.427299981936812,
+            15.342600061558187
+          ],
+          "median_ms": 16.42735005589202,
+          "max_ms": 104.32499996386468,
+          "undo_commands": 1,
+          "memory": {
+            "working_bytes": 265150464,
+            "process_peak_bytes": 265150464
+          }
+        },
+        "failures": []
+      },
+      {
+        "label": "program",
+        "sha256": "e6bcff3e9d51beee13d094d40533b9ec5a73d62c7be479c4e332151a59225329",
+        "duration": 1800.212,
+        "editing": {
+          "cue_count": 180,
+          "samples_ms": [
+            15.452600084245205,
+            38.58260007109493,
+            60.019100084900856,
+            10.674600023776293,
+            10.807799990288913,
+            306.76870001479983,
+            20.940599963068962,
+            12.7638999838382,
+            27.59620000142604,
+            30.012000002898276,
+            32.89320005569607,
+            29.253700049594045,
+            26.103899930603802,
+            15.414000023156404,
+            15.379999997094274,
+            14.79529996868223,
+            15.5668999068439,
+            18.64320004824549,
+            15.19830001052469,
+            13.776300009340048
+          ],
+          "median_ms": 17.105049977544695,
+          "max_ms": 306.76870001479983,
+          "undo_commands": 1,
+          "memory": {
+            "working_bytes": 320356352,
+            "process_peak_bytes": 320454656
+          }
+        },
+        "failures": []
+      },
+      {
+        "label": "meeting",
+        "sha256": "ba534aadbbb04a8e91f3b433e9dc436a2e8be93501e611e65dabedb6db529f6b",
+        "duration": 7210.012,
+        "editing": {
+          "cue_count": 721,
+          "samples_ms": [
+            16.997699975036085,
+            15.125200035981834,
+            10.788300074636936,
+            52.36979993060231,
+            13.782499940134585,
+            53.02400002256036,
+            37.49149991199374,
+            27.332899975590408,
+            13.760400004684925,
+            13.932999921962619,
+            16.97039999999106,
+            17.41169998422265,
+            106.1553000472486,
+            17.153599997982383,
+            25.706300046294928,
+            13.93300003837794,
+            29.24519998487085,
+            35.30970006249845,
+            344.29289994295686,
+            12.030199985019863
+          ],
+          "median_ms": 17.282649991102517,
+          "max_ms": 344.29289994295686,
+          "undo_commands": 1,
+          "memory": {
+            "working_bytes": 402481152,
+            "process_peak_bytes": 402481152
+          }
+        },
+        "failures": []
+      }
+    ],
+    "limits": [
+      "Controlled cues test editor load, not AI quality.",
+      "Detector/segment timings exclude AI inference and synthesis.",
+      "Memory is this process; child FFmpeg memory is not included.",
+      "Same source videos and controlled cue load; occasional paint spikes remain. No AI inference comparison."
+    ]
+  },
+  "package_5": {
+    "source": "4bc0e3d7431f5c1bad3d78ffb4c6112a1741a2b3",
+    "working_candidate": true,
+    "cases": [
+      {
+        "label": "short",
+        "duration": 120.166667,
+        "source_sha256": "a6145154aee091019c2fc91def46b6e661a73be4da062a8463098e1115ee2e8c",
+        "cold_seconds": 1.282007599947974,
+        "warm_seconds": 0.6684338999912143,
+        "identical_result": true,
+        "classification_samples": 250,
+        "protected_intervals": 10,
+        "source_unchanged": true
+      },
+      {
+        "label": "program",
+        "duration": 1800.212,
+        "source_sha256": "e6bcff3e9d51beee13d094d40533b9ec5a73d62c7be479c4e332151a59225329",
+        "cold_seconds": 6.369591699913144,
+        "warm_seconds": 0.4224006000440568,
+        "identical_result": true,
+        "classification_samples": 3749,
+        "protected_intervals": 12,
+        "source_unchanged": true
+      },
+      {
+        "label": "meeting",
+        "duration": 7210.012,
+        "source_sha256": "ba534aadbbb04a8e91f3b433e9dc436a2e8be93501e611e65dabedb6db529f6b",
+        "cold_seconds": 24.076535200001672,
+        "warm_seconds": 0.6547744000563398,
+        "identical_result": true,
+        "classification_samples": 15021,
+        "protected_intervals": 79,
+        "source_unchanged": true
+      }
+    ],
+    "limits": [
+      "Actual whole-source YAMNet and FFmpeg, no AI inference/synthesis or factual-quality claim.",
+      "Cold and warm calls use the shared pipeline stage; files/models are hashed on every request."
+    ]
+  },
+  "package_8": {
+    "source_parent": "232e704896179d5850a12a4072ff2b2e128bdfa9",
+    "working_candidate": true,
+    "qt_platform": "offscreen",
+    "limits": [
+      "Offscreen Qt playback/editing/undo/save/reopen with actual media; not directly comparable to native-window latency/memory.",
+      "No new AI inference, speech detector or reader acceptance claim."
+    ],
+    "cases": [
+      {
+        "label": "short",
+        "sha256": "a6145154aee091019c2fc91def46b6e661a73be4da062a8463098e1115ee2e8c",
+        "duration": 120.166667,
+        "failures": [],
+        "open_to_play_seconds": 0.9004501999588683,
+        "playback_position_ms": 100,
+        "editing": {
+          "cue_count": 12,
+          "samples_ms": [
+            17.185699893161654,
+            13.117099995724857,
+            3.6788000725209713,
+            2.7624000795185566,
+            2.8973999433219433,
+            2.454900066368282,
+            2.70389998331666,
+            3.014099900610745,
+            2.907100017182529,
+            3.289500018581748,
+            2.9033999890089035,
+            2.7254000306129456,
+            2.727599930949509,
+            2.1605000365525484,
+            2.2990000434219837,
+            3.5164000000804663,
+            6.3934000208973885,
+            8.468199986964464,
+            11.16809993982315,
+            9.534499957226217
+          ],
+          "median_ms": 2.960599958896637,
+          "max_ms": 17.185699893161654,
+          "undo_commands": 1,
+          "memory": {
+            "working_bytes": 220450816,
+            "process_peak_bytes": 220450816
+          }
+        },
+        "undo_redo_save_reopen": true,
+        "source_unchanged": true,
+        "visual_20s_segment_seconds": 1.3355617000488564
+      },
+      {
+        "label": "program",
+        "sha256": "e6bcff3e9d51beee13d094d40533b9ec5a73d62c7be479c4e332151a59225329",
+        "duration": 1800.212,
+        "failures": [],
+        "open_to_play_seconds": 0.4505771000403911,
+        "playback_position_ms": 153,
+        "editing": {
+          "cue_count": 180,
+          "samples_ms": [
+            14.699600054882467,
+            14.996399986557662,
+            10.388599941506982,
+            6.606200011447072,
+            7.512899930588901,
+            6.583200069144368,
+            6.213200045749545,
+            6.378500023856759,
+            4.495500004850328,
+            3.383500035852194,
+            2.877200022339821,
+            3.378800000064075,
+            2.8309000190347433,
+            3.5185000160709023,
+            2.800600021146238,
+            2.2738000843673944,
+            2.4165998911485076,
+            2.2797000128775835,
+            3.289800020866096,
+            2.747999969869852
+          ],
+          "median_ms": 3.451000025961548,
+          "max_ms": 14.996399986557662,
+          "undo_commands": 1,
+          "memory": {
+            "working_bytes": 221995008,
+            "process_peak_bytes": 225914880
+          }
+        },
+        "undo_redo_save_reopen": true,
+        "source_unchanged": true,
+        "visual_20s_segment_seconds": 0.5233121000928804
+      },
+      {
+        "label": "meeting",
+        "sha256": "ba534aadbbb04a8e91f3b433e9dc436a2e8be93501e611e65dabedb6db529f6b",
+        "duration": 7210.012,
+        "failures": [],
+        "open_to_play_seconds": 0.41788540000561625,
+        "playback_position_ms": 113,
+        "editing": {
+          "cue_count": 721,
+          "samples_ms": [
+            11.797199957072735,
+            15.362899983301759,
+            8.551100036129355,
+            7.136699976399541,
+            6.388399982824922,
+            7.580999983474612,
+            6.68360001873225,
+            5.416399915702641,
+            6.299600005149841,
+            7.75019999127835,
+            6.22420001309365,
+            4.611999960616231,
+            3.8526999996975064,
+            6.150300032459199,
+            4.493599990382791,
+            3.9688999531790614,
+            4.172799992375076,
+            5.425499984994531,
+            4.264799994416535,
+            3.9561999728903174
+          ],
+          "median_ms": 6.187250022776425,
+          "max_ms": 15.362899983301759,
+          "undo_commands": 1,
+          "memory": {
+            "working_bytes": 252641280,
+            "process_peak_bytes": 252641280
+          }
+        },
+        "undo_redo_save_reopen": true,
+        "source_unchanged": true,
+        "visual_20s_segment_seconds": 0.5236418999265879
+      }
+    ],
+    "final_load_regression": {
+      "label": "short",
+      "sha256": "a6145154aee091019c2fc91def46b6e661a73be4da062a8463098e1115ee2e8c",
+      "duration": 120.166667,
+      "failures": [],
+      "open_to_play_seconds": 0.5787178999744356,
+      "playback_position_ms": 106,
+      "editing": {
+        "cue_count": 12,
+        "samples_ms": [
+          21.208800026215613,
+          11.337200063280761,
+          10.041400091722608,
+          12.01730000320822,
+          9.320099954493344,
+          5.0876999739557505,
+          4.622800042852759,
+          5.797300022095442,
+          3.2952999463304877,
+          4.291099961847067,
+          5.4243000922724605,
+          6.7841000854969025,
+          5.875099916011095,
+          11.154300067573786,
+          40.127099957317114,
+          9.53109993133694,
+          8.749400032684207,
+          10.476800031028688,
+          55.08800002280623,
+          8.79190000705421
+        ],
+        "median_ms": 9.055999980773777,
+        "max_ms": 55.08800002280623,
+        "undo_commands": 1,
+        "memory": {
+          "working_bytes": 222281728,
+          "process_peak_bytes": 222294016
+        }
+      },
+      "undo_redo_save_reopen": true,
+      "load_resynchronizes_editor": true,
+      "source_unchanged": true,
+      "visual_20s_segment_seconds": 0.7491190999280661
+    }
+  }
+}

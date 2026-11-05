@@ -66,9 +66,9 @@ def install_source(out):
     for name,folder in [('RUSTUP_HOME','.rustup'),('CARGO_HOME','.cargo')]:env.setdefault(name,str(Path.home()/folder))
     command([sys.executable,'tools/install_unix.py'],env=env,timeout=600)
     root=home/('Library/Application Support/DescriberWorkbench/source-install' if mac else '.local/share/DescriberWorkbench/source-install')
-    assert command([root/'venv/bin/describer','--version'],env=env).strip()=='0.6.1'
+    assert command([root/'venv/bin/describer','--version'],env=env).strip()=='0.7.0'
     launcher=home/('Applications/Describer Workbench.app/Contents/MacOS/DescriberWorkbench' if mac else '.local/share/applications/describer-workbench.desktop')
-    assert launcher.is_file();return {'cli_version':'0.6.1','launcher':str(launcher)}
+    assert launcher.is_file();return {'cli_version':'0.7.0','launcher':str(launcher)}
 
 
 def main():
@@ -90,7 +90,7 @@ def main():
         for path in Path('describer').rglob('*.py'):
             name='.'.join(path.with_suffix('').parts)
             if name.endswith('.__init__'):name=name[:-9]
-            if name not in pyz.toc:continue
+            assert name in pyz.toc,name
             frozen=pyz.extract(name);source=compile(path.read_bytes(),frozen.co_filename,'exec')
             # co_filename is normalized throughout recursively by compile.
             assert source==frozen,name
@@ -131,7 +131,7 @@ def main():
     mp3=json.loads(command([cli,'--workspace',out/'mp3','--settings',config,'batch',mp3_batch]))
     assert mp3[0]['job']['state']=='done',mp3
     run([tool('ffmpeg'),'-v','error','-i',mp3[0]['job']['artifact']['path'],'-f','null','-'])
-    command([sys.executable,'tools/verify_portable_interfaces.py','--cli',cli,'--output',out/'interfaces','--expected-version','0.6.1'])
+    command([sys.executable,'tools/verify_portable_interfaces.py','--cli',cli,'--output',out/'interfaces','--expected-version','0.7.0'])
     source_gui=gui_source(out,source)
     frozen_gui=packaged_gui(gui,out)
     if mac:

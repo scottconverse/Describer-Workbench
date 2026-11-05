@@ -346,8 +346,9 @@ class DescriptionService:
             if cues is not None:
                 previous = project.cues
                 edited = parse_cues(cues, project.duration)
-                for cue in edited:
-                    matches = [old for old in previous if
+                for index, cue in enumerate(edited):
+                    matches = [old for old in previous if old.cue_id == cue.cue_id]
+                    if not matches:matches = [old for old in previous if
                                (cue.event_id and old.event_id == cue.event_id) or
                                (not cue.event_id and (old.start, old.end) == (cue.start, cue.end))]
                     if not matches and not cue.event_id:
@@ -357,14 +358,15 @@ class DescriptionService:
                     if len(matches) == 1:
                         old = matches[0]
                         preserved = old.edited(cue.start, cue.end, cue.text, project.duration)
-                        cue.event_id, cue.event_start, cue.event_end = preserved.event_id, preserved.event_start, preserved.event_end
-                        cue.evidence, cue.uncertainty, cue.kind = preserved.evidence, preserved.uncertainty, preserved.kind
-                        cue.disposition = preserved.disposition
+                        cue = edited[index] = preserved
                     cue.disposition = 'unresolved' if cue.disposition == 'unresolved' or cue.uncertainty else 'unplanned'
                     cue.audio, cue.speech_seconds, cue.speed = '', 0, 1
+                    cue.audio_volume, cue.narration_text = None, ''
+                if len({cue.cue_id for cue in edited}) != len(edited):raise ValueError('Duplicate description identity; existing work was kept.')
                 project.cues = edited
-                project.coverage = []
-                project.analysis = {'note':'Edited; re-plan before exporting narration.'}
+                from ..drafting import coverage_for
+                project.coverage = coverage_for(edited, project.coverage, previous)
+                project.analysis = dict(project.analysis, requires_replan=True, note='Edited; re-plan before exporting narration.')
             if glossary is not None:
                 project.glossary = str(glossary)
             project.save(self._path(job_id) / 'result.adproject')

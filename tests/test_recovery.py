@@ -267,7 +267,7 @@ def test_desktop_resume_reopened_owner_retains_checkpoints_and_original_settings
         checkpoint=Checkpoints(root,{'source':sha(project.video),'model':settings['model']})
         checkpoint.stage('observed',lambda:calls.append('observe') or {'complete':True})
         if fail[0]:raise RuntimeError('transient speech failure')
-        project.cues[0].text='Recovered';return project
+        project.cues=[Cue(1,2,'Recovered').validate(project.duration)];return project
     service=DescriptionService(tmp_path/'engine')
     with patch('describer.engine.core.describe',side_effect=describe):
         job=service.submit(project=project,settings={'allow_cloud':True,'model':'original-exact-model'})
@@ -277,7 +277,7 @@ def test_desktop_resume_reopened_owner_retains_checkpoints_and_original_settings
         w.operation_preflight=lambda settings,done,**kwargs:done()
         w.job=lambda task,done:done(task(threading.Event(),lambda text:None))
         try:
-            with patch('describer.engine.get_service',return_value=service),patch('describer.app.QInputDialog.getItem',side_effect=lambda *args:(args[3][0],True)),patch.object(QMessageBox,'question',return_value=QMessageBox.Yes):
+            with patch('describer.engine.get_service',return_value=service),patch('describer.app.QInputDialog.getItem',side_effect=lambda *args:(args[3][0],True)),patch.object(QMessageBox,'question',return_value=QMessageBox.Yes),patch('describer.drafting.review_proposal',side_effect=lambda window,proposal:proposal.apply(window.project,set(proposal.candidates),set(proposal.existing),False)):
                 w.recover_jobs()
             assert w.project.cues[0].text=='Recovered' and w.dirty and w.project_path is None
             assert calls==['observe']

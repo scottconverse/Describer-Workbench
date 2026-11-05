@@ -1,14 +1,46 @@
-# Technical user and developer guide — 0.6.1
+# Technical user and developer guide — 0.7.0
+
+**Editor boundaries:** `editor_history.py` contains existing project
+undo/redo commands and keyboard routing; `editor_selection.py` holds cue identity
+independently of widgets. Use `Window.choose(index)` and `selected_index()`;
+the hidden table is removed. Selection survives sorting and filtering, with a
+neighbor selected only after the selected cue is removed. Tests and native
+acceptance helpers exercise visible controls rather than obsolete table cells.
+
+Routine tests default to `QT_QPA_PLATFORM=offscreen` before creating QApplication.
+This exercises real Qt controls/event delivery without occupying the desktop;
+it does not prove native screen-reader output. Source CI runs affected
+desktop Ruff F checks and strict mypy on the typed selection model. It does not
+claim the older dynamic Window/presentation classes are fully statically typed.
+
+```powershell
+$env:QT_QPA_PLATFORM='offscreen'
+python -m pytest -q
+python -m ruff check --select F describer/app.py describer/desktop.py describer/editor_history.py describer/editor_selection.py
+python -m mypy --strict --follow-imports=silent describer/editor_selection.py
+```
+
+**Measured export preview:** `export_preview.py` stamps canonical validated cue
+data, source/audio file identity, captions and relevant narration settings after
+the shared `prepare` pipeline. The preview shares `included_pauses` with the
+exporter, never estimates speech from word counts. Missing/stale measurements
+are explicit. Measuring uses the existing preflight, consent and job ownership;
+the full project transaction applies only if the input fingerprint still matches.
+Export remeasures, so the displayed finished duration is approximate. This behavior is included in 0.7.0.
+
+**File compatibility:** Version 0.7.0 reads project formats 1 and 2 and saves format 2. This prevents older 0.6.1 readers from silently dropping cue identity/review metadata on re-save: they reject format 2. Existing version-1 files are not rewritten until explicitly saved; keep an original copy when comparing older and newer applications.
+
+Version 0.7.0 adds a stable `cue_id` separate from `event_id`, plus `origin`, `manually_edited`, `review_status` and `review_history`. Saved project version 1 remains readable; missing legacy fields receive defaults and persist on save. `DraftProposal` uses a complete-project fingerprint, half-open ranges, explicit accepted/replaced cue ID sets and a glossary choice. Conflicting replacements and stale proposals are rejected; boundary-crossing cues remain whole. Desktop application/undo includes coverage and analysis as well as cues/glossary. Edited reviewed/approved facts require review again; provider output cannot assign human approval. See [preservation rules and acceptance status](STABILIZATION.md). These fields persist in 0.7.0 projects.
 
 Windows, macOS and Linux · documentation updated November 5, 2026. [Nontechnical quick start](QUICK-START.md) · [Complete user manual](USER-MANUAL.md).
 
-For the separate macOS/Linux packages, native dependencies, repository installer and build commands, see [the platform installation guide](UNIX-INSTALL.md). The existing Windows spec, signed artifacts, installation and default stable release remain unchanged. Unix builds have separate source/package/acceptance identities and no publisher certificate. The `macOS and Linux add-ons` workflow performs native tests and package installation on Ubuntu 24.04 x64 and macOS 15 arm64/Intel; its receipts state which behaviors were actually exercised.
+For the separate macOS/Linux packages, native dependencies, repository installer and build commands, see [the platform installation guide](UNIX-INSTALL.md). Windows packages use Azure Trusted Signing; Unix packages retain their separate integrity policy. Unix builds have separate source/package/acceptance identities and no publisher certificate. The `macOS and Linux add-ons` workflow performs native tests and package installation on Ubuntu 24.04 x64 and macOS 15 arm64/Intel; its receipts state which behaviors were actually exercised.
 
-Version 0.6.1: [AI connections](AI-CONNECTIONS.md) documents the new routes and evidence limits. Timed narration is synthesized and measured independently of the live-text screen-reader route. New/repair cues record `audio_volume:100`; target gain is `speech_volume / audio_volume`. The desktop prompts repair for older cues with unknown synthesis level. The shared service prepares narration before media export; the raw exporter rejects unknown recorded levels. User and model text remain unchanged when repairing audio.
+Version 0.7.0: [AI connections](AI-CONNECTIONS.md) documents the new routes and evidence limits. Timed narration is synthesized and measured independently of the live-text screen-reader route. New/repair cues record `audio_volume:100`; target gain is `speech_volume / audio_volume`. The desktop prompts repair for older cues with unknown synthesis level. The shared service prepares narration before media export; the raw exporter rejects unknown recorded levels. User and model text remain unchanged when repairing audio.
 
 Reported usage persists with operation and requested/reported model identity. Automatic glossary generation shares the description request; such records have `components:["description","glossary"]` and explicitly unavailable separate glossary counts. The desktop labels that combined category and never fabricates a split or a subscription dollar cost. Scene requests remain separately attributed; unavailable provider token fields remain unknown.
 
-Candidate status includes `pipeline` stage completion/percentage and available `usage`. Gemini `MAX_TOKENS` produces an error job plus `partial_response` metadata pointing to a separate `partial-response.json` with `complete:false`. Python can inspect it with `service.partial_response(job_id)`; the desktop's recovery dialog provides a read-only view. Configured keys are redacted. Safety-blocked responses are not recovered. Failed jobs have no completed result or export; use a shorter chunk in a new request. Existing upload cleanup and bounded retry behavior remain in force.
+Job status includes `pipeline` stage completion/percentage and available `usage`. Gemini `MAX_TOKENS` produces an error job plus `partial_response` metadata pointing to a separate `partial-response.json` with `complete:false`. Python can inspect it with `service.partial_response(job_id)`; the desktop's recovery dialog provides a read-only view. Configured keys are redacted. Safety-blocked responses are not recovered. Failed jobs have no completed result or export; use a shorter chunk in a new request. Existing upload cleanup and bounded retry behavior remain in force.
 
 New image adapters share a source-time FFmpeg sampler with at most eight640px images. Actual decoded timestamps accompany the images; interval-centred frames are not labeled as interval starts. Native CLI child environments use a process/home/locale/proxy/TLS allowlist and exclude API-credit overrides, ADC authentication overrides and unrelated secrets. Provider-global settings and default model selection are not changed.
 
@@ -16,11 +48,54 @@ New image adapters share a source-time FFmpeg sampler with at most eight640px im
 
 The Windows updater uses the official latest stable GitHub release when the configured feed is blank. It checks the archive digest, requires timestamped Valid Scott Converse signatures on both Windows executables, and rechecks all staged payload hashes before applying. Manual signed-package acceptance: `python -m tests.update_acceptance SIGNED_ARCHIVE NEW_OUTPUT_DIRECTORY`. Real portable relaunch acceptance: `python -m tests.portable_update_acceptance prepare NEW_OUTPUT_DIRECTORY OLD_INSTALL VERIFIED_STAGED_DIRECTORY`, then close only its disposable window and run the same module with `verify NEW_OUTPUT_DIRECTORY`. These scripts write new receipts beside their disposable installation and preserve historical evidence. A requested launch alone does not verify the running application.
 
-See [0.6.1 release acceptance](V061-ACCEPTANCE.md) for verification scope and limits. The distributed Windows GUI and CLI are signed as Scott Converse using Azure Trusted Signing with Microsoft timestamps. Windows source builds require the [release signing procedure](CODE-SIGNING.md) before publication; the explicitly authorized Mac/Linux distributions use the separate integrity policy below.
+See [0.7.0 release acceptance](V070-ACCEPTANCE.md) for verification scope and limits. The distributed Windows GUI and CLI are signed as Scott Converse using Azure Trusted Signing with Microsoft timestamps. Windows source builds require the [release signing procedure](CODE-SIGNING.md) before publication; the explicitly authorized Mac/Linux distributions use the separate integrity policy below.
 
 Describer Workbench has one headless engine. The Qt desktop, Python API, CLI,
 REST API and MCP tools call the same `DescriptionService`. No WSL, Docker,
 desktop window or paid service is required for local processing.
+
+Editor text changes use `TextEdit`, which retains one cue and its
+coverage row per undo group. It updates existing list items and timeline buttons; it does not refresh the whole workspace. A 1.2-second
+pause, cursor navigation, focus/cue change or other operation separates groups.
+Keyboard and context-menu undo share the project stack. Timing/structural edits
+continue through full `CueEdit` transactions. `cue_accessible` supplies the same
+semantic name for native list accessibility and timeline controls. Actual Windows
+NVDA evidence and cross-platform source-check limits are in the stabilization
+record; accessible Qt metadata alone is not proof of a reader workflow.
+
+`project_recovery.DraftStore` atomically writes format-2 project
+snapshots plus original path, source size/mtime and pending editor fields beneath
+`unsaved-drafts` beside the settings file. It copies project data, not settings or
+credentials. The desktop's 30-second timer runs only while dirty and idle;
+unchanged content is deduplicated. Retention is 3 per project, 20 total, 50 MiB,
+10 MiB per snapshot. Pruning is limited to validated owned files in that resolved
+directory and excludes symlinks. A recovered project has no active save path.
+Save As changes the active path only after atomic project persistence succeeds.
+Engine jobs/checkpoints remain separate. The native crash acceptance helper uses
+a disposable profile/video and intentionally exits its child with code 23 after
+the actual timer fires; it verifies full-state recovery and unchanged originals.
+
+`engine.speech_cache` stores disposable validated classification JSON
+under the host data folder's `speech-cache`, shared across engine jobs. The cache
+key includes actual media/detector/decoder/implementation hashes and inference
+runtime versions; it excludes the vision provider/model and requested range,
+which cannot change independently measured source audio. A changed detector,
+decoder or implementation invalidates reuse. Captions are always imported and
+applied afresh. Existing per-job checkpoints remain separate. Corrupt cache data
+is recomputed; cancellation never publishes partial data. Per-key advisory locks
+avoid duplicate measurement and remain responsive to cancellation. Cache I/O
+failure preserves fresh analysis. Source builds hash `sound.py`; frozen builds
+hash the executable, since bundled Python sources may not exist as files. Cache
+entries can be removed while the app/engine is stopped; they are regenerated.
+
+Drafting retains `ModelPicker`'s transactional settings. The simple
+connection selector and Advanced provider cards synchronize through its existing
+provider control; exact-model selection and all discovery/testing paths remain.
+Range and transmission/preservation disclosure remain outside the Advanced
+scroll area. Accept validates/stores the exact visible model before invoking the
+existing analysis/consent path. Cancel restores settings/prompt/preset. Advanced
+expansion is bounded by available screen height; dialog teardown reparents the
+shared editorial widgets and stops its status timer before deferred deletion.
 
 ## Install
 

@@ -80,7 +80,8 @@ def protected_audio(project, settings, cancel, log):
     spans, trace = [], []
     if any(s['codec_type'] == 'audio' for s in info['streams']):
         log('Measuring speech and vocal sounds independently of vision…')
-        spans, trace = speech_spans(Path(project.video), project.duration, speech_model(settings), cancel)
+        from .speech_cache import measured
+        spans, trace = measured(Path(project.video), project.duration, speech_model(settings), cancel,log,speech_spans)
     if settings.get('captions'):
         for c in import_subtitles(settings['captions'], project.duration):
             spans.append([max(0, c.start - .3), min(project.duration, c.end + .3)])
@@ -134,11 +135,11 @@ def prepare(project, settings, root, cancel, log, checkpoint):
         cue.validate(project.duration)
         ident = cue.event_id or f'authored-{i}'
         cue.event_id = ident
-        row = {'event_id': ident, 'text': cue.text, 'kind': cue.kind,
+        row = {'event_id': ident, 'cue_id':cue.cue_id, 'review_status':cue.review_status, 'manually_edited':cue.manually_edited, 'text': cue.text, 'kind': cue.kind,
                'event_start': cue.event_start, 'event_end': cue.event_end,
                'timing_start': cue.timing_start, 'timing_end': cue.timing_end,
                'evidence': cue.evidence, 'uncertainty': cue.uncertainty}
-        if cue.uncertainty or cue.disposition == 'unresolved':
+        if cue.uncertainty or cue.disposition == 'unresolved' or cue.review_status == 'needs-review':
             cue.disposition = 'unresolved'
             row.update(disposition='unresolved', reason=cue.uncertainty)
             coverage.append(row)
@@ -180,9 +181,11 @@ def prepare(project, settings, root, cancel, log, checkpoint):
         coverage.append(row)
     stage(log,'narration',len(project.cues),len(project.cues))
     project.coverage = coverage
-    project.analysis.update(protected=safety['protected'], safe_gaps=safety['safe_gaps'],
+    project.analysis.update(protected=safety['protected'], safe_gaps=safety['safe_gaps'], requires_replan=False,
                             limitations=['Coverage accounts for observed events, not a guarantee that vision found every essential event.',
                                          'Pause descriptions require the pause-aware player or extended video export.'])
+    from ..export_preview import plan_stamp
+    project.analysis['export_plan_stamp']=plan_stamp(project,settings)
     return project
 
 
