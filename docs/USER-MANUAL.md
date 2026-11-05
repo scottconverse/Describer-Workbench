@@ -136,6 +136,8 @@ For a clean model comparison, use identical media/range/prompts and clear the gl
 
 ## 6. Edit and review descriptions
 
+**Stabilization source candidate:** continuous text typing is grouped into one undo step until a pause of 1.2 seconds, cursor navigation, a different cue, or another operation. Ctrl+Z, Ctrl+Shift+Z and the text context menu use the same project history, including review state and coverage. Text edits update the existing cue widgets; timing changes may reorder the full list. Published 0.6.1 applications retain their previous editing behavior.
+
 Select a description to seek and expand its inline editor. Start, End and text update the project immediately when valid. Add at playhead inserts and selects a three-second cue. Delete removes the selected cue after confirmation. Ctrl+Z and Ctrl+Shift+Z undo/redo cue edits.
 
 Times accept numeric seconds (`62.5`), minutes/seconds (`1:02.5`) or hours/minutes/seconds (`00:01:02.5`). Changing Start shifts End to preserve cue duration; changing End adjusts only End. The ± buttons nudge by 0.1 seconds. Invalid intermediate input stays in the editor but does not enter the project; correct it before saving or exporting. Text must be nonempty and the end must follow the start within the video duration.

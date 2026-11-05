@@ -336,6 +336,13 @@ class Window(DesktopInterface, QMainWindow):
         except ValueError:
             return  # Keep intermediate typing; never publish an invalid cue.
         if candidate==self.project.cues[i]:return
+        old=self.project.cues[i]
+        if hasattr(self,'undo_stack') and (candidate.start,candidate.end)==(old.start,old.end):
+            from .desktop import TextEdit
+            self._typing=True
+            try:self.undo_stack.push(TextEdit(self,i,old,candidate))
+            finally:self._typing=False
+            return
         before=copy.deepcopy(self.project.cues);after=copy.deepcopy(before);after[i]=candidate;after.sort(key=lambda c:c.start)
         if hasattr(self,'undo_stack'):
             from .desktop import CueEdit

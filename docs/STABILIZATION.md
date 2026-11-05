@@ -77,7 +77,23 @@ file-format compatibility correction at `94cf008` passed 49 affected local
 checks and format-specific Linux/Mac checks (run `42096984452`); the original
 GUI evidence was retained. The actual old reader rejected format 2, and forcing
 format 1 demonstrated the loss of identity/review fields that the correction
-prevents. Package 1 is accepted and pushed; Package 2 is next.
+prevents. Package 1 is accepted and pushed.
+
+Package 2 updates a single cue, its coverage and existing visible widgets for
+ordinary typing. It retains full transactions for timing/structural edits and
+uses one project history for keyboard/context undo. Same-media native Windows
+measurements recorded median 16.4/17.1/17.3 ms at 12/180/721 cues, compared with
+53.6/146.2/410.3 ms before stabilization. The two-hour working memory measured
+402 MB versus 716 MB; 20 continuous characters became one undo group. Occasional
+paint spikes remain (two-hour maximum 344 ms); these are GUI load measurements,
+not full AI processing or quality claims. Raw receipts remain local.
+
+P2 verification ledger: initial 18 existing affected checks passed; the new
+keyboard test exposed private text-widget undo bypassing project history and
+was fixed. Two new fixtures needed normalization of legacy event times and a
+noncanonical evidence field. Only those affected tests were repeated; no app
+build or full CI restart. The pre-existing Windows COM diagnostic remained
+nonterminal. Final affected and native results are recorded with delivery.
 
 Native reader acceptance must identify exactly which
 reader/platform combination was exercised; simulated events are not that proof.
