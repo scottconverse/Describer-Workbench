@@ -652,8 +652,25 @@ class Window(DesktopInterface, QMainWindow):
         self.preset.clear();self.preset.addItems(list(self.settings.data['presets'].get(self.settings.data['language'],self.settings.data['presets'].get('English',{'Standard':''}))))
     def preset_changed(self,name):self.prompt.setPlainText(self.settings.data['presets'].get(self.settings.data['language'],self.settings.data['presets'].get('English',{})).get(name,''))
     def presets(self):
-        action,ok=QInputDialog.getItem(self,'Manage prompt presets','Action',['Add or edit','Delete'],0,False)
+        action,ok=QInputDialog.getItem(self,'Manage prompt presets','Action',['Add or edit','Rename','Delete'],0,False)
         if not ok:return
+        if action=='Rename':
+            presets=self.settings.data['presets'].get(self.settings.data['language'],{})
+            if not presets:self.error('No presets exist in the selected language.');return
+            old,ok=QInputDialog.getItem(self,'Rename preset','Preset',list(presets),0,False)
+            if not ok:return
+            name,ok=QInputDialog.getText(self,'Rename preset','New name',text=old)
+            if not ok:return
+            name=name.strip()
+            if not name:self.error('A preset name is required.');return
+            if name==old:return
+            if name in presets:self.error('That preset name already exists.');return
+            previous=copy.deepcopy(self.settings.data);selected=self.preset.currentText()
+            presets[name]=presets.pop(old)
+            try:
+                self.settings.save();self.reload_presets();self.preset.setCurrentText(name if selected==old else selected)
+            except Exception as exc:self.settings.data=previous;self.error(str(exc))
+            return
         if action=='Delete':
             presets=self.settings.data['presets'].setdefault(self.settings.data['language'],{})
             name,ok=QInputDialog.getItem(self,'Delete preset','Preset',list(presets),0,False)
@@ -886,7 +903,7 @@ class Window(DesktopInterface, QMainWindow):
         QMessageBox.information(self,'Describer Workbench '+__version__,
             'Version '+__version__+'. '
             'Open a video, then choose Draft with AI or import SRT/VTT. Select a description to seek and edit it inline. '
-            'Start/end accept seconds or HH:MM:SS and change independently. Click the timeline to seek; Ctrl+wheel zooms. Space toggles playback outside text editors when the window receives it. Save with Ctrl+S. '
+            'Start/end accept seconds or HH:MM:SS. Changing Start shifts End to preserve duration; changing End adjusts only End. Click the timeline to seek; Ctrl+wheel zooms. Space toggles playback outside text editors when the window receives it. Save with Ctrl+S. '
             'Export MP4, MP3/WAV, SRT/VTT, text or JSON. The shared engine protects measured speech, '
             'caps narration speed at 1.15x, and retains no-fit descriptions as pauses. '
             'Draft checks the selected detector and offers verified setup before inference. File also offers detector installation, Repair narration and Recover interrupted jobs. Edits preserve review evidence; Mark as checked clears review deliberately. Unresolved facts block complete media exports. '

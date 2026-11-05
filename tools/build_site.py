@@ -22,6 +22,7 @@ def downloadable_markdown(source):
                'CODE-SIGNING.md': REPO+'/blob/main/docs/CODE-SIGNING.md',
                'AI-CONNECTIONS.md': REPO+'/blob/main/docs/AI-CONNECTIONS.md',
                'V052-ACCEPTANCE.md': REPO+'/blob/main/docs/V052-ACCEPTANCE.md',
+               'V061-ACCEPTANCE.md': REPO+'/blob/main/docs/V061-ACCEPTANCE.md',
                'V060-ACCEPTANCE.md': REPO+'/blob/main/docs/V060-ACCEPTANCE.md',
                'V051-ACCEPTANCE.md': REPO+'/blob/main/docs/V051-ACCEPTANCE.md',
                'V050-ACCEPTANCE.md': REPO+'/blob/main/docs/V050-ACCEPTANCE.md',
@@ -39,6 +40,7 @@ def render(source, title, filename):
     md = markdown.Markdown(extensions=['tables','fenced_code','toc','md_in_html'], extension_configs={'toc':{'permalink':False}})
     body = md.convert(source)
     body=body.replace('href="AI-CONNECTIONS.md','href="'+REPO+'/blob/main/docs/AI-CONNECTIONS.md')
+    body=body.replace('href="V061-ACCEPTANCE.md','href="'+REPO+'/blob/main/docs/V061-ACCEPTANCE.md')
     body=body.replace('href="V060-ACCEPTANCE.md','href="'+REPO+'/blob/main/docs/V060-ACCEPTANCE.md')
     for old,new in [('USER-MANUAL.md','manual.html'),('ARCHITECTURE.md','architecture.html'),('DEVELOPER-GUIDE.md','developer.html'),('CODE-SIGNING.md',REPO+'/blob/main/docs/CODE-SIGNING.md'),('V052-ACCEPTANCE.md',REPO+'/blob/main/docs/V052-ACCEPTANCE.md'),('V051-ACCEPTANCE.md',REPO+'/blob/main/docs/V051-ACCEPTANCE.md'),('V050-ACCEPTANCE.md',REPO+'/blob/main/docs/V050-ACCEPTANCE.md'),('../THIRD-PARTY-NOTICES.md',REPO+'/blob/main/THIRD-PARTY-NOTICES.md')]:
         body=body.replace('href="'+old,'href="'+new)

@@ -57,17 +57,34 @@ def discover(settings,cancel,log):
     loaded={row.get('name') for row in json_request(settings,'/api/ps').get('models',[])}
     for row in tags.get('models',[]):
         if cancel.is_set():raise InterruptedError('Cancelled.')
+        if not isinstance(row,dict):continue
         name=row.get('name')
         if not isinstance(name,str) or not name:continue
         caps=row.get('capabilities')
         error=None
-        if not isinstance(caps,list):
-            try:caps=json_request(settings,'/api/show',{'model':name}).get('capabilities')
-            except (OSError,RuntimeError,ValueError):
-                caps=None;error='Capability discovery unavailable; retry this model before analysis.'
+        info={}
+        try:
+            info=json_request(settings,'/api/show',{'model':name})
+            if not isinstance(info,dict):raise ValueError('Invalid model metadata')
+            if not isinstance(caps,list):caps=info.get('capabilities')
+        except (OSError,RuntimeError,ValueError):
+            info={};error='Model details unavailable; supplied catalog fields retained. Retry before analysis.'
+        details=dict(row.get('details') or {}) if isinstance(row.get('details'),dict) else {}
+        if isinstance(info.get('details'),dict):details.update(info['details'])
+        metadata=info.get('model_info',{})
+        metadata=metadata if isinstance(metadata,dict) else {}
+        architecture=metadata.get('general.architecture')
+        context=metadata.get(str(architecture)+'.context_length')
+        if context is None:
+            contexts=[value for key,value in metadata.items() if key.endswith('.context_length')]
+            if len(contexts)==1:context=contexts[0]
+        def number(value):return value if isinstance(value,int) and not isinstance(value,bool) and value>0 else None
+        def text(value):return value if isinstance(value,str) and value.strip() else None
         rows.append({'name':name,'vision':('vision' in caps if isinstance(caps,list) else None), 'error':error,
-            'cloud':bool(row.get('remote_host') or name.endswith('-cloud') or name.endswith(':cloud') or not is_loopback(endpoint(settings))),
-            'loaded':name in loaded,'digest':row.get('digest','')})
+            'cloud':bool(row.get('remote_host') or info.get('remote_host') or name.endswith('-cloud') or name.endswith(':cloud') or not is_loopback(endpoint(settings))),
+            'loaded':name in loaded,'digest':row.get('digest',''), 'family':text(details.get('family')),
+            'parameter_size':text(details.get('parameter_size')), 'quantization':text(details.get('quantization_level')),
+            'size':number(row.get('size')), 'context_length':number(context)})
     log(f'Ollama reports {len(rows)} models. Discovery makes no generation requests.')
     return sorted(rows,key=lambda r:(r['cloud'],not r['loaded'],r['name']))
 

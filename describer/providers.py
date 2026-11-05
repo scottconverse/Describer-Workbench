@@ -48,5 +48,6 @@ def destination(settings):
     if provider=='Ollama':return 'Ollama at '+settings.get('ollama_url','')+' (sampled images, no audio)'
     if provider in ('Subscription gateway','OpenAI-compatible'):
         from .subscriptions import connection
-        return provider+' at '+connection(settings)['url']+' (sampled images and prompts, no audio; gateway forwards to the selected subscription provider)'
+        forwarding='; gateway forwards to the selected subscription provider' if provider=='Subscription gateway' else ''
+        return provider+' at '+connection(settings)['url']+' (sampled images and prompts, no audio'+forwarding+')'
     return provider+' (sampled images and prompts, no audio; uses the selected provider account)'

@@ -1,14 +1,14 @@
 # Describer Workbench user manual
 
-For **0.6.0** · November 4, 2026 (America/Denver). See [release acceptance](V060-ACCEPTANCE.md) for executed checks and delivery boundaries.
+For **0.6.1** · November 4, 2026 (America/Denver). See [release acceptance](V061-ACCEPTANCE.md) for executed checks and delivery boundaries.
 
-This guide describes version 0.6.0 and its [AI connections](AI-CONNECTIONS.md). **Live text playback output** applies to live text and Scene answers. Timed in-gap and pause cues use measured export-voice audio, with Windows as the default, as explicitly chosen by Scott on November4. A screen reader controls its own live-text rate and volume; unavailable reader output falls back to Windows speech. The Speech slider scales measured WAV playback and exported narration. Older WAVs without synthesis-volume metadata need **File > Repair narration** before timed playback; repair preserves source media, descriptions and evidence, asks for applicable cloud consent, and must be saved to retain new audio references.
+This guide describes version 0.6.1 and its [AI connections](AI-CONNECTIONS.md). **Live text playback output** applies to live text and Scene answers. Timed in-gap and pause cues use measured export-voice audio, with Windows as the default, as explicitly chosen by Scott on November4. A screen reader controls its own live-text rate and volume; unavailable reader output falls back to Windows speech. The Speech slider scales measured WAV playback and exported narration. Older WAVs without synthesis-volume metadata need **File > Repair narration** before timed playback; repair preserves source media, descriptions and evidence, asks for applicable cloud consent, and must be saved to retain new audio references.
 
-[Windows 0.6.0 download](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.6.0) · [Project](https://github.com/scottconverse/Describer-Workbench) · [Architecture guide](ARCHITECTURE.md)
+[Windows 0.6.1 download](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.6.1) · [Project](https://github.com/scottconverse/Describer-Workbench) · [Architecture guide](ARCHITECTURE.md)
 
-## Changes in 0.6.0
+## Features retained from 0.6.0
 
-Version 0.6.0 includes the following controls.
+Version 0.6.1 includes the following controls.
 
 - **AI connections:** gateway subscriptions, native Codex/Claude/Antigravity tools, named OpenAI-compatible profiles and the separate Anthropic API route. Follow [connection setup](AI-CONNECTIONS.md); catalog entries do not establish image support or account entitlement. No route automatically falls back to another model.
 - **Editing and Scene:** changing Start preserves cue duration; authored timing remains separate from the original visual event. Scene answers have individual Speak, Copy and Add actions. Explore supports2/5/10/20-second ranges and optional focus, with glossary context passed to the request.
@@ -26,7 +26,7 @@ Describer Workbench helps you write short spoken descriptions of a video's visua
 
 The outputs are an editable project; SRT, VTT, plain text or project JSON; narrated MP3/WAV; or a described MP4. Complete media exports include no-fit descriptions by pausing the source. MP4 freezes the picture at the original event while narration plays, then resumes. This extends the timeline; it does not create an embedded selectable alternate track.
 
-The 0.6.0 Windows portable package contains both the desktop app and `DescriberCLI.exe`, including REST and MCP access. Older 0.4.2 downloads do not contain the shared engine or transports.
+The 0.6.1 Windows portable package contains both the desktop app and `DescriberCLI.exe`, including REST and MCP access. Older 0.4.2 downloads do not contain the shared engine or transports.
 
 AI descriptions need editorial review. In particular, the Ollama path sees still images sampled from the video and receives no audio. It cannot know when someone is speaking or confirm a spoken name. The new engine measures speech/vocal protection separately with local YAMNet; it never asks vision to invent safe dialogue gaps. Review still matters for missed speech and visual facts.
 
@@ -84,7 +84,7 @@ Start your separately installed Ollama server. Open **Draft with AI**, choose **
 
 Draft preflights the selected speech detector. If missing or corrupt, it offers an explicit download/repair and continues only after SHA256 and ONNX validation. Cancel makes no provider request. **File → Install speech detector** repairs the selected custom path as well as the default path. Network reads have a ten-second timeout; cancellation waits for a pending read and preserves an earlier valid asset. Completed installation is retained if cancellation arrives afterward. If it is unavailable or changed, analysis and narrated export stop before inference. An already verified file can be reused offline.
 
-Choose an installed vision entry. To change a tag, double-click the model row or press F2, enter the exact model ID without display annotations, and commit the edit. The model list is the editable control; there is no separate tag field. **Test connection** first checks capability and then sends a short text prompt; a successful reply does not prove visual understanding. Refresh itself makes metadata requests, not inference requests or downloads.
+Choose an installed vision entry. To change a tag, select a discovered row or type the exact ID without display annotations in the separate **Exact analysis model ID** field. Test connection and Start draft use that exact ID. **Test connection** first checks capability and then sends a short text prompt; a successful reply does not prove visual understanding. Refresh itself makes metadata requests, not inference requests or downloads.
 
 If the server is elsewhere, set its root address and optional key in Settings. Local default: `http://127.0.0.1:11434`. Remote addresses require HTTPS. For cloud tags, sign in using Ollama itself. Ollama uses its own sign-in. Subscription tools and the shared gateway use the separate sign-in paths in AI connections. Remote/cloud inference asks permission before sending sampled frames/prompts and may use paid allowance. Local server selection alone does not guarantee private inference if Ollama routes the chosen tag to its cloud.
 
@@ -120,7 +120,7 @@ For a clean model comparison, use identical media/range/prompts and clear the gl
 
 Select a description to seek and expand its inline editor. Start, End and text update the project immediately when valid. Add at playhead inserts and selects a three-second cue. Delete removes the selected cue after confirmation. Ctrl+Z and Ctrl+Shift+Z undo/redo cue edits.
 
-Times accept numeric seconds (`62.5`), minutes/seconds (`1:02.5`) or hours/minutes/seconds (`00:01:02.5`). Start and End are independent; the ± buttons nudge by 0.1 seconds. Invalid intermediate input stays in the editor but does not enter the project; correct it before saving or exporting. Text must be nonempty and the end must follow the start within the video duration.
+Times accept numeric seconds (`62.5`), minutes/seconds (`1:02.5`) or hours/minutes/seconds (`00:01:02.5`). Changing Start shifts End to preserve cue duration; changing End adjusts only End. The ± buttons nudge by 0.1 seconds. Invalid intermediate input stays in the editor but does not enter the project; correct it before saving or exporting. Text must be nonempty and the end must follow the start within the video duration.
 
 Use this review sequence:
 
@@ -130,7 +130,7 @@ Use this review sequence:
 4. Fit the words comfortably in the cue window; shortening text is often better than fast speech.
 5. Check adjacent cues, continuity and overall coverage. A valid timestamp is not proof of useful timing.
 
-Automatic normalization skips malformed rows, bounds valid intervals and removes only duplicates of the same event/time/text. It preserves genuine repetitions and overlapping event intervals. The planner then selects an independently protected gap within the original event; it never moves an event to a different scene to conceal overlap.
+AI chunk validation rejects malformed times, text or metadata as a whole before caching success. Rejected responses remain separate diagnostic artifacts; retry requests a corrected response while reusing valid prior chunks. Normalization removes only duplicates of the same event/time/text. It preserves genuine repetitions and overlapping event intervals. The planner then selects an independently protected gap within the original event; it never moves an event to a different scene to conceal overlap.
 
 Description rows show **In gap**, **Sped up**, **Pauses picture** (or a pause duration), **Needs review**, or **Not yet placed** tags. Needs review corresponds to the stored `unresolved` disposition; Not yet placed corresponds to `unplanned`. Use the All / Needs review / Pauses filter above the list. **Mark as checked** appears only on Needs review cues and clears the uncertainty after you verify the facts; it does not measure narration or establish accuracy. Editing a cue clears its old plan; narrated export replans it. The inline fit meter is a word-count estimate unless a matching measured narration duration is available. **Start at playhead** and **End at playhead** set the respective boundary. **Preview in context** plays from two seconds before Start; it is not a bounded-loop preview.
 
@@ -181,7 +181,7 @@ MP3 is audio only; choose MP4 for a described video. Save the `.adproject` and i
 
 ## 9. Import and download
 
-Open video first, then **Import SRT / VTT** (Ctrl+I). Import replaces current cues after confirmation. UTF-8, UTF-16 with a byte-order marker and Windows-1252 fallback are supported. Empty/zero-length subtitle entries are skipped with warnings. The parser handles the tested timestamped variants; it is not a general preservation tool for WebVTT styling, regions or metadata.
+Open video first, then **Import SRT / VTT** (Ctrl+I). Import replaces current cues after confirmation. UTF-8, UTF-16 with a byte-order marker and Windows-1252 fallback are supported. Empty/zero-length subtitle entries are skipped with warnings. Basic VTT cues accept MM:SS.mmm or HH:MM:SS.mmm timestamps, including a mixture in one file. Existing hour-qualified SRT timestamps remain supported. The parser handles these timestamped variants; it is not a general preservation tool for WebVTT styling, regions or metadata.
 
 **Open URL** / **Open YouTube** asks for a URL and destination folder, downloads through yt-dlp and opens the resulting video. Quality is configurable. Use content you are entitled to download. Public extractor behavior changes and was not verified against live YouTube in the release acceptance; a local HTTP download fixture was tested.
 
@@ -201,11 +201,11 @@ Open video first, then **Import SRT / VTT** (Ctrl+I). Import replaces current cu
 | Recognize characters | Requests and carries a visual glossary. |
 | Remove audio | Strips audio from prepared video. Gemini then loses dialogue evidence; Ollama already receives no audio. |
 | Background ducking | −40 to 0 dB, default −15 dB. More negative reduces the original bed more. |
-| Speech rate / volume | Native export voice rate −10 to 10; speech volume 0–100 for Qt speech and newly synthesized Windows narration. Existing measured WAV playback, OpenAI exports and a screen reader retain their own audio levels. |
+| Speech rate / volume | Native export voice rate −10 to 10. Speech volume 0–100 scales live Qt speech, measured WAV playback and exported narration, including OpenAI narration. Newly planned Windows WAVs are synthesized at 100% and scaled using their recorded level. A screen reader controls its own volume/rate; older WAVs without a recorded level require repair. |
 | Playback voice / output | Qt Windows voice or active screen reader; separate from export engine/voice. |
 | Interruption | Allow new cue speech to interrupt, or queue it. |
 | Interface language | English, Arabic, Spanish, French, Italian, Portuguese, Russian, Turkish, Ukrainian or Vietnamese. Arabic uses RTL. Unmatched strings/help/logs fall back to English; no native-speaker acceptance is claimed. |
-| Presets | Draft with AI selects a language-specific prompt preset or accepts multiline guidance. Original prompt data can be imported through File → Import original data. The redesigned dialog has no prompt-preset manager button. Manage voice presets stores speech personalities. |
+| Presets | Draft with AI selects a language-specific prompt preset or accepts multiline guidance. Original prompt data can be imported through File → Import original data. Use **File → Manage presets** to add/edit, rename or delete a prompt preset in the current description language. Rename preserves its prompt and selection; an existing name is refused and Cancel preserves settings. Manage voice presets stores speech personalities. |
 | Download quality | Best, 360p, 480p, 720p or 1080p, subject to available formats. |
 | Notifications / diagnostics | Enable sounds and choose DEBUG through CRITICAL logging. |
 | Gemini BLOCK_NONE | Requests supported adjustable thresholds only; provider core safeguards/account restrictions remain. |
@@ -221,7 +221,7 @@ NVDA/JAWS end-to-end acceptance was not performed. The presence of controller mo
 
 Projects are user-selected `.adproject` JSON files with `version`, `video`, `duration`, `cues` and `glossary`, plus optional coverage/analysis and event/placement fields. Existing version-1 projects remain readable. Video is an absolute path, not embedded media. Moving a project to another computer requires moving the media separately; **Open project** prompts you to locate a missing video and revalidates cue durations. Projects contain description text and paths; inspect before sharing. Save is written to a sibling temporary file then replaced.
 
-Settings live at `%LOCALAPPDATA%/DescriberWorkbench/settings.json`. API keys are DPAPI-protected for the current Windows user. Moving this file to a different account does not move working keys. If a key cannot be unlocked, re-enter it. Damaged/incompatible settings load defaults with a warning and are preserved in a `.recovery-*` copy before saving. Other settings are not encrypted.
+Settings live at `%LOCALAPPDATA%/DescriberWorkbench/settings.json`. API keys are DPAPI-protected for the current Windows user. Moving this file to a different account does not move working keys. If a key cannot be unlocked, re-enter it. Damaged/incompatible settings, including malformed nested connection/model entries or a missing selected profile, load defaults with a warning and are preserved in a `.recovery-*` copy before saving. Other settings are not encrypted.
 
 Logs live beside settings, rotate at 1 MiB with one backup and redact configured key strings. They may still include paths, descriptions and error text. Temporary clips/frames/audio are created for jobs and normally removed when their temporary directories close. Downloaded videos and exported files remain where you chose to save them. Engine jobs, snapshots, checkpoints and narration persist under `%LOCALAPPDATA%/DescriberWorkbench/engine` (or `DESCRIBER_HOME/engine`); they are needed for resume and planned playback. Keep them with projects. There is no automatic deletion. API keys are omitted from saved jobs.
 
@@ -307,14 +307,14 @@ Example `.adproject` (illustrative; update the media path):
 }
 ```
 
-Project schema version is independent of application version. Loading requires version 1, finite nonnegative timings, valid text and cue bounds. Import validation is strict; model-output normalization is more tolerant and logs skipped rows. Settings schema is separate and migrates bundled presets. Do not use source-controlled settings files to distribute credentials.
+Project schema version is independent of application version. Loading requires version 1, finite nonnegative timings, valid text and cue bounds. Import validation is strict; AI chunks require valid text, timing and metadata for every returned observation; invalid chunks fail without accepting partial results. Settings schema is separate and migrates bundled presets. Do not use source-controlled settings files to distribute credentials.
 
 Optional update-feed shape (example only; no service is supplied):
 
 ```json
 {
   "application": "DescriberWorkbench",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "url": "https://example.org/DescriberWorkbench.zip",
   "sha256": "REPLACE_WITH_THE_ACTUAL_64_HEXADECIMAL_CHARACTER_DIGEST"
 }
@@ -333,7 +333,7 @@ Run the standard suite on Windows:
 
 The optional second command opens an owned window, makes a short clip, tests editing/seeking/playback, DPAPI, native speech and MP3. It writes local artifacts and is not a cloud test. Additional acceptance scripts in `tests/` exercise library formats, audio mixing and update staging/rollback; read their inputs before running. `verify_payload.py` compares frozen source code fingerprints to the executable and checks reader dependencies. It does not prove human usability or visual accuracy.
 
-The v0.5.1 suite passes 51 tests and 3 subtests. The earlier v0.5.0 suite passed 43 tests and 3 subtests. Real native vision/classifier/speech checks covered three 120-second samples, and packaged GUI/CLI/HTTP/MCP startup passed. These are historical results. See the [0.6.0 release acceptance record](V060-ACCEPTANCE.md), [historical desktop acceptance](V051-ACCEPTANCE.md) and [historical engine acceptance](V050-ACCEPTANCE.md) for scope and limits. These results are functional evidence, not a visual-accuracy percentage.
+The v0.5.1 suite passes 51 tests and 3 subtests. The earlier v0.5.0 suite passed 43 tests and 3 subtests. Real native vision/classifier/speech checks covered three 120-second samples, and packaged GUI/CLI/HTTP/MCP startup passed. These are historical results. See the [0.6.1 release acceptance record](V061-ACCEPTANCE.md), [historical desktop acceptance](V051-ACCEPTANCE.md) and [historical engine acceptance](V050-ACCEPTANCE.md) for scope and limits. These results are functional evidence, not a visual-accuracy percentage.
 
 Historical 0.4.2 evidence: its suite passed 28 tests. Actual GUI Bunny seconds 62–122 with Gemma 26B and Qwen Q6 completed four requests per model with a clean initial glossary. The eight requests carried the requested off/32K/64K settings, runner contexts were 64K and no thinking output or truncation occurred. Projects matched responses; cue counts (29/25) are not quality scores. The release verification asset pins the executable and source identity. Raw local receipts are excluded from Git/public downloads because they include images and paths.
 
@@ -349,11 +349,11 @@ This is newly written reconstruction source, not recovered original source or an
 
 ## Redesigned desktop interface
 
-The 0.6.0 Windows portable and source tree include the Industry PySide6 interface described here. New scene answers are marked for review. **Mark as checked** appears only on Needs review descriptions. Use it only after verifying visual facts; editing invalidates measured narration and the engine replans it at media export. Saved projects and engine protocols remain compatible.
+The 0.6.1 Windows portable and source tree include the Industry PySide6 interface described here. New scene answers are marked for review. **Mark as checked** appears only on Needs review descriptions. Use it only after verifying visual facts; editing invalidates measured narration and the engine replans it at media export. Saved projects and engine protocols remain compatible.
 
 ### Timeline navigation and desktop visual controls
 
-Use Ctrl+mouse-wheel over the timeline to zoom around the pointer, and the mouse wheel or bottom scrollbar to pan. The visible range follows the playhead; selecting a description brings it into view. The picture lane samples eight frames within the visible range and refreshes after zooming or panning; repeated frames can still occur in a static scene. Sped-up description blocks have diagonal stripes. Description tags distinguish In gap, Sped up, Pauses picture and Needs review. Theme and Settings are icon buttons; the editor toolbar and document status counts are hidden on Start. Sliders, checkboxes and scrollbars use the interface accent in both themes. Model tags can be edited in the model list (double-click or F2), with no duplicate tag field.
+Use Ctrl+mouse-wheel over the timeline to zoom around the pointer, and the mouse wheel or bottom scrollbar to pan. The visible range follows the playhead; selecting a description brings it into view. The picture lane samples eight frames within the visible range and refreshes after zooming or panning; repeated frames can still occur in a static scene. Sped-up description blocks have diagonal stripes. Description tags distinguish In gap, Sped up, Pauses picture and Needs review. Theme and Settings are icon buttons; the editor toolbar and document status counts are hidden on Start. Sliders, checkboxes and scrollbars use the interface accent in both themes. Select a model row or edit its exact tag in the separate Exact analysis model ID field. Supported subscription/API routes offer a synthetic-image Test connection; Ollama retains its labeled text test and Gemini is checked when an operation starts.
 
 The Draft dialog accepts multiline editorial instructions and preserves the selected provider/model. Scene questions have a labeled Context range; every answer card has Speak, Copy and Add as description actions for its captured position. Glossary cards keep Add character beneath the list. The model chip shows the actual selected ID, and the status separates ordinary in-gap, sped-up, pause and review counts.
 
@@ -362,7 +362,7 @@ At export, choose a narration engine and a voice in the dropdowns. Windows voice
 
 ## Setup and recovery changes (0.5.2)
 
-These recovery controls were introduced in 0.5.2 and retained in 0.6.0. [Current release acceptance](V060-ACCEPTANCE.md) records checks and verification limits.
+These recovery controls were introduced in 0.5.2 and retained in 0.6.1. [Current release acceptance](V061-ACCEPTANCE.md) records checks and verification limits.
 
 - Draft provider/model edits are committed by Start; Cancel preserves saved settings. Ollama Refresh and Test operate on the exact displayed ID. Gemini does not expose an Ollama-backed test. Slow preflight runs in the background; Cancel prevents continuation. Install/start Ollama separately and install your chosen vision model, then use Draft > Refresh models. No automatic model selection or download occurs.
 - Setup distinguishes missing, configured, verified and error. A configured Gemini key is not an account-access test. Detector verification is cached and invalidated by file changes. Voice readiness concerns the selected export engine, not playback voices.
@@ -371,4 +371,4 @@ These recovery controls were introduced in 0.5.2 and retained in 0.6.0. [Current
 - **File > Repair narration** regenerates missing narration and placement through the shared engine without repeating vision. Missing referenced audio is also reported on load/playback. Consent precedes cloud speech. Save the repaired project to retain its new audio references.
 - **File > Recover interrupted jobs** lists readable failed/cancelled/interrupted jobs with original source and operation. Resume uses original saved settings plus current keys, and opens the result as an unsaved recovered project. Checkpoints are reused only when source, model, settings and implementation identity match. An older release's checkpoints may be incompatible with this version; rejection preserves them. Damaged job records are reported and left unchanged; restore them from a backup rather than deleting the engine workspace.
 - The developer API announces readiness only after startup. A busy port is reported; no conflicting process is terminated. Stop/retry once the conflict is resolved.
-- URL failures offer connection/account/extractor guidance and a local-file fallback. The app does not import browser cookies or bypass bot challenges. In 0.6.0, Check for updates with a blank feed queries the official latest stable GitHub release; the older0.5.2 behavior only offered the releases page.
+- URL failures offer connection/account/extractor guidance and a local-file fallback. The app does not import browser cookies or bypass bot challenges. In 0.6.1, Check for updates with a blank feed queries the official latest stable GitHub release; the older0.5.2 behavior only offered the releases page.

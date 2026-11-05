@@ -1,6 +1,6 @@
-# Developer guide — 0.6.0
+# Developer guide — 0.6.1
 
-Version 0.6.0: [AI connections](AI-CONNECTIONS.md) documents the new routes and evidence limits. Timed narration is synthesized and measured independently of the live-text screen-reader route. New/repair cues record `audio_volume:100`; target gain is `speech_volume / audio_volume`. The desktop prompts repair for older cues with unknown synthesis level. The shared service prepares narration before media export; the raw exporter rejects unknown recorded levels. User and model text remain unchanged when repairing audio.
+Version 0.6.1: [AI connections](AI-CONNECTIONS.md) documents the new routes and evidence limits. Timed narration is synthesized and measured independently of the live-text screen-reader route. New/repair cues record `audio_volume:100`; target gain is `speech_volume / audio_volume`. The desktop prompts repair for older cues with unknown synthesis level. The shared service prepares narration before media export; the raw exporter rejects unknown recorded levels. User and model text remain unchanged when repairing audio.
 
 Reported usage persists with operation and requested/reported model identity. Automatic glossary generation shares the description request; such records have `components:["description","glossary"]` and explicitly unavailable separate glossary counts. The desktop labels that combined category and never fabricates a split or a subscription dollar cost. Scene requests remain separately attributed; unavailable provider token fields remain unknown.
 
@@ -12,7 +12,7 @@ New image adapters share a source-time FFmpeg sampler with at most eight640px im
 
 The updater uses the official latest stable GitHub release when the configured feed is blank. It checks the archive digest, requires timestamped Valid Scott Converse signatures on both Windows executables, and rechecks all staged payload hashes before applying. Manual signed-package acceptance: `python -m tests.update_acceptance SIGNED_ARCHIVE NEW_OUTPUT_DIRECTORY`. Real portable relaunch acceptance: `python -m tests.portable_update_acceptance prepare NEW_OUTPUT_DIRECTORY OLD_INSTALL VERIFIED_STAGED_DIRECTORY`, then close only its disposable window and run the same module with `verify NEW_OUTPUT_DIRECTORY`. These scripts write new receipts beside their disposable installation and preserve historical evidence. A requested launch alone does not verify the running application.
 
-See [0.6.0 release acceptance](V060-ACCEPTANCE.md) for verification scope and limits. The distributed Windows GUI and CLI are signed as Scott Converse using Azure Trusted Signing with Microsoft timestamps. Source builds require the [release signing procedure](CODE-SIGNING.md) before publication.
+See [0.6.1 release acceptance](V061-ACCEPTANCE.md) for verification scope and limits. The distributed Windows GUI and CLI are signed as Scott Converse using Azure Trusted Signing with Microsoft timestamps. Source builds require the [release signing procedure](CODE-SIGNING.md) before publication.
 
 Describer Workbench has one headless engine. The Qt desktop, Python API, CLI,
 REST API and MCP tools call the same `DescriptionService`. No WSL, Docker,
@@ -80,6 +80,8 @@ retains completed stages only if source, local model digest, parameters and engi
 match. Provider keys are never written to jobs/checkpoints; supply keys again
 after restarting a cloud-backed engine. Cancellation cannot undo a sent cloud
 request. A waiting read can take up to its configured timeout.
+
+Observation checkpoints are reusable only after whole-chunk timestamp, text, metadata and glossary validation. Rejected provider data is retained under `stages/rejected-*.json` with `complete:false` and its stage name; it is diagnostic data, not a project result. Resume requests a corrected response for the failed chunk while retaining validated earlier chunks. A legacy invalid cached stage is preserved under `invalid-*.json` instead of being reused. These files can include provider text and should be inspected before sharing. Changed implementation identity still requires a new job rather than resuming an older executable's work.
 
 One process owns a workspace. Do not start multiple owners against the same
 directory. Clients sharing desktop jobs attach to its HTTP service. Separate

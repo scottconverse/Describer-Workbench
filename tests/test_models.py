@@ -14,7 +14,11 @@ class OllamaTests(unittest.TestCase):
         rows=[{'name':'vision:local','capabilities':['vision'],'digest':'a'},
               {'name':'text:local','capabilities':['completion']},
               {'name':'alias','remote_host':'https://ollama.com','capabilities':['vision']}]
-        with patch.object(models,'json_request',side_effect=[{'models':rows},{'models':[{'name':'vision:local'}]}]):
+        def metadata(settings,path,payload=None):
+            if path=='/api/tags':return {'models':rows}
+            if path=='/api/ps':return {'models':[{'name':'vision:local'}]}
+            return {'model_info':{'fixture.context_length':65536}}
+        with patch.object(models,'json_request',side_effect=metadata):
             result=models.discover(self.settings,self.cancel,lambda _:None)
         self.assertTrue(next(r for r in result if r['name']=='vision:local')['loaded'])
         self.assertFalse(next(r for r in result if r['name']=='text:local')['vision'])
