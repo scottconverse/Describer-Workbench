@@ -25,7 +25,7 @@ jobs:
       HF_HUB_DISABLE_TELEMETRY: '1'
       OTEL_SDK_DISABLED: 'true'
       DO_NOT_TRACK: '1'
-      DESCRIBER_HOME: ${{ runner.temp }}/describer-native
+      DESCRIBER_HOME: /tmp/describer-native-${{ matrix.target }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
@@ -96,7 +96,7 @@ jobs:
       HF_HUB_DISABLE_TELEMETRY: '1'
       OTEL_SDK_DISABLED: 'true'
       DO_NOT_TRACK: '1'
-      DESCRIBER_HOME: ${{ runner.temp }}/describer-native
+      DESCRIBER_HOME: /tmp/describer-native-${{ matrix.target }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
