@@ -2,6 +2,7 @@
 import argparse
 import hashlib
 import json
+import os
 import struct
 import subprocess
 import sys
@@ -25,7 +26,7 @@ def documents():
 
 
 def manifest():
-    return {'application_version':'0.6.1','documentation_source':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
+    return {'application_version':'0.6.1','documentation_source':os.environ.get('DESCRIBER_DOCUMENTATION_SOURCE') or subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
             'scope':'Documentation only; original application acceptance retained. Windows signed executables unchanged. Mac ad-hoc integrity only.',
             'sha256':{name:hashlib.sha256(data).hexdigest() for name,data in documents().items()}}
 
@@ -46,6 +47,17 @@ def unsigned_macho(path):
         if command==0x1d:
             cut=struct.unpack_from('<I',data,offset+8)[0]
             data[offset+8:offset+16]=b'\0'*8
+        offset+=size
+    offset=32
+    for _ in range(struct.unpack_from('<I',data,16)[0]):
+        command,size=struct.unpack_from('<II',data,offset)
+        if command==0x19 and data[offset+8:offset+24].rstrip(b'\0')==b'__LINKEDIT':
+            # codesign changes the enclosing segment sizes with its signature blob.
+            # Normalize only these two sizes, retaining every offset and all payload bytes.
+            fileoff=struct.unpack_from('<Q',data,offset+40)[0]
+            payload_size=cut-fileoff
+            struct.pack_into('<Q',data,offset+32,payload_size)
+            struct.pack_into('<Q',data,offset+48,payload_size)
         offset+=size
     return hashlib.sha256(data[:cut]).hexdigest()
 
@@ -70,7 +82,12 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--input',type=Path,required=True)
     parser.add_argument('--output',type=Path,required=True)
+    parser.add_argument('--documentation-source',default='')
     args=parser.parse_args();source=args.input.resolve();out=args.output.resolve();out.mkdir(parents=True,exist_ok=True)
+    if args.documentation_source:
+        # A helper-only repair does not change the already-published guide identity.
+        run('git','diff','--exit-code',args.documentation_source,'HEAD','--','README.md','docs')
+        os.environ['DESCRIBER_DOCUMENTATION_SOURCE']=args.documentation_source
     original=digest(source)
     with tempfile.TemporaryDirectory(prefix='describer-docs-') as tmp:
         stage=Path(tmp)
@@ -85,7 +102,9 @@ def main():
             install_docs(app/'Contents/Resources')
             run('codesign','--force','--sign','-',str(app))
             run('codesign','--verify','--deep','--strict','--verbose=2',str(app))
-            assert snapshot(app,mac=True)==before,'Non-documentation app content changed'
+            after=snapshot(app,mac=True)
+            differences={name:{'before':before.get(name),'after':after.get(name)} for name in before.keys()|after.keys() if before.get(name)!=after.get(name)}
+            assert not differences,'Non-documentation app content changed: '+json.dumps(differences,sort_keys=True)
             # Validate actual executable launch after resealing, without opening an editor or provider.
             run(str(app/'Contents/MacOS/DescriberCLI'),'--help')
             (payload/'Applications').symlink_to('/Applications')
@@ -114,6 +133,7 @@ def main():
         receipt={'documentation':manifest(),'original_package':{'name':source.name,'sha256':original},
                  'refreshed_package':{'name':source.name,'sha256':digest(out/source.name)},
                  'preservation':seal,'preserved_entries':len(before),'application_rebuilt':False}
+        receipt['packaging_helper_source']=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
         (out/(source.name+'.docs.json')).write_text(json.dumps(receipt,indent=2)+'\n',encoding='utf-8')
 
 
