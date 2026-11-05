@@ -53,6 +53,7 @@ jobs:
         env:
           DOC_SOURCE: ${{ inputs.documentation_source }}
         run: |
+          if [ -n "$DOC_SOURCE" ]; then git fetch origin "$DOC_SOURCE" --depth=1; fi
           for package in intake/DescriberWorkbench*; do
             python tools/refresh_packaged_docs.py --input "$package" --output refreshed --documentation-source "$DOC_SOURCE"
           done
