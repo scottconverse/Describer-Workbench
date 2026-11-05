@@ -184,7 +184,7 @@ tolerance and actual decoding. Source unchanged and reopened preview identical.
 No human-listening or live cloud synthesis claim. Native Qt preview screenshot
 was inspected. Acceptance-helper misuse of the video-only probe on WAV was
 corrected to FFprobe; prior checkpoints reused. An atomic documentation patch
-context miss changed no files. No full CI/build restart. Native checks pending.
+context miss changed no files. No full CI/build restart. Three final preview/stale-job checks and three documentation checks passed. A collection command used the nonexistent test_docs.py path; only the correctly named test_documentation.py was then run. Native Linux/macOS source checks passed at c24a3f1 in run42106391026. Package 7 is accepted and pushed.
 
 Native reader acceptance must identify exactly which
 reader/platform combination was exercised; simulated events are not that proof.
