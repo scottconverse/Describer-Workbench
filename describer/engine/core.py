@@ -23,7 +23,7 @@ def atomic_json(path, value):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     import tempfile
-    with tempfile.NamedTemporaryFile(mode='w',encoding='utf-8',prefix=path.name+'.',suffix='.partial',dir=path.parent,delete=False) as out:
+    with tempfile.NamedTemporaryFile(mode='w',encoding='utf-8',prefix='.dw-',suffix='.partial',dir=path.parent,delete=False) as out:
         tmp=Path(out.name)
         json.dump(value,out,indent=2,ensure_ascii=False)
     try:tmp.replace(path)
@@ -39,13 +39,27 @@ class Checkpoints:
             raise ValueError('Source, provider, model or settings changed; submit a new job instead of resuming.')
         atomic_json(path, identity)
 
-    def stage(self, name, action):
+    def stage(self, name, action, validate=None):
         path = self.root / (name + '.json')
+        def checked(value):
+            if validate:
+                try:validate(value)
+                except ValueError as exc:
+                    # Retain rejected output for diagnosis, never as reusable success.
+                    from uuid import uuid4
+                    rejected=self.root/('rejected-'+uuid4().hex[:12]+'.json')
+                    atomic_json(rejected, {'stage':name,'value':value,'complete':False,'error':str(exc)})
+                    raise
+            return value
         if path.exists():
             data = json.loads(path.read_text('utf-8'))
             if all((self.root / p).is_file() and sha(self.root / p) == h for p, h in data['files'].items()):
-                return data['value']
-        value = action()
+                try:return checked(data['value'])
+                except ValueError:
+                    # Keep the old cache too, without allowing it to poison retries.
+                    from uuid import uuid4
+                    path.rename(self.root/('invalid-'+uuid4().hex[:12]+'.json'))
+        value = checked(action())
         files = {}
         if isinstance(value, dict) and value.get('audio'):
             audio = Path(value['audio'])

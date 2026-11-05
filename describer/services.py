@@ -121,6 +121,7 @@ class Settings:
                 for key,(low,high) in ranges.items():self.data[key]=max(low,min(high,self.data[key]))
                 from .providers import provider_name
                 provider_name(self.data)
+                validate_connection_settings(self.data)
                 self.data.update({key:value for key,value in j.items() if key.endswith('_key') and isinstance(value,str)})
                 if j.get('settings_version',0)<3:
                     for name,prompt in PROMPTS.items():self.data['presets'].setdefault('English',{}).setdefault(name,prompt)
@@ -138,6 +139,27 @@ class Settings:
             if j[k]: j[k] = base64.b64encode(dpapi(j[k].encode())).decode()
         self.path.parent.mkdir(parents=True, exist_ok=True)
         temp = self.path.with_suffix('.tmp');temp.write_text(json.dumps(j, indent=2), encoding='utf-8');temp.replace(self.path)
+
+
+def validate_connection_settings(settings):
+    """Validate persisted nested choices without contacting providers or reading keys."""
+    from .providers import PROVIDERS
+    for provider,model in settings['provider_models'].items():
+        if provider not in PROVIDERS or not isinstance(model,str):raise ValueError('Invalid provider model.')
+    for provider,path in settings['cli_paths'].items():
+        if provider not in ('Codex CLI','Claude CLI','Gemini CLI') or not isinstance(path,str):raise ValueError('Invalid CLI path.')
+    for ident,entry in settings['connections'].items():
+        if not ident or not isinstance(entry,dict):raise ValueError('Invalid connection entry.')
+        for field in ('url','credential'):
+            if not isinstance(entry.get(field),str) or not entry[field].strip():raise ValueError('Invalid connection '+field+'.')
+        if not isinstance(entry.get('name',''),str):raise ValueError('Invalid connection name.')
+        if not entry['credential'].endswith('_key'):raise ValueError('Invalid connection credential reference.')
+        if not isinstance(entry.get('enabled',True),bool) or not isinstance(entry.get('model',''),str):raise ValueError('Invalid connection choices.')
+    if settings['connection_id'] and settings['connection_id'] not in settings['connections']:raise ValueError('Selected connection is missing.')
+    choices={'voice_engine':('Windows','Windows 32-bit','Windows OneCore','OpenAI'),
+             'playback_output':('Windows speech','Screen reader'), 'analysis_effort':('','low','medium','high','xhigh','max')}
+    for field,values in choices.items():
+        if settings[field] not in values:raise ValueError('Invalid '+field+'.')
 
 
 class IncompleteResponse(ValueError):
@@ -256,11 +278,17 @@ def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, c
                 except IncompleteResponse as exc:
                     exc.context={'clip_start':start,'clip_duration':length,'timestamp_reference':'clip'}
                     raise
-            data=checkpoint(f'observe-{start:.6f}',request) if checkpoint else request()
+            from .project import normalize_chunk
+            def validate(data):
+                normalize_chunk(data,start,length)
+                if settings.get('auto_glossary',False) and isinstance(data,dict) and 'character_glossary' in data:
+                    from .compatibility import merge_glossary
+                    merge_glossary(glossary,data['character_glossary'])
+            data=checkpoint(f'observe-{start:.6f}',request,validate) if checkpoint else request()
+            validate(data)
             if settings.get("auto_glossary",False) and isinstance(data,dict) and "character_glossary" in data:
                 from .compatibility import merge_glossary
                 glossary=merge_glossary(glossary,data["character_glossary"])
-            from .project import normalize_chunk
             for cue in normalize_chunk(data,start,length,log):
                 cue.start+=start;cue.end+=start;cue.event_start+=start;cue.event_end+=start
                 cue.event_id=f'{start:.6f}:{cue.event_start:.6f}:{cue.event_end:.6f}:{len(cues)}'

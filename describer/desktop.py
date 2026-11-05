@@ -600,11 +600,16 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
                 name=model_list.item(i).data(Qt.UserRole);self.model_picker.store_model(name);exact_model.setText(name)
         sync_models();model_list.currentRowChanged.connect(selected_model)
         exact_model.editingFinished.connect(lambda:self.model_picker.store_model(exact_model.text().strip()) if exact_model.text().strip() else None)
-        links=QHBoxLayout();v.addLayout(links);refresh_button=button(links,'Refresh models',self.model_picker.refresh,role='ghost');test_button=button(links,'Test connection',self.model_picker.test,role='ghost');links.addStretch()
+        def test_current_model():
+            if self.model_picker.store_model(exact_model.text().strip()):self.model_picker.test()
+        links=QHBoxLayout();v.addLayout(links);refresh_button=button(links,'Refresh models',self.model_picker.refresh,role='ghost');test_button=button(links,'Test connection',test_current_model,role='ghost');links.addStretch()
         def provider_actions(*args):
-            ollama=self.model_picker.provider.currentText()=='Ollama'
-            refresh_button.setEnabled(self.model_picker.provider.currentText()!='Gemini');test_button.setEnabled(ollama)
-            test_button.setToolTip('Tests the exact Ollama model.' if ollama else 'Gemini is validated when a confirmed operation starts; no discovery/test request is offered here.')
+            provider=self.model_picker.provider.currentText()
+            refresh_button.setEnabled(self.model_picker.refresh_button.isEnabled())
+            test_button.setEnabled(self.model_picker.test_button.isEnabled())
+            test_button.setToolTip('Text connection test for the exact Ollama model; not a vision test.' if provider=='Ollama' else
+                                   'Gemini is validated when a confirmed operation starts.' if provider=='Gemini' else
+                                   'Tests the exact selected model with a synthetic blue image after confirmation.')
         provider_actions();self.model_picker.provider.currentTextChanged.connect(provider_actions)
         status=QLabel(self.model_picker.help.text());status.setWordWrap(True);v.addWidget(status)
         timer=QTimer(d);timer.timeout.connect(lambda:status.setText(self.model_picker.help.text()));timer.start(300)
@@ -617,7 +622,11 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
         verbosity=QComboBox();verbosity.addItems(['Short','Standard','Detailed']);verbosity.setCurrentText(self.settings.data['verbosity']);v.addWidget(QLabel('Verbosity'));v.addWidget(verbosity)
         glossary=QCheckBox('Recognize characters and update the glossary');glossary.setChecked(self.settings.data['auto_glossary']);v.addWidget(glossary)
         note=QLabel();note.setWordWrap(True);v.addWidget(note)
-        def update_note():note.setText(('Sampled frames, no audio, go to the selected Ollama server. Remote/cloud confirmation remains required.' if self.model_picker.provider.currentText()=='Ollama' else 'Uploads video to Google with your key; may include audio and incur charges.')+f' Range analysis replaces the {len(self.project.cues)} current descriptions.')
+        def update_note():
+            from .providers import destination
+            try:message=destination(self.model_picker.data)
+            except ValueError as exc:message=str(exc)
+            note.setText(message+'. External processing requires confirmation and may use allowance or API credit.'+f' Range analysis replaces the {len(self.project.cues)} current descriptions.')
         update_note();self.model_picker.provider.currentTextChanged.connect(update_note)
         actions=QDialogButtonBox(QDialogButtonBox.Cancel);actions.addButton('Start draft',QDialogButtonBox.AcceptRole).setProperty('role','primary');actions.accepted.connect(d.accept);actions.rejected.connect(d.reject);v.addWidget(actions)
         accepted=d.exec();timer.stop();self.model_picker.provider.currentTextChanged.disconnect(update_note);self.model_picker.provider.currentTextChanged.disconnect(sync_models);self.model_picker.reloaded.disconnect(sync_models)

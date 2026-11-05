@@ -1,6 +1,6 @@
-# AI connections — 0.6.0
+# AI connections — 0.6.1
 
-Version 0.6.0 implements these finite routes. The Windows executables are signed as Scott Converse. See [release acceptance](V060-ACCEPTANCE.md) for executed checks and delivery boundaries.
+Version 0.6.1 implements these finite routes. The Windows executables are signed as Scott Converse. See [release acceptance](V061-ACCEPTANCE.md) for executed checks and delivery boundaries.
 
 | Route | Authentication and model selection | Verification so far |
 |---|---|---|
@@ -18,6 +18,8 @@ Subscriptions, native CLIs and API credits are separate routes. An installed CLI
 ## Setup
 
 Choose the route in **Draft with AI**, enter an exact model ID, and save. Each route retains its own model ID. For compatible servers, use **File > Manage AI connections** to add, select, disable or delete a profile. Saving a profile selects the connection while preserving the selected provider. Select **OpenAI-compatible** to use it. Cancel discards the edits. API credentials are stored under Windows DPAPI; removing a saved credential is explicit.
+
+Select a discovered row or type in the separate **Exact analysis model ID** field. The visible **Test connection** button uses that ID and the selected route. Subscription/native/compatible/Anthropic routes use the synthetic-image test; Ollama uses its labeled text test. Gemini is checked when a confirmed operation starts. Gemini and Anthropic API have no catalog refresh in this interface. Draft displays the selected destination and whether it receives sampled images without audio or Gemini video; normal external-processing confirmation remains required.
 
 For the shared subscription gateway, enter its URL and the path to its existing client-key file in Settings. Describer reads that key by reference. It does not copy the gateway authentication store, perform a second OAuth login or restart the shared gateway. Gateway aliases can differ from native CLI IDs.
 

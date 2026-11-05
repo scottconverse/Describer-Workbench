@@ -113,7 +113,7 @@ def parse_cues(data, duration=0):
                    for x in data], key=lambda c: c.start)
 
 
-def normalize_generated(data,duration,log=lambda _:None):
+def normalize_generated(data,duration,log=lambda _:None,*,strict=False):
     """Validate observations without deleting real recurrence or shifting events.
 
     Only identical rows of the same event are duplicates. Overlap is input to
@@ -123,7 +123,7 @@ def normalize_generated(data,duration,log=lambda _:None):
     rows=data.get('descriptions',data.get('audio_descriptions',data.get('cues',[]))) if isinstance(data,dict) else data
     if not isinstance(rows,list):raise ValueError('Expected a description list.')
     parsed=[]
-    for row in rows:
+    for index,row in enumerate(rows,1):
         try:
             start=seconds(row.get('start',row.get('start_time_mmss')));end=seconds(row.get('end',row.get('end_time_mmss')))
             text=str(row.get('text',row.get('description_text',''))).strip()
@@ -133,7 +133,10 @@ def normalize_generated(data,duration,log=lambda _:None):
             allowed = {f.name for f in fields(Cue)} - {'start','end','text'}
             cue = Cue(start,end,text,**{k:v for k,v in row.items() if k in allowed}).validate(duration)
             parsed.append(cue)
-        except (ValueError,TypeError,AttributeError):log('Skipped a malformed generated description.')
+        except (ValueError,TypeError,AttributeError) as exc:
+            if strict:
+                raise ValueError(f'Malformed chunk observation {index}; retry the chunk. No partial chunk was accepted as complete.') from exc
+            log('Skipped a malformed generated description.')
     cues=[]
     seen=set()
     for cue in sorted(parsed,key=lambda c:c.start):
@@ -184,7 +187,7 @@ def normalize_chunk(data, start, length, log=lambda _:None):
             row.pop(key, None)
         adjusted.append(row)
     if absolute:log('Reconciled source-absolute chunk timestamps.')
-    return normalize_generated(adjusted,length,log)
+    return normalize_generated(adjusted,length,log,strict=True)
 
 
 def scene_data(data):
@@ -211,9 +214,10 @@ def import_subtitles(path, duration=0, warnings=None):
     else:
         try:text=b.decode('utf-8-sig')
         except UnicodeDecodeError:text=b.decode('cp1252')
-    pattern = r'(\d{1,2}:\d{2}:\d{2}[,.]\d{2,3})\s+-{1,2}>\s+(\d{1,2}:\d{2}:\d{2}[,.]\d{2,3})[^\n]*\n(.*?)(?=\n\s*\n|\Z)'
+    timestamp = r'(?:\d+:)?\d{2}:\d{2}[,.]\d{2,3}'
+    pattern = rf'^({timestamp})\s+-{{1,2}}>\s+({timestamp})[^\n]*\n(.*?)(?=\n\s*\n|\Z)'
     cues=[]
-    for a,b,t in re.findall(pattern,text.replace('\r',''),re.S):
+    for a,b,t in re.findall(pattern,text.replace('\r',''),re.S|re.M):
         start,end=seconds(a),seconds(b);text=re.sub('<[^>]*>','',t).strip()
         if not text or end<=start:
             if warnings is not None:warnings.append(f'Skipped empty or zero-length subtitle at {a}.')

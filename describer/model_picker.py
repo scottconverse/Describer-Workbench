@@ -45,6 +45,9 @@ class ModelPicker(QWidget):
         if provider!='Gemini':
             for row in self.rows:
                 label=row['name']+(' · cloud · uses allowance' if row['cloud'] else ' · local')+(' · vision unknown' if row['vision'] is None else ' · vision' if row['vision'] else ' · no vision')+(' · loaded' if row['loaded'] else '')
+                if provider=='Ollama':
+                    for field,title in (('family','family'),('parameter_size','parameters'),('quantization','quantization'),('size','bytes'),('context_length','context')):
+                        label+=' · '+title+': '+str(row.get(field) if row.get(field) is not None else 'unknown')
                 self.model.addItem(label,row['name'])
         else:self.model.addItem(settings['model'],settings['model'])
         selected=model_id(settings);index=self.model.findData(selected)
@@ -81,12 +84,14 @@ class ModelPicker(QWidget):
         if name:self.store_model(name)
 
     def store_model(self,name):
-        set_model(self.data,name)
+        try:set_model(self.data,name)
+        except ValueError as exc:self.window.error(str(exc));return False
         self.model.blockSignals(True)
         index=self.model.findData(name)
         if index>=0:self.model.setCurrentIndex(index)
         else:self.model.setCurrentIndex(-1);self.model.setEditText(name)
         self.model.blockSignals(False);self.status();self.save()
+        return True
 
     def refresh(self):
         if self.window.busy() or self.provider.currentText()=='Gemini':return
