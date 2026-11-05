@@ -97,6 +97,25 @@ nonterminal. Final local runs passed 48 tests and 3 subtests, then 7 editing/doc
 checks. Native Linux and macOS source/Qt tests passed at `9b9da1a` in run
 `42098539007`. Package 2 is accepted and pushed.
 
+Package 3 candidate restores native focus rendering in ordinary custom lists and
+paints a distinct keyboard-focus rectangle on description rows. Accessible cue
+names carry timing, placement, review state, text and uncertainty, including live
+updates. White on #416180 replaces the low-contrast primary button and pause
+badge combination. Platform voice labels retain correct settings categories;
+shared help text uses host speech terminology.
+
+Windows NVDA 2026.3 portable (official signed NV Access release) was actually
+running with isolated settings and add-ons disabled. Its real speech log records
+both cue names and times/review/uncertainty, description editor focus and the
+application's live-text output through the active NVDA adapter. The native Qt
+workflow navigated cues, edited text, used undo/redo and saved the actual project.
+The saved file and normal application exit were verified. These are speech
+pipeline and interaction observations; human listening/blind-user usability,
+JAWS, VoiceOver and Orca remain unverified. Temporary reader was quit afterward.
+Initial test-window visibility was delayed and a duplicate fixture window was
+closed normally; intermittent CUA foreground/geometry errors were recovered by
+fresh observations, without changing the app. No full CI or build restart.
+
 Native reader acceptance must identify exactly which
 reader/platform combination was exercised; simulated events are not that proof.
 

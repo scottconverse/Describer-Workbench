@@ -954,8 +954,8 @@ class Window(DesktopInterface, QMainWindow):
             'Start/end accept seconds or HH:MM:SS. Changing Start shifts End to preserve duration; changing End adjusts only End. Click the timeline to seek; Ctrl+wheel zooms. Space toggles playback outside text editors when the window receives it. Save with Ctrl+S. '
             'Export MP4, MP3/WAV, SRT/VTT, text or JSON. The shared engine protects measured speech, '
             'caps narration speed at 1.15x, and retains no-fit descriptions as pauses. '
-            'Draft checks the selected detector and offers verified setup before inference. File also offers detector installation, Repair narration and Recover interrupted jobs. Edits preserve review evidence; Mark as checked clears review deliberately. Unresolved facts block complete media exports. '
-            'File can also start the authenticated developer API/MCP server. Windows speech works offline. '
+            'Draft checks the selected detector and offers verified setup before inference. File also offers detector installation, Repair narration and Recover interrupted jobs. Edits preserve review evidence; Mark as checked clears review deliberately. Unresolved facts block complete media exports. '+
+            native_text('File can also start the authenticated developer API/MCP server. Windows speech works offline. ')+
             'Cloud operations use your own keys and require confirmation. Cancel stops local jobs; an in-flight cloud request may take up to its timeout. '
             'This is an independent reconstruction. Read the maintained user manual at https://describer-workbench.sconverse.chatgpt.site/manual for controls and verification limits.')
     def install_detector(self):

@@ -58,7 +58,6 @@ class BlueprintDialog(QDialog):
 
 class FlatSelectionDelegate(QStyledItemDelegate):
     def paint(self,painter,option,index):
-        option.state &= ~QStyle.State_HasFocus
         super().paint(painter,option,index)
 
 
@@ -77,8 +76,11 @@ class CueDelegate(QStyledItemDelegate):
             tag=cue_status(cue);width=painter.fontMetrics().horizontalAdvance(tag)+16;tag_rect=QRectF(r.x(),r.bottom()-19,width,20)
             pen=QPen(QColor('#5980a6') if cue.speed>1 or cue.disposition=='pause' else option.palette.text().color(),1)
             if cue.disposition=='unresolved':pen.setStyle(Qt.DashLine)
-            if cue.disposition=='pause':painter.fillRect(tag_rect,QColor('#5980a6'))
-            painter.setPen(pen);painter.drawRect(tag_rect);painter.setPen(option.palette.text().color());painter.drawText(tag_rect,Qt.AlignCenter,tag)
+            if cue.disposition=='pause':painter.fillRect(tag_rect,QColor('#416180'))
+            painter.setPen(pen);painter.drawRect(tag_rect);painter.setPen(QColor('#ffffff') if cue.disposition=='pause' else option.palette.text().color());painter.drawText(tag_rect,Qt.AlignCenter,tag)
+        if option.state & QStyle.State_HasFocus:
+            painter.setPen(QPen(option.palette.text().color(),2,Qt.DotLine));painter.setBrush(Qt.NoBrush)
+            painter.drawRect(option.rect.adjusted(3,3,-4,-4))
         painter.restore()
 
 
@@ -87,6 +89,10 @@ def cue_status(cue):
     if cue.disposition=='pause':return f'Pause {cue.speech_seconds:.1f}s' if cue.speech_seconds else 'Pauses picture'
     if cue.speed>1:return f'Sped up · {cue.speed:.2f}×'
     return 'In gap' if cue.disposition=='in-gap' else 'Not yet placed'
+
+
+def cue_accessible(cue,index):
+    return f'Description {index+1}, {clock(cue.start)} to {clock(cue.end)}, {cue_status(cue)}, {cue.review_status}. {cue.text}'+(' Uncertainty: '+cue.uncertainty if cue.uncertainty else '')
 
 
 class BlueprintFrame(QFrame):
@@ -151,7 +157,7 @@ class Timeline(QWidget):
         self.blocks = []
         for i, cue in enumerate(self.window.project.cues):
             b = TimelineBlock(str(i+1), self,striped=cue.speed>1)
-            b.setAccessibleName(f'Description {i+1}, {clock(cue.start)} to {clock(cue.end)}, {cue.disposition}')
+            b.setAccessibleName(cue_accessible(cue,i))
             b.setToolTip(cue.text)
             b.clicked.connect(lambda checked=False, index=i: self.window.choose(index))
             b.setProperty('role','primary' if cue.disposition=='pause' else 'secondary')
@@ -414,7 +420,7 @@ QPushButton {{border:1px solid {border};padding:7px 10px;background:transparent;
 QLineEdit,QComboBox,QPlainTextEdit,QListWidget {{border:1px solid {border};padding:7px;selection-background-color:rgba(89,128,166,24);selection-color:{fg};}}
 QPushButton:hover {{background:rgba(89,128,166,20);border-color:#5980a6;}}
 QPushButton:focus,QLineEdit:focus,QPlainTextEdit:focus {{border:2px solid #5980a6;}}
-QPushButton[role="primary"] {{background:#5980a6;color:#10171e;border:1px solid #5980a6;}}
+QPushButton[role="primary"] {{background:#416180;color:#ffffff;border:1px solid #416180;}}
 QPushButton[role="ghost"],QPushButton[role="link"] {{border:1px solid transparent;background:transparent;}}
 QPushButton[role="link"] {{color:{'#b5d9fd' if dark else '#416180'};font-size:12px;padding:3px;}}
 QPushButton[role="ghost"]:hover,QPushButton[role="link"]:hover {{background:rgba(89,128,166,20);}}
@@ -424,6 +430,7 @@ QListWidget::item {{padding:10px;border:0;border-bottom:1px solid {border};borde
 QListWidget::item:selected {{background:rgba(89,128,166,24);color:{fg};border-left:3px solid #5980a6;}}
 QListWidget::item:hover {{background:rgba(89,128,166,15);}}
 QFrame[providerCard="true"] {{border:0;}} QFrame[providerCard="true"][selected="true"] {{border:0;}}
+QPushButton:focus,QPushButton[role="primary"]:focus,QPushButton[role="ghost"]:focus,QPushButton[role="link"]:focus,QComboBox:focus,QListWidget:focus,QTabBar:focus,QSlider:focus {{border:2px solid {fg};}}
 QFrame[providerCard="true"] QRadioButton {{background:transparent;}}
 QSlider::groove:horizontal {{height:4px;background:{surface};border:1px solid {border};}}
 QSlider::sub-page:horizontal {{background:#5980a6;}} QSlider::add-page:horizontal {{background:{surface};}}
@@ -490,7 +497,7 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
         for i,c in enumerate(self.project.cues):
             if self.cue_filter.currentIndex()==1 and c.disposition!='unresolved':continue
             if self.cue_filter.currentIndex()==2 and c.disposition!='pause':continue
-            item=QListWidgetItem(c.text);item.setData(Qt.UserRole,c);item.setData(Qt.UserRole+1,i+1);item.setToolTip(cue_status(c)+': '+c.text);item.setSizeHint(QSize(250,108));self.cue_list.addItem(item);self.visible_indices.append(i)
+            item=QListWidgetItem(c.text);item.setData(Qt.UserRole,c);item.setData(Qt.UserRole+1,i+1);item.setData(Qt.AccessibleTextRole,cue_accessible(c,i));item.setToolTip(cue_status(c)+': '+c.text);item.setSizeHint(QSize(250,108));self.cue_list.addItem(item);self.visible_indices.append(i)
         self.cue_list.blockSignals(False);self.tabs.setTabText(0,f'Descriptions · {len(self.project.cues)}');self.empty.setVisible(not self.project.cues);self.cue_list.setVisible(bool(self.project.cues));self.inline_scroll.setVisible(bool(self.project.cues))
         self.timeline.sync();self.update_status()
     def list_selected(self,row):
@@ -528,10 +535,10 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
                 if row is None:
                     row=next((i for i,value in enumerate(self.visible_indices) if value>index),len(self.visible_indices))
                     item=QListWidgetItem();item.setSizeHint(QSize(250,108));self.cue_list.insertItem(row,item);self.visible_indices.insert(row,index)
-                item=self.cue_list.item(row);item.setText(cue.text);item.setData(Qt.UserRole,cue);item.setData(Qt.UserRole+1,index+1);item.setToolTip(cue_status(cue)+': '+cue.text)
+                item=self.cue_list.item(row);item.setText(cue.text);item.setData(Qt.UserRole,cue);item.setData(Qt.UserRole+1,index+1);item.setData(Qt.AccessibleTextRole,cue_accessible(cue,index));item.setToolTip(cue_status(cue)+': '+cue.text)
         finally:self.cue_list.blockSignals(False)
         block=self.timeline.blocks[index];block.setToolTip(cue.text);block.striped=cue.speed>1
-        block.setAccessibleName(f'Description {index+1}, {clock(cue.start)} to {clock(cue.end)}, {cue.disposition}')
+        block.setAccessibleName(cue_accessible(cue,index))
         block.setProperty('role','primary' if cue.disposition=='pause' else 'secondary')
         block.setStyleSheet('border:1px dashed palette(text);' if cue.disposition=='unresolved' else '')
         block.update()
@@ -862,7 +869,7 @@ def organize_settings(window,dialog,outer,scroll,content,form,buttons,section=No
         if any(k in lower for k in ('api key','server address')):target='Keys & privacy'
         elif any(k in lower for k in ('update','feed')):target='Updates'
         elif any(k in lower for k in ('export','openai','speech model')):target='Export voice'
-        elif any(k in lower for k in ('playback','volume','ducking','interrupt','windows voice')):target='Speech & playback'
+        elif any(k in lower for k in ('playback','volume','ducking','interrupt','windows voice','native voice')):target='Speech & playback'
         elif any(k in lower for k in ('interface','youtube','logging','notification')):target='Interface'
         rows[target].append((label,field))
     dialog_header(outer,'SETTINGS','Configure analysis, speech, privacy and developer access.');outer.setContentsMargins(20,20,20,20)
