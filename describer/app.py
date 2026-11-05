@@ -636,16 +636,19 @@ class Window(DesktopInterface, QMainWindow):
         if not affected or self.thread is not None:return
         self.player.pause()
         if QMessageBox.question(self,'Narration needs repair',f'{len(affected)} descriptions have missing audio or older audio without a recorded synthesis volume. Repair narration using the selected speech engine so the Speech slider can control its level reliably? Text, evidence and source media are preserved. You can also use File > Repair narration later.',QMessageBox.Yes|QMessageBox.No,QMessageBox.No)==QMessageBox.Yes:self.repair_narration()
-    def repair_narration(self):
+    def repair_narration(self,*,settings_override=None,completed=None):
         if self.busy() or not self.project.video or not self.project.cues:return
-        self.player.pause();snapshot=copy.deepcopy(self.project);settings=copy.deepcopy(self.settings.data);identity=self.project
+        from .drafting import fingerprint
+        self.player.pause();snapshot=copy.deepcopy(self.project);settings=copy.deepcopy(settings_override or self.settings.data);identity=self.project;original=fingerprint(snapshot)
         def launch():
             from .engine import get_service
             service=get_service();allowed=dict(settings,allow_cloud=True)
             def done(project):
-                if self.project is identity:
+                if self.project is identity and fingerprint(self.project)==original:
                     from .drafting import ProjectChange
                     self.undo_stack.push(ProjectChange(self,self.project,project,'Repair narration'));self.log('Narration repaired. Save the project to keep the new audio references.')
+                    if completed:self.pending_after_job=completed
+                else:self.notify('Project changed while measuring narration. Current edits were kept; measure again.')
             self.job(lambda c,l:service.repair_narration(snapshot,allowed,c,l),done)
         self.operation_preflight(settings,launch,narration=True,detector=True,vision=False)
     def recover_jobs(self):

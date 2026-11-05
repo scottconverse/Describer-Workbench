@@ -171,6 +171,21 @@ from actual source. No full suite/build/CI restart. Five final draft/documentati
 Native Linux/macOS source checks passed at `74c3364` in run `42104653513`.
 Package 6 is accepted and pushed.
 
+Package 7 candidate adds format-specific outcome text and an optional measured
+narration preview using the shared prepare pipeline and pause selection. Voice,
+format and destination survive measurement; settings remain unchanged until
+Export. Stale measurements are explicit; changed project input cannot be
+overwritten by measurement completion. Export still measures independently.
+23 affected local tests passed, followed by 3 focused preview/actual-media tests
+after correcting numeric normalization in the stamp across save/reopen. Actual
+Windows native speech measured 6.143175 seconds of pause narration over a
+4-second controlled video; WAV was 10.143175 seconds and MP4 passed the 0.15-second
+tolerance and actual decoding. Source unchanged and reopened preview identical.
+No human-listening or live cloud synthesis claim. Native Qt preview screenshot
+was inspected. Acceptance-helper misuse of the video-only probe on WAV was
+corrected to FFprobe; prior checkpoints reused. An atomic documentation patch
+context miss changed no files. No full CI/build restart. Native checks pending.
+
 Native reader acceptance must identify exactly which
 reader/platform combination was exercised; simulated events are not that proof.
 

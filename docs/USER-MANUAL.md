@@ -230,6 +230,18 @@ Choose the engine and voice directly in the Export dialog for narrated media. In
 
 Export choices:
 
+**Stabilization source candidate:** Export shows the selected format's outcome.
+For MP4/MP3/WAV, **Measure narration** uses the selected voice and actual speech
+detector to measure and place narration, then reopens Export with your format,
+voice and path retained. Cloud speech still asks for consent. Measurement is an
+undoable project change; save to retain the new audio references. The preview
+adds measured pause narration to source duration. Changing descriptions, source,
+captions, voice/rate or missing audio invalidates it. Export measures again, so
+synthesis and codec rounding can change the final duration. You may export
+without a preview; no guessed duration is presented. Subtitles retain source
+times and cannot reproduce picture pauses; TXT and JSON do not contain narrated
+media. Published 0.6.1 applications do not yet include this preview.
+
 - **SRT:** timed UTF-8 descriptions. This is not a speech transcript unless your cues are transcripts.
 - **Plain text:** one description per line; timing is omitted.
 - **VTT / JSON:** WebVTT script or full project JSON with event and coverage metadata.

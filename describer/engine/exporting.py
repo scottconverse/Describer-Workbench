@@ -6,6 +6,10 @@ from pathlib import Path
 from .core import atomic_json, check_cancel
 
 
+def included_pauses(project,mode):
+    return sorted((c for c in project.cues if c.disposition=='pause'),key=lambda c:c.narration_window()[0]) if mode=='complete' else []
+
+
 def export(project, output, settings, cancel, log, mode='complete'):
     from ..services import _mix_planned_audio, run, tool
     target = Path(output).resolve()
@@ -34,8 +38,7 @@ def export(project, output, settings, cancel, log, mode='complete'):
         atomic_json(str(target) + '.coverage.json', {'coverage': project.coverage, 'complete': False,
                     'note': 'Text cues are not a narrated track; pause cues use original event times.'})
         return {'path': str(target), 'complete': False, 'kind': 'script'}
-    paused = sorted((c for c in project.cues if c.disposition == 'pause'), key=lambda c: c.narration_window()[0])
-    included = paused if mode == 'complete' else []
+    included = included_pauses(project,mode)
     with tempfile.TemporaryDirectory(prefix='describer-export-') as temporary:
         tmp = Path(temporary)
         bed = tmp / 'bed.mp3'

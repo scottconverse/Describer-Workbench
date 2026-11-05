@@ -184,6 +184,8 @@ def prepare(project, settings, root, cancel, log, checkpoint):
     project.analysis.update(protected=safety['protected'], safe_gaps=safety['safe_gaps'], requires_replan=False,
                             limitations=['Coverage accounts for observed events, not a guarantee that vision found every essential event.',
                                          'Pause descriptions require the pause-aware player or extended video export.'])
+    from ..export_preview import plan_stamp
+    project.analysis['export_plan_stamp']=plan_stamp(project,settings)
     return project
 
 

@@ -1,5 +1,14 @@
 # Technical user and developer guide — 0.6.1
 
+**Candidate export preview:** `export_preview.py` stamps canonical validated cue
+data, source/audio file identity, captions and relevant narration settings after
+the shared `prepare` pipeline. The preview shares `included_pauses` with the
+exporter, never estimates speech from word counts. Missing/stale measurements
+are explicit. Measuring uses the existing preflight, consent and job ownership;
+the full project transaction applies only if the input fingerprint still matches.
+Export remeasures, so the displayed finished duration is approximate. This is
+source-candidate behavior, separate from the published 0.6.1 binaries.
+
 **Candidate file compatibility:** stabilization source reads project formats 1 and 2 and saves format 2. This prevents older 0.6.1 readers from silently dropping cue identity/review metadata on re-save: they reject format 2. Existing version-1 files are not rewritten until explicitly saved; keep an original copy when comparing candidate and released applications.
 
 Stabilization source candidates add a stable `cue_id` separate from `event_id`, plus `origin`, `manually_edited`, `review_status` and `review_history`. Saved project version 1 remains readable; missing legacy fields receive defaults and persist on save. `DraftProposal` uses a complete-project fingerprint, half-open ranges, explicit accepted/replaced cue ID sets and a glossary choice. Conflicting replacements and stale proposals are rejected; boundary-crossing cues remain whole. Desktop application/undo includes coverage and analysis as well as cues/glossary. Edited reviewed/approved facts require review again; provider output cannot assign human approval. See [preservation rules and acceptance status](STABILIZATION.md). These fields are source changes, not claims about published 0.6.1 binaries.

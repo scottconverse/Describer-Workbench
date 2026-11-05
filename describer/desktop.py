@@ -791,7 +791,7 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
             self.settings.data.update(verbosity=verbosity.currentText(),auto_glossary=glossary.isChecked());self.settings.save()
             self.job_label.setText('Drafting descriptions');self.analyze()
         d.deleteLater()
-    def export(self):
+    def export(self,*,initial_voice=None,initial_format=None,initial_path=None):
         if self.busy() or not self.project.cues:return
         d=BlueprintDialog(self);d.setWindowTitle('EXPORT');d.resize(920,780);v=QVBoxLayout(d);v.setContentsMargins(20,20,20,20);dialog_header(v,'EXPORT','Choose an output format and review narration coverage.');row=QHBoxLayout();v.addLayout(row)
         formats=QListWidget();formats.setItemDelegate(FlatSelectionDelegate(formats));formats.setObjectName('formatCards');formats.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff);formats.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -800,8 +800,13 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
         formats.setFixedHeight(520);formats.setMinimumWidth(340);row.addWidget(formats,0,Qt.AlignTop)
         right=QVBoxLayout();row.addLayout(right);counts={k:sum(c.disposition==k for c in self.project.cues) for k in ('in-gap','pause','unresolved')};right.addWidget(section('COVERAGE'));right.addWidget(QLabel(f"In gap: {sum(c.disposition=='in-gap' and c.speed<=1 for c in self.project.cues)}\nSped up: {sum(c.speed>1 for c in self.project.cues)}\nPauses picture: {counts['pause']}\nNeeds review: {counts['unresolved']}"))
         warning=QLabel('Unresolved visual facts block media exports.');warning.setWordWrap(True);right.addWidget(warning)
-        review=button(right,'Review now',lambda:(d.reject(),self.tabs.setCurrentIndex(0),self.cue_filter.setCurrentIndex(1),self.choose(next(i for i,c in enumerate(self.project.cues) if c.disposition=='unresolved'))))
-        voice_picker=ExportVoices(self,d);right.addWidget(voice_picker)
+        review=button(right,'Review now',lambda:(d.reject(),self.tabs.setCurrentIndex(0),self.cue_filter.setCurrentIndex(0),self.choose(next(i for i,c in enumerate(self.project.cues) if c.disposition=='unresolved' or c.uncertainty or c.review_status=='needs-review'))))
+        voice_picker=ExportVoices(self,d,initial_voice);right.addWidget(voice_picker)
+        preview=QLabel();preview.setWordWrap(True);preview.setAccessibleName('Export outcome preview');right.addWidget(preview)
+        requested_preview=[]
+        def measure():
+            requested_preview.append((voice_picker.selection(),extensions[formats.currentRow()],path.text()));d.reject()
+        measure_button=button(right,'Measure narration',measure)
         right.addWidget(QLabel('Save to'));path=QLineEdit();path.setPlaceholderText('Choose an output file…');path.setAccessibleName('Export save path');right.addWidget(path)
         extensions=['mp4','mp3','wav','srt','vtt','txt','json']
         def browse():
@@ -819,10 +824,14 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
             d.accept()
         actions.accepted.connect(accept_export)
         def state():
-            media=formats.currentRow()<3;blocked=media and bool(counts['unresolved']);warning.setVisible(blocked);review.setVisible(blocked);voice_picker.setVisible(media);go.setEnabled(bool(path.text()) and not blocked and (not media or voice_picker.usable()))
-        formats.currentRowChanged.connect(lambda _:state());path.textChanged.connect(state);formats.setCurrentRow(0);state()
+            from .export_preview import outcome
+            media=formats.currentRow()<3;result=outcome(self.project,dict(self.settings.data,**voice_picker.selection()),extensions[formats.currentRow()]);blocked=media and result['blocked'];preview.setText(result['text']);warning.setVisible(blocked);review.setVisible(blocked);voice_picker.setVisible(media);measure_button.setVisible(media);measure_button.setEnabled(not blocked and voice_picker.usable());go.setEnabled(bool(path.text()) and not blocked and (not media or voice_picker.usable()))
+        formats.currentRowChanged.connect(lambda _:state());path.textChanged.connect(state);formats.setCurrentRow(extensions.index(initial_format) if initial_format in extensions else 0);path.setText(initial_path or '');state()
         voice_picker.changed.connect(state)
         accepted=d.exec();voice_picker.shutdown(5000)
+        if requested_preview:
+            selection,ext,destination=requested_preview[0]
+            self.repair_narration(settings_override=dict(self.settings.data,**selection),completed=lambda:self.export(initial_voice=selection,initial_format=ext,initial_path=destination));return
         if accepted:
             ext=extensions[formats.currentRow()]
             if Path(path.text()).suffix.lower()!='.'+ext:self.error('Save path extension must match the selected format.');return
@@ -973,10 +982,11 @@ class VoiceDiscovery(QObject):
 
 class ExportVoices(QWidget):
     changed=Signal()
-    def __init__(self,window,parent):
+    def __init__(self,window,parent,selection=None):
         super().__init__(parent);self.window=window;self.thread=None;self.worker=None;self.loading=False;self.closing=False;self.requested='';self.loaded=''
+        self.preferences=dict(window.settings.data,**(selection or {}))
         layout=QVBoxLayout(self);layout.setContentsMargins(0,0,0,0);layout.setSpacing(8)
-        layout.addWidget(QLabel('Narration engine'));self.engine=QComboBox();self.engine.setAccessibleName('Export narration engine');self.engine.addItems(narration_engines());self.engine.setCurrentText(window.settings.data['voice_engine']);layout.addWidget(self.engine)
+        layout.addWidget(QLabel('Narration engine'));self.engine=QComboBox();self.engine.setAccessibleName('Export narration engine');self.engine.addItems(narration_engines());self.engine.setCurrentText(self.preferences['voice_engine']);layout.addWidget(self.engine)
         layout.addWidget(QLabel('Narration voice'));self.voice=QComboBox();self.voice.setAccessibleName('Export narration voice');layout.addWidget(self.voice)
         self.note=QLabel();self.note.setWordWrap(True);layout.addWidget(self.note)
         self.retry=QPushButton('Retry voice discovery');layout.addWidget(self.retry);self.retry.clicked.connect(lambda:self.request(self.engine.currentText()))
@@ -990,7 +1000,7 @@ class ExportVoices(QWidget):
         import threading
         engine=self.requested;self.voice.clear();self.loaded=engine
         if engine=='OpenAI':
-            settings=self.window.settings.data;self.voice.addItem('Base voice · '+settings['voice'],{'voice':settings['voice'],'voice_preset':''})
+            settings=self.preferences;self.voice.addItem('Base voice · '+settings['voice'],{'voice':settings['voice'],'voice_preset':''})
             for name,preset in settings['voice_presets'].items():self.voice.addItem(name+' · '+preset['base_voice'],{'voice':preset['base_voice'],'voice_preset':name})
             index=next((i for i in range(self.voice.count()) if self.voice.itemData(i)['voice_preset']==settings.get('voice_preset')),0);self.voice.setCurrentIndex(index)
             self.loading=False;self.voice.setEnabled(True);self.note.setText('OpenAI narration sends description text for paid synthesis. Draft and export ask for consent before sending.');self.changed.emit();return
@@ -1006,7 +1016,7 @@ class ExportVoices(QWidget):
         if not rows:self.failed(native_text('No usable voices found. Retry, select another engine, or install a Windows voice in Windows Settings.'));return
         self.voice.addItem('Default available voice  -  '+rows[0]['name'],{'windows_voice':rows[0]['id']})
         for row in rows:self.voice.addItem(row['name'],{'windows_voice':row['id']})
-        selected=self.window.settings.data.get('windows_voice','') if self.loaded==self.window.settings.data['voice_engine'] else ''
+        selected=self.preferences.get('windows_voice','') if self.loaded==self.preferences['voice_engine'] else ''
         if selected and not any(r['id']==selected for r in rows):
             self.voice.insertItem(0,'Saved voice is missing  -  select a voice',None);self.voice.setCurrentIndex(0)
         else:
