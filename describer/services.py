@@ -12,6 +12,7 @@ import urllib.request
 from pathlib import Path
 from .project import response_json, normalize_generated
 from .catalogue import PROMPTS,VOICE_PRESETS
+from .platforms import data_directory,native_engine,speech_label
 
 CREATE_NO_WINDOW = 0x08000000 if os.name == 'nt' else 0
 
@@ -22,8 +23,10 @@ def asset_path(name):
 
 
 def tool(name):
-    bundled = Path(getattr(sys, '_MEIPASS', Path(__file__).resolve().parents[1])) / 'bin' / (name + '.exe')
+    bundled = Path(getattr(sys, '_MEIPASS', Path(__file__).resolve().parents[1])) / 'bin' / (name + ('.exe' if os.name=='nt' else ''))
     found = str(bundled) if bundled.exists() else shutil.which(name)
+    if not found and sys.platform=='darwin':
+        found=next((str(p) for p in (Path('/opt/homebrew/bin')/name,Path('/usr/local/bin')/name) if p.is_file()),None)
     if not found:
         raise RuntimeError(f'{name} was not found. Install FFmpeg or put it on PATH.')
     return found
@@ -31,7 +34,11 @@ def tool(name):
 
 def run(args, cancel=None, *, return_stderr=False):
     with tempfile.TemporaryFile() as out, tempfile.TemporaryFile() as err:
-        p = subprocess.Popen(args, stdout=out, stderr=err, creationflags=CREATE_NO_WINDOW)
+        options={}
+        if os.name!='nt':
+            from .platforms import external_environment
+            options['env']=external_environment()
+        p = subprocess.Popen(args, stdout=out, stderr=err, creationflags=CREATE_NO_WINDOW,**options)
         while p.poll() is None:
             if cancel and cancel.wait(.1):
                 p.terminate()
@@ -61,7 +68,8 @@ def segment(source, output, start, duration, fps=2, cancel=None, silent=False):
 
 def dpapi(data, decrypt=False):
     if os.name != 'nt':
-        raise RuntimeError('Persistent secret storage requires Windows DPAPI.')
+        from .platforms import keyring_secret
+        return keyring_secret(data,decrypt)
     from ctypes import wintypes
     class Blob(ctypes.Structure):
         _fields_ = [('size', wintypes.DWORD), ('data', ctypes.POINTER(ctypes.c_ubyte))]
@@ -81,19 +89,20 @@ DEFAULTS = {'ui_theme':'light','recent_projects':[], 'model': 'gemini-2.5-flash'
             'cli_paths':{},'analysis_timeout':600,'analysis_effort':'','anthropic_key':'',
             'codex_cli':'','claude_cli':'','gemini_cli':'',
             'ollama_key':'','ollama_timeout':600,'ollama_frame_interval':2,
-            'voice_engine': 'Windows', 'voice': 'alloy', 'tts_model': 'gpt-4o-mini-tts',
+            'voice_engine': native_engine(), 'voice': 'alloy', 'tts_model': 'gpt-4o-mini-tts',
             'voice_presets': VOICE_PRESETS, 'settings_version': 3,
             'voice_preset': '', 'voice_speed': 1.0, 'voice_instructions': '', 'windows_voice': '', 'speech_rate': 0,
             'playback_voice': '', 'sounds': True, 'ui_language': 'English', 'auto_glossary': True,
             'silent_upload': False, 'safety_block_none': False, 'temperature': 0.3, 'update_feed': '', 'auto_update_check': False,
             'logging_level':'INFO','chunking': True, 'verbosity': 'Standard', 'download_quality': 'Best', 'player_volume': 80, 'speech_volume': 100,
-            'playback_output': 'Windows speech', 'duck_db': -15, 'interrupt': True, 'presets': {'English': {'Standard': '', **PROMPTS}}, 'gemini_key': '', 'openai_key': ''}
+            'playback_output': speech_label(), 'duck_db': -15, 'interrupt': True, 'presets': {'English': {'Standard': '', **PROMPTS}}, 'gemini_key': '', 'openai_key': ''}
 
 
 class Settings:
     def __init__(self, path=None):
-        self.path = Path(path) if path else Path(os.environ.get('LOCALAPPDATA', str(Path.home()))) / 'DescriberWorkbench' / 'settings.json'
+        self.path = Path(path) if path else data_directory() / 'settings.json'
         self.data = json.loads(json.dumps(DEFAULTS))
+        self._protected_cache={}
         self.load_warning='';self.needs_recovery=False
         if self.path.exists():
             try:
@@ -101,7 +110,9 @@ class Settings:
                 if not isinstance(j,dict):raise ValueError('Expected a settings object.')
                 for k in [key for key in j if key.endswith('_key')]:
                     if j.get(k):
-                        try:j[k]=dpapi(base64.b64decode(j[k]),True).decode()
+                        try:
+                            protected=j[k];j[k]=dpapi(base64.b64decode(protected),True).decode()
+                            self._protected_cache[k]=(j[k],protected)
                         except Exception:
                             j[k]='';self.load_warning='A saved API key could not be unlocked. Re-enter it in Settings.';self.needs_recovery=True
                 for key,default in DEFAULTS.items():
@@ -136,7 +147,12 @@ class Settings:
             self.needs_recovery=False
         j = dict(self.data)
         for k in [key for key in j if key.endswith('_key')]:
-            if j[k]: j[k] = base64.b64encode(dpapi(j[k].encode())).decode()
+            if j[k]:
+                cached=self._protected_cache.get(k)
+                if os.name!='nt' and cached and cached[0]==j[k]:j[k]=cached[1]
+                else:
+                    plain=j[k];j[k]=base64.b64encode(dpapi(plain.encode())).decode()
+                    self._protected_cache[k]=(plain,j[k])
         self.path.parent.mkdir(parents=True, exist_ok=True)
         temp = self.path.with_suffix('.tmp');temp.write_text(json.dumps(j, indent=2), encoding='utf-8');temp.replace(self.path)
 
@@ -156,8 +172,8 @@ def validate_connection_settings(settings):
         if not entry['credential'].endswith('_key'):raise ValueError('Invalid connection credential reference.')
         if not isinstance(entry.get('enabled',True),bool) or not isinstance(entry.get('model',''),str):raise ValueError('Invalid connection choices.')
     if settings['connection_id'] and settings['connection_id'] not in settings['connections']:raise ValueError('Selected connection is missing.')
-    choices={'voice_engine':('Windows','Windows 32-bit','Windows OneCore','OpenAI'),
-             'playback_output':('Windows speech','Screen reader'), 'analysis_effort':('','low','medium','high','xhigh','max')}
+    choices={'voice_engine':('Windows','Windows 32-bit','Windows OneCore','macOS','eSpeak NG','OpenAI'),
+             'playback_output':('Windows speech','System speech','Screen reader'), 'analysis_effort':('','low','medium','high','xhigh','max')}
     for field,values in choices.items():
         if settings[field] not in values:raise ValueError('Invalid '+field+'.')
 
@@ -343,7 +359,7 @@ def narration_preflight(settings, cancel=None):
     if engine=='OpenAI':
         if not settings.get('openai_key'):raise ValueError('OpenAI speech needs an API key. Open Settings > Keys & privacy, or select a Windows narration engine.')
         return
-    if engine not in ('Windows','Windows 32-bit','Windows OneCore'):raise ValueError('Select a supported narration engine in Settings > Export voice.')
+    if engine not in ('Windows','Windows 32-bit','Windows OneCore','macOS','eSpeak NG'):raise ValueError('Select a supported narration engine in Settings > Export voice.')
     from .windows_speech import windows_speech
     rows=windows_speech(engine,cancel=cancel,listing=True)
     if not rows:raise ValueError('No voices are installed for '+engine+'. Choose another engine or install a voice in Windows Settings.')

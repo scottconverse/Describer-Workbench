@@ -104,6 +104,23 @@ def open_native_login(settings,cwd):
     args={'Codex CLI':['login','--device-auth'],'Claude CLI':['auth','login','--claudeai'],
           'Gemini CLI':['--sandbox','--settings',json.dumps({'modelProvider':'','useG1Credits':False})]}
     if provider not in args:raise ValueError('Choose a native subscription CLI. The shared gateway retains its own sign-in tools.')
+    if os.name!='nt':
+        import shlex
+        import sys
+        # Terminal daemons may retain a different environment. Clean it inside
+        # the launched script too; do not persist any environment values.
+        allowed=subscription_environment()
+        names=[name for name in allowed if name.isidentifier()]
+        environment=' '.join(name+'="${'+name+'-}"' for name in names)
+        command=cli_command(settings)+args[provider]
+        script=Path(cwd)/'subscription-login.command';script.parent.mkdir(parents=True,exist_ok=True)
+        script.write_text('#!/bin/sh\nexec /usr/bin/env -i '+environment+' '+shlex.join(command)+'\n',encoding='utf-8');script.chmod(0o700)
+        if sys.platform=='darwin':terminal=['/usr/bin/open','-a','Terminal',str(script)]
+        else:
+            executable=next((shutil.which(name) for name in ('x-terminal-emulator','gnome-terminal','konsole','xterm') if shutil.which(name)),None)
+            if not executable:raise ValueError('No desktop terminal found. Run the selected CLI login in your terminal, then use Test connection.')
+            terminal=[executable,'--' if Path(executable).name=='gnome-terminal' else '-e',str(script)]
+        return subprocess.Popen(terminal,cwd=str(cwd),env=allowed)
     return subprocess.Popen(cli_command(settings)+args[provider],cwd=str(cwd),env=subscription_environment(),
                             creationflags=subprocess.CREATE_NEW_CONSOLE)
 

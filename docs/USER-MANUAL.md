@@ -2,6 +2,8 @@
 
 For **0.6.1** · November 4, 2026 (America/Denver). See [release acceptance](V061-ACCEPTANCE.md) for executed checks and delivery boundaries.
 
+**macOS/Linux add-ons:** use the [platform installation guide](UNIX-INSTALL.md) for Apple Silicon/Intel DMGs, Linux x64 DEB/portable archives and repository installation. The workflows below are shared; Windows executable names, DPAPI, SAPI/OneCore and signed updater instructions apply specifically to Windows. macOS uses Keychain and measured macOS voices; Linux uses Secret Service and measured eSpeak NG. Their update command opens the manual download page. The existing signed Windows 0.6.1 release remains unchanged. Mac/Linux acceptance has its own release receipts; it does not inherit Windows acceptance or signing.
+
 This guide describes version 0.6.1 and its [AI connections](AI-CONNECTIONS.md). **Live text playback output** applies to live text and Scene answers. Timed in-gap and pause cues use measured export-voice audio, with Windows as the default, as explicitly chosen by Scott on November4. A screen reader controls its own live-text rate and volume; unavailable reader output falls back to Windows speech. The Speech slider scales measured WAV playback and exported narration. Older WAVs without synthesis-volume metadata need **File > Repair narration** before timed playback; repair preserves source media, descriptions and evidence, asks for applicable cloud consent, and must be saved to retain new audio references.
 
 [Windows 0.6.1 download](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.6.1) · [Project](https://github.com/scottconverse/Describer-Workbench) · [Architecture guide](ARCHITECTURE.md)
@@ -255,7 +257,7 @@ For manual updates, close Workbench and extract the new portable build separatel
 
 ## 14. Runtime and source setup
 
-The supported delivered artifact is a 64-bit Windows PyInstaller folder bundle. Source was tested with Python 3.13, PySide6 6.12.0, google-genai 2.34.0, yt-dlp 2026.10.26, accessible-output2 0.17 and cryptography 50.0.2. FFmpeg/FFprobe are separate source prerequisites; the portable bundle includes them. Native speech requires the corresponding Windows hosts/voices.
+The original delivered artifact is a 64-bit Windows PyInstaller folder bundle; separate macOS/Linux packages and source launchers are described in the platform installation guide above. Source was tested with Python 3.13, PySide6 6.12.0, google-genai 2.34.0, yt-dlp 2026.10.26, accessible-output2 0.17 and cryptography 50.0.2. FFmpeg/FFprobe are separate source prerequisites; Windows/Mac downloads bundle them, while Linux resolves system dependencies. Native speech requires the corresponding platform's installed voices.
 
 ```powershell
 git clone https://github.com/scottconverse/Describer-Workbench.git

@@ -1,6 +1,8 @@
 # Architecture and implementation guide
 
-Describer Workbench **0.6.1**. Shared engine and native Windows workbench. The earlier signed0.5.2 package has its own [historical acceptance record](V052-ACCEPTANCE.md).
+Describer Workbench **0.6.1**. Shared engine and native desktop workbench. The earlier signed0.5.2 package has its own [historical acceptance record](V052-ACCEPTANCE.md).
+
+The separate [macOS/Linux add-ons](UNIX-INSTALL.md) retain the existing Windows release. `platforms.py` chooses host data folders, narration choices and explicit macOS Keychain/Linux Secret Service storage; settings retain only opaque keyring references, with no plaintext fallback. `unix_speech.py` synthesizes through macOS `say` or eSpeak NG into measured WAVs. `DescriberUnix.spec` and Unix install/package helpers are separate from the unchanged Windows build spec. Unix updates are manual; they do not enter Windows Authenticode staging. Existing providers, consent and native CLI authentication ownership remain shared.
 
 Version 0.6.1: [AI connections](AI-CONNECTIONS.md) adds gateway/native subscription and explicit API adapters behind the same service, with no automatic model fallback. Native/gateway routes send up to eight sampled timestamped images without audio. Timed narration retains independently measured WAVs and safe placement; the live-text reader preference does not change that scheduling. Cues record their synthesis volume so live gain and export gain can account for it; older unknown levels require repair. Earlier 0.5.2 packages retain their historical behavior.
 
@@ -12,7 +14,7 @@ The service centralizes provider validation and consent before queueing or resum
 
 ![Desktop and developer adapters share one headless engine.](diagrams/system.svg)
 
-The engine lives in Describer-Workbench. CivicCast remains a separate consumer; no release-candidate or live station data is part of this workspace. Desktop, Python, CLI, REST and MCP all call `DescriptionService`. A workspace has one process owner, an exclusive file lock and a serial job queue. Additional processes attach over HTTP rather than opening the same workspace. The headless imports do not require Qt. Native speech currently requires Windows; other speech adapters retain their platform/provider requirements.
+The engine lives in Describer-Workbench. CivicCast remains a separate consumer; no release-candidate or live station data is part of this workspace. Desktop, Python, CLI, REST and MCP all call `DescriptionService`. A workspace has one process owner, an exclusive file lock and a serial job queue. Additional processes attach over HTTP rather than opening the same workspace. The headless imports do not require Qt. Native speech uses Windows SAPI/OneCore, macOS voices or Linux eSpeak NG; OpenAI speech retains its explicit remote consent and credential requirements.
 
 ```mermaid
 flowchart TD

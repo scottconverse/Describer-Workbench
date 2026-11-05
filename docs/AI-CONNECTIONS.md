@@ -2,6 +2,8 @@
 
 Version 0.6.1 implements these finite routes. The Windows executables are signed as Scott Converse. See [release acceptance](V061-ACCEPTANCE.md) for executed checks and delivery boundaries.
 
+The [macOS/Linux add-ons](UNIX-INSTALL.md) expose these same routes where the external CLI/server is installed. Re-select executable paths on the new machine. Native sign-in opens Terminal or a Linux desktop terminal; each CLI retains its credentials. Gateway authentication remains external and is not migrated. Saved API keys use macOS Keychain or Linux Secret Service instead of Windows DPAPI. Mac/Linux packages do not inherit the Windows certificate or the historical live-provider acceptance performed on Windows; run Test connection for the selected model/account on the destination computer.
+
 | Route | Authentication and model selection | Verification so far |
 |---|---|---|
 | Gemini | Existing Google API key and exact Gemini model ID | Existing route; new completion-status classification has regression checks |

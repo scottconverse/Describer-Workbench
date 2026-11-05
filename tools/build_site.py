@@ -17,6 +17,7 @@ DOC_STATUS = 'Version '+VERSION
 def downloadable_markdown(source):
     """Keep navigation usable after a guide is saved outside the source tree."""
     targets = {'USER-MANUAL.md': ORIGIN+'/manual.html',
+               'UNIX-INSTALL.md': ORIGIN+'/unix.html',
                'ARCHITECTURE.md': ORIGIN+'/architecture.html',
                'DEVELOPER-GUIDE.md': ORIGIN+'/developer.html',
                'CODE-SIGNING.md': REPO+'/blob/main/docs/CODE-SIGNING.md',
@@ -40,6 +41,7 @@ def render(source, title, filename):
     md = markdown.Markdown(extensions=['tables','fenced_code','toc','md_in_html'], extension_configs={'toc':{'permalink':False}})
     body = md.convert(source)
     body=body.replace('href="AI-CONNECTIONS.md','href="'+REPO+'/blob/main/docs/AI-CONNECTIONS.md')
+    body=body.replace('href="UNIX-INSTALL.md','href="unix.html')
     body=body.replace('href="V061-ACCEPTANCE.md','href="'+REPO+'/blob/main/docs/V061-ACCEPTANCE.md')
     body=body.replace('href="V060-ACCEPTANCE.md','href="'+REPO+'/blob/main/docs/V060-ACCEPTANCE.md')
     for old,new in [('USER-MANUAL.md','manual.html'),('ARCHITECTURE.md','architecture.html'),('DEVELOPER-GUIDE.md','developer.html'),('CODE-SIGNING.md',REPO+'/blob/main/docs/CODE-SIGNING.md'),('V052-ACCEPTANCE.md',REPO+'/blob/main/docs/V052-ACCEPTANCE.md'),('V051-ACCEPTANCE.md',REPO+'/blob/main/docs/V051-ACCEPTANCE.md'),('V050-ACCEPTANCE.md',REPO+'/blob/main/docs/V050-ACCEPTANCE.md'),('../THIRD-PARTY-NOTICES.md',REPO+'/blob/main/THIRD-PARTY-NOTICES.md')]:
@@ -58,12 +60,12 @@ def main():
     for p in (ROOT/'website').iterdir():
         if p.is_file():shutil.copy2(p,out/p.name)
     shutil.copytree(ROOT/'docs/diagrams',out/'diagrams',dirs_exist_ok=True)
-    for src,title,name in [('USER-MANUAL.md','User manual','manual.html'),('ARCHITECTURE.md','Architecture guide','architecture.html'),('DEVELOPER-GUIDE.md','Developer guide','developer.html')]:
+    for src,title,name in [('USER-MANUAL.md','User manual','manual.html'),('ARCHITECTURE.md','Architecture guide','architecture.html'),('DEVELOPER-GUIDE.md','Developer guide','developer.html'),('UNIX-INSTALL.md','macOS and Linux installation','unix.html')]:
         source=(ROOT/'docs'/src).read_text(encoding='utf-8')
         (out/name).write_text(render(source,title,name),encoding='utf-8')
         (out/name.replace('.html','.md')).write_text(downloadable_markdown(source),encoding='utf-8')
     (out/'robots.txt').write_text(f'User-agent: *\nAllow: /\nSitemap: {ORIGIN}/sitemap.xml\n',encoding='utf-8')
-    (out/'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+''.join(f'<url><loc>{ORIGIN}/{p}</loc></url>' for p in ['','manual','architecture','developer'])+'</urlset>',encoding='utf-8')
+    (out/'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+''.join(f'<url><loc>{ORIGIN}/{p}</loc></url>' for p in ['','manual','architecture','developer','unix'])+'</urlset>',encoding='utf-8')
     print(f'Static site rendered to {out}')
 
 if __name__=='__main__':main()

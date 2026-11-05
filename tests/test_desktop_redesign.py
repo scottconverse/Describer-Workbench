@@ -1,3 +1,4 @@
+from describer.platforms import native_engine
 """Desktop redesign regressions: edit persistence, undo, range controls and export gate."""
 import tempfile
 from pathlib import Path
@@ -141,12 +142,12 @@ def test_export_voice_picker_selects_ids_for_the_correct_engine():
                 while picker.loading and time.monotonic()<deadline:app.processEvents();time.sleep(.01)
                 assert not picker.loading
             try:
-                finish();picker.voice.setCurrentIndex(1);assert picker.selection()['windows_voice']=='Windows-id'
-                picker.engine.setCurrentText('Windows OneCore');finish();picker.voice.setCurrentIndex(1)
+                finish();picker.voice.setCurrentIndex(1);assert picker.selection()['windows_voice']==native_engine()+'-id'
+                picker.engine.addItem('Windows OneCore') if picker.engine.findText('Windows OneCore')<0 else None;picker.engine.setCurrentText('Windows OneCore');finish();picker.voice.setCurrentIndex(1)
                 assert picker.selection()=={'voice_engine':'Windows OneCore','windows_voice':'Windows OneCore-id','voice_preset':''}
                 picker.engine.setCurrentText('OpenAI');assert picker.voice.count()>0
                 assert picker.selection()['voice_engine']=='OpenAI'
-                assert w.settings.data['voice_engine']=='Windows'  # Cancel never mutates settings.
+                assert w.settings.data['voice_engine']==native_engine()  # Cancel never mutates settings.
             finally:
                 # Keep the owner alive even if an assertion fails during discovery.
                 stopped=picker.shutdown(wait_ms=5000);app.processEvents()
@@ -193,18 +194,18 @@ def test_voice_discovery_waits_for_owned_completion_before_replacement(tmp_path)
         try:
             assert entered.wait(3)
             first=picker.thread
-            picker.engine.setCurrentText('Windows OneCore')
+            picker.engine.addItem('Windows OneCore') if picker.engine.findText('Windows OneCore')<0 else None;picker.engine.setCurrentText('Windows OneCore')
             assert picker.thread is first
             release.set()
             # Deliberately hold the GUI queue until the old native thread ends.
             assert first.wait(3000)
-            picker.engine.setCurrentText('Windows 32-bit')
+            picker.engine.addItem('Windows 32-bit') if picker.engine.findText('Windows 32-bit')<0 else None;picker.engine.setCurrentText('Windows 32-bit')
             assert picker.thread is first
             deadline=time.monotonic()+3
             while picker.loading and time.monotonic()<deadline:
                 app.processEvents();time.sleep(.01)
             assert not picker.loading and picker.loaded=='Windows 32-bit'
-            picker.engine.setCurrentText('Windows')
+            picker.engine.setCurrentIndex(0)
             picker.shutdown()
             deadline=time.monotonic()+3
             while picker.thread is not None and time.monotonic()<deadline:app.processEvents();time.sleep(.01)

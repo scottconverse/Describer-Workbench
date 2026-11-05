@@ -1,5 +1,7 @@
 # Developer guide — 0.6.1
 
+For the separate macOS/Linux packages, native dependencies, repository installer and build commands, see [the platform installation guide](UNIX-INSTALL.md). The existing Windows spec, signed artifacts, installation and default stable release remain unchanged. Unix builds have separate source/package/acceptance identities and no publisher certificate. The `macOS and Linux add-ons` workflow performs native tests and package installation on Ubuntu 24.04 x64 and macOS 15 arm64/Intel; its receipts state which behaviors were actually exercised.
+
 Version 0.6.1: [AI connections](AI-CONNECTIONS.md) documents the new routes and evidence limits. Timed narration is synthesized and measured independently of the live-text screen-reader route. New/repair cues record `audio_volume:100`; target gain is `speech_volume / audio_volume`. The desktop prompts repair for older cues with unknown synthesis level. The shared service prepares narration before media export; the raw exporter rejects unknown recorded levels. User and model text remain unchanged when repairing audio.
 
 Reported usage persists with operation and requested/reported model identity. Automatic glossary generation shares the description request; such records have `components:["description","glossary"]` and explicitly unavailable separate glossary counts. The desktop labels that combined category and never fabricates a split or a subscription dollar cost. Scene requests remain separately attributed; unavailable provider token fields remain unknown.
@@ -30,9 +32,9 @@ python -m pip install ".[desktop,http,mcp]"
 
 Core installs do not depend on Qt. Local speech detection needs the `local`
 extra, FFmpeg/FFprobe and a pinned YAMNet asset. Install an Ollama vision model
-separately. Windows voices provide offline narration on Windows. Other platforms
-can supply a speech adapter; native Windows voices do not become cross-platform
-merely by installing the headless package. Optional OpenAI speech remains a
+separately. Windows voices provide offline narration on Windows. The add-ons
+provide measured macOS voices and Linux eSpeak NG; install their native dependencies
+as described in the platform guide. Optional OpenAI speech remains a
 remote, explicitly authorized alternative.
 
 Provision the classifier explicitly; opening a file never downloads models:

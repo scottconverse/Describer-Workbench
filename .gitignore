@@ -23,3 +23,7 @@ settings.dat2
 key.salt
 *.log
 *.recovery-*
+/dist-unix/
+/build-unix/
+/unix-media/
+/unix-packages/

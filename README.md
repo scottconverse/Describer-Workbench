@@ -1,6 +1,8 @@
 # Describer Workbench
 
-**One audio-description engine for a Windows workbench, Python, CLI, REST/OpenAPI and MCP.**
+**One audio-description engine for a desktop workbench, Python, CLI, REST/OpenAPI and MCP.**
+
+macOS and Linux are additional native distributions of 0.6.1 under the separate [platform add-on release](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.6.1-unix.1): Apple Silicon/Intel Mac DMGs and Linux x64 DEB/portable archive. Follow [macOS/Linux installation, source installation and platform limits](docs/UNIX-INSTALL.md). Mac packages have no Apple publisher certificate or notarization. The signed Windows 0.6.1 package below remains unchanged and stays the default stable release.
 
 **Version 0.6.1** fixes whole-chunk metadata validation and retry, visible subscription connection tests and disclosure, settings recovery, model metadata display, workflow instructions, optional-hours VTT import and prompt-preset rename. See [connection setup and verification limits](docs/AI-CONNECTIONS.md) and [0.6.1 acceptance](docs/V061-ACCEPTANCE.md). Windows releases require Scott Converse Azure Trusted Signing; the release verification asset records the executed signing and delivery results. The [0.6.0 record](docs/V060-ACCEPTANCE.md) remains historical evidence.
 
@@ -33,7 +35,7 @@ Open a video, draft descriptions through the selected analysis connection, edit 
 4. Choose an analysis provider/model and a short range, or add cues manually. Follow the [first-project walkthrough](docs/USER-MANUAL.md#3-your-first-project).
 5. Save with **Ctrl+S**, review playback and use **Export** for SRT, text or MP3.
 
-The binary targets 64-bit Windows and has GUI and CLI executables **signed as Scott Converse using Azure Trusted Signing**. Windows 11 was used for local acceptance. Windows speech depends on installed voices. Ollama, model weights and test media are separate. No macOS/Linux release or formal minimum RAM/GPU requirement is established; hardware needs depend on the local model.
+The Windows binary targets 64-bit Windows and has GUI and CLI executables **signed as Scott Converse using Azure Trusted Signing**. Windows 11 was used for local acceptance. Windows speech depends on installed voices. The separate macOS/Linux add-ons use macOS voices or eSpeak NG and native secure credential storage. Ollama, model weights and test media are separate. No formal minimum RAM/GPU requirement is established; hardware needs depend on the local model.
 
 Compare your download with the release's `SHA256SUMS.txt`:
 

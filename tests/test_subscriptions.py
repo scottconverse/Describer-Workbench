@@ -28,10 +28,15 @@ def test_native_login_hands_off_without_reading_tokens_or_api_environment(tmp_pa
     with patch.dict(os.environ,{'OPENAI_API_KEY':'fixture','ANTHROPIC_API_KEY':'fixture','GEMINI_API_KEY':'fixture'}),patch.object(subscriptions,'cli_command',return_value=['native-cli']),patch.object(subscriptions.subprocess,'Popen') as launch:
         subscriptions.open_native_login(dict(DEFAULTS,analysis_provider=provider),tmp_path)
     command=launch.call_args.args[0]
+    if os.name!='nt':
+        script=(tmp_path/'subscription-login.command').read_text()
+        import shlex
+        command=shlex.split(script.split(' native-cli ',1)[1]);command.insert(0,'native-cli')
+        assert 'fixture' not in script
     assert command[1:1+len(expected)]==expected
     env=launch.call_args.kwargs['env']
     assert all(key not in env for key in ('OPENAI_API_KEY','ANTHROPIC_API_KEY','GEMINI_API_KEY'))
-    assert launch.call_args.kwargs['creationflags']==subprocess.CREATE_NEW_CONSOLE
+    if os.name=='nt':assert launch.call_args.kwargs['creationflags']==subprocess.CREATE_NEW_CONSOLE
     assert 'stdout' not in launch.call_args.kwargs and 'stderr' not in launch.call_args.kwargs
     if provider=='Gemini CLI':assert json.loads(command[-1])['useG1Credits'] is False
 
