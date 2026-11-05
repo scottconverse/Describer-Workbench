@@ -1,8 +1,10 @@
 # AI connections — 0.6.1
 
+Documentation updated November 5, 2026. [Quick start](QUICK-START.md) · [User manual](USER-MANUAL.md) · [Platform installation](UNIX-INSTALL.md).
+
 Version 0.6.1 implements these finite routes. The Windows executables are signed as Scott Converse. See [release acceptance](V061-ACCEPTANCE.md) for executed checks and delivery boundaries.
 
-The [macOS/Linux add-ons](UNIX-INSTALL.md) expose these same routes where the external CLI/server is installed. Re-select executable paths on the new machine. Native sign-in opens Terminal or a Linux desktop terminal; each CLI retains its credentials. Gateway authentication remains external and is not migrated. Saved API keys use macOS Keychain or Linux Secret Service instead of Windows DPAPI. Mac/Linux packages do not inherit the Windows certificate or the historical live-provider acceptance performed on Windows; run Test connection for the selected model/account on the destination computer.
+The [macOS/Linux add-ons](UNIX-INSTALL.md) expose these same routes where the external CLI/server is installed. Re-select executable paths on the new machine. Windows sign-in opens the native tool window; Mac sign-in opens Terminal and Linux uses an available desktop terminal. Each CLI retains its credentials. Gateway authentication remains external and is not migrated. Saved API keys use macOS Keychain or Linux Secret Service instead of Windows DPAPI. Mac/Linux packages do not inherit the Windows certificate or the historical live-provider acceptance performed on Windows; run Test connection for the selected model/account on the destination computer.
 
 | Route | Authentication and model selection | Verification so far |
 |---|---|---|
@@ -33,7 +35,7 @@ Native Codex disables shell, hooks and agent delegation. Native Claude disables 
 
 ## Discovery, testing and data
 
-**Refresh models** uses the selected route's catalog where available. Codex can use its local catalog cache; Claude requires an exact manually entered ID. A cached ID is not proof of current availability. Unknown vision capability is displayed as unknown. Native Anthropic has no catalog refresh in this interface.
+**Refresh models** uses the selected route's catalog where available. Codex can use its local catalog cache; Claude requires an exact manually entered ID. A cached ID is not proof of current availability. Unknown vision capability is displayed as unknown. The Anthropic API has no catalog refresh in this interface.
 
 **Test connection** on the new routes sends a synthetic blue image after external-processing confirmation. It reports success only if the response identifies blue. This establishes a small image-backed smoke test, not narration quality, all model entitlements or the actual model identity when the provider does not report it. Ollama's existing test is a text test and says so.
 

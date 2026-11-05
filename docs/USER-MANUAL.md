@@ -1,10 +1,12 @@
 # Describer Workbench user manual
 
-For **0.6.1** · November 4, 2026 (America/Denver). See [release acceptance](V061-ACCEPTANCE.md) for executed checks and delivery boundaries.
+For **0.6.1** · November 5, 2026 (America/Denver). See [release acceptance](V061-ACCEPTANCE.md) for executed checks and delivery boundaries.
 
-**macOS/Linux add-ons:** use the [platform installation guide](UNIX-INSTALL.md) for Apple Silicon/Intel DMGs, Linux x64 DEB/portable archives and repository installation. The workflows below are shared; Windows executable names, DPAPI, SAPI/OneCore and signed updater instructions apply specifically to Windows. macOS uses Keychain and measured macOS voices; Linux uses Secret Service and measured eSpeak NG. Their update command opens the manual download page. The existing signed Windows 0.6.1 release remains unchanged. Mac/Linux acceptance has its own release receipts; it does not inherit Windows acceptance or signing.
+[Quick start without programming](QUICK-START.md) · [Technical integration guide](DEVELOPER-GUIDE.md)
 
-This guide describes version 0.6.1 and its [AI connections](AI-CONNECTIONS.md). **Live text playback output** applies to live text and Scene answers. Timed in-gap and pause cues use measured export-voice audio, with Windows as the default, as explicitly chosen by Scott on November4. A screen reader controls its own live-text rate and volume; unavailable reader output falls back to Windows speech. The Speech slider scales measured WAV playback and exported narration. Older WAVs without synthesis-volume metadata need **File > Repair narration** before timed playback; repair preserves source media, descriptions and evidence, asks for applicable cloud consent, and must be saved to retain new audio references.
+**Windows, macOS and Linux:** use the [platform installation guide](UNIX-INSTALL.md) for Apple Silicon/Intel DMGs, Linux x64 DEB/portable archives and repository installation. The workflows below are shared; Windows executable names, DPAPI, SAPI/OneCore and signed updater instructions apply specifically to Windows. macOS uses Keychain and measured macOS voices; Linux uses Secret Service and measured eSpeak NG. Their update command opens the manual download page. The existing signed Windows 0.6.1 release remains unchanged. Mac/Linux acceptance has its own release receipts; it does not inherit Windows acceptance or signing.
+
+This guide describes version 0.6.1 and its [AI connections](AI-CONNECTIONS.md). **Live text playback output** applies to live text and Scene answers. Timed in-gap and pause cues use measured export-voice audio, with the host native voice as the default (Windows on Windows, macOS on Mac, eSpeak NG on Linux). The accepted Windows narration policy remains unchanged. A screen reader controls its own live-text rate and volume; unavailable reader output falls back to Qt system speech. The Speech slider scales measured WAV playback and exported narration. Older WAVs without synthesis-volume metadata need **File > Repair narration** before timed playback; repair preserves source media, descriptions and evidence, asks for applicable cloud consent, and must be saved to retain new audio references.
 
 [Windows 0.6.1 download](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.6.1) · [Project](https://github.com/scottconverse/Describer-Workbench) · [Architecture guide](ARCHITECTURE.md)
 
@@ -28,24 +30,36 @@ Describer Workbench helps you write short spoken descriptions of a video's visua
 
 The outputs are an editable project; SRT, VTT, plain text or project JSON; narrated MP3/WAV; or a described MP4. Complete media exports include no-fit descriptions by pausing the source. MP4 freezes the picture at the original event while narration plays, then resumes. This extends the timeline; it does not create an embedded selectable alternate track.
 
-The 0.6.1 Windows portable package contains both the desktop app and `DescriberCLI.exe`, including REST and MCP access. Older 0.4.2 downloads do not contain the shared engine or transports.
+Every native package contains the desktop and a CLI, including REST and MCP access. Windows uses `DescriberCLI.exe`, Mac uses `Describer Workbench.app/Contents/MacOS/DescriberCLI`, and Linux provides `describer` (DEB) or `DescriberCLI` (tar). Older 0.4.2 downloads do not contain the shared engine or transports.
 
 AI descriptions need editorial review. In particular, the Ollama path sees still images sampled from the video and receives no audio. It cannot know when someone is speaking or confirm a spoken name. The new engine measures speech/vocal protection separately with local YAMNet; it never asks vision to invent safe dialogue gaps. Review still matters for missed speech and visual facts.
 
 ## 2. Install and choose a working mode
 
-Download the Windows portable ZIP from the release page. Extract everything, then open `DescriberWorkbench/DescriberWorkbench.exe`. Keep the `_internal` directory with the executable. The current portable build has GUI and CLI executables signed as Scott Converse using Azure Trusted Signing with Microsoft timestamps. It includes the application runtime and media tools; it does not include Ollama, AI model weights or videos.
+Choose your platform below. [The quick start](QUICK-START.md) gives a short first-project walkthrough.
+
+| Computer | Download | Install and start | Publisher signing |
+| --- | --- | --- | --- |
+| Windows x64 (Windows 11 tested) | [Portable ZIP](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.6.1/DescriberWorkbench-0.6.1-windows-x64.zip) | Extract everything; open `DescriberWorkbench/DescriberWorkbench.exe`. Keep `_internal` beside it. | Scott Converse, Azure Trusted Signing with Microsoft timestamps |
+| Mac, Apple Silicon, macOS 15+ | [arm64 DMG](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.6.1-unix.1/DescriberWorkbench-0.6.1-macos-arm64.dmg) | Open DMG; drag the app to Applications. | No Apple publisher certificate or notarization; ad-hoc integrity only |
+| Mac, Intel, macOS 15+ | [x64 DMG](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.6.1-unix.1/DescriberWorkbench-0.6.1-macos-x64.dmg) | Open DMG; drag the app to Applications. | No Apple publisher certificate or notarization; ad-hoc integrity only |
+| Ubuntu 24.04 / compatible Debian desktop, x86-64 | [DEB installer](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.6.1-unix.1/DescriberWorkbench-0.6.1-linux-x64.deb) | `sudo apt install ./DescriberWorkbench-0.6.1-linux-x64.deb`; open Describer Workbench from the applications menu. | Unsigned |
+| Other Linux x86-64 desktops | [Portable tar](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.6.1-unix.1/DescriberWorkbench-0.6.1-linux-x64.tar.gz) | Extract; run `DescriberWorkbench/DescriberWorkbench` after installing native dependencies. | Unsigned; other distributions not acceptance-tested |
+
+Compare the download with its release checksums. Mac/Linux prerequisites, approval, updates and removal are in [the platform guide](UNIX-INSTALL.md). Mac has no Apple publisher certificate/notarization; Linux is unsigned.
+
+**Windows:** download the portable ZIP from the release page. Extract everything, then open `DescriberWorkbench/DescriberWorkbench.exe`. Keep the `_internal` directory with the executable. The current portable build has GUI and CLI executables signed as Scott Converse using Azure Trusted Signing with Microsoft timestamps. It includes the application runtime and media tools; it does not include Ollama, AI model weights or videos.
 
 Use one of these paths:
 
 | Mode | Setup | Best starting task |
 | --- | --- | --- |
-| Manual/offline | No AI key. Use installed Windows voices. | Open video, add one cue, listen and export. |
+| Manual/offline | No AI key. Use your platform’s installed native voices. | Open video, add one cue, listen and export. |
 | Local AI | Install/start Ollama and install a vision model separately. | Choose Ollama, refresh models, test a short range. |
 | Gemini | Enter your Google Gemini API key/model in Settings. | Confirm upload and analyze a short clip. |
 | Ollama cloud/remote | Configure sign-in/access in Ollama or the remote server. | Select a vision-capable tag and confirm transmission. |
 
-Native subscriptions and compatible/API analysis are described in [AI connections](AI-CONNECTIONS.md). API credits and subscription access are separate. OpenAI speech remains an optional text-to-speech service. No key is needed for manual editing, subtitle import, local playback or native Windows speech. A local AI model still needs enough RAM/VRAM for that model; the app does not estimate hardware requirements.
+Native subscriptions and compatible/API analysis are described in [AI connections](AI-CONNECTIONS.md). API credits and subscription access are separate. OpenAI speech remains an optional text-to-speech service. No key is needed for manual editing, subtitle import, local playback or native speech. A local AI model still needs enough RAM/VRAM for that model; the app does not estimate hardware requirements.
 
 ## 3. Your first project
 
@@ -76,7 +90,7 @@ The **File** menu includes projects, subtitle import, glossary, prompt presets, 
 | Ctrl+E | Export |
 | F1 | Built-in help |
 
-Press Space to toggle playback when focus is outside single-line and multiline text editors and the key reaches the main window. Text editors retain Space for typing; focused buttons/lists may handle it themselves. The Play/Pause icon always provides an explicit playback action. Ctrl+Z and Ctrl+Shift+Z undo/redo cue edits. Ordinary Tab navigation follows Qt focus order.
+Press Space to toggle playback when focus is outside single-line and multiline text editors and the key reaches the main window. Text editors retain Space for typing; focused buttons/lists may handle it themselves. The application defines the shortcuts above with Qt `Ctrl` sequences; macOS Qt presents the native command-key equivalent. Use the displayed menu shortcut for your host; the timeline’s Ctrl+wheel modifier is a separate control. The Play/Pause icon always provides an explicit playback action. Ctrl+Z and Ctrl+Shift+Z undo/redo cue edits. Ordinary Tab navigation follows Qt focus order.
 
 ## 5. Draft with AI
 
@@ -98,7 +112,7 @@ Enter **Gemini API key** and **Gemini model** in Settings. Choose Gemini in the 
 
 Choose **Whole video**, **Next 20 seconds** or **Next 60 seconds**. Next ranges start at the current playhead and stop at the end of the video if necessary. Pick a prompt preset or edit the editorial guidance, then choose **Start draft**.
 
-**Analysis replaces the project's cue list after confirmation, including when only a short range is selected.** It does not append or merge a range into existing cues. Returned times remain absolute video times. Save before comparing models, copy the `.adproject` file in Windows File Explorer, and use **Open project** on the copy. This version has no Save As command; Ctrl+S continues saving the currently opened project.
+**Analysis replaces the project's cue list after confirmation, including when only a short range is selected.** It does not append or merge a range into existing cues. Returned times remain absolute video times. Save before comparing models, copy the `.adproject` file in your file manager, and use **Open project** on the copy. This version has no Save As command; Ctrl+S continues saving the currently opened project.
 
 The log reports prepared ranges, response progress and available token metadata. Long jobs run sequentially. At the default Ollama frame interval, a 60-second range normally means four requests. Do not assume a single short response represents the whole requested range; inspect the final cue coverage.
 
@@ -167,9 +181,9 @@ The **Audio export speech engine** is separate from playback voice:
 | eSpeak NG (Linux add-on) | Installed eSpeak NG voices, synthesized to measured WAV |
 | OpenAI | Configured API key, model, base voice/preset and paid remote synthesis |
 
-Choose the engine and voice directly in the Export dialog for narrated media. Installed Windows voices load asynchronously for the selected engine; OpenAI lists the configured base voice and saved presets. Accepting Export saves the selected engine/voice for subsequent exports; Cancel leaves settings unchanged. Alternatively, configure **Settings → Export voice** or **File → Select Windows export voice** and use **Test selected export voice** for a preview. Changing engines clears an incompatible native voice selection. OpenAI preview and export confirm before sending text. Draft also names OpenAI speech separately from its vision destination before any external processing.
+Choose the engine and voice directly in the Export dialog for narrated media. Installed native voices load asynchronously for the selected engine; OpenAI lists the configured base voice and saved presets. Accepting Export saves the selected engine/voice for subsequent exports; Cancel leaves settings unchanged. Alternatively, configure **Settings → Export voice** or **File → Select Windows export voice** on Windows (the corresponding native-voice action on Mac/Linux) and use **Test selected export voice** for a preview. Changing engines clears an incompatible native voice selection. OpenAI preview and export confirm before sending text. Draft also names OpenAI speech separately from its vision destination before any external processing.
 
-**Manage voice presets** adds, edits, deletes or imports original `voices.json` personalities. Choose the active preset in Settings. Presets set a base voice, speed and delivery instructions; instructions are sent only for the compatible `gpt-4o-mini-tts` family. They do not turn a Windows voice into an OpenAI voice.
+**Manage voice presets** adds, edits, deletes or imports original `voices.json` personalities. Choose the active preset in Settings. Presets set a base voice, speed and delivery instructions; instructions are sent only for the compatible `gpt-4o-mini-tts` family. They do not turn a native voice into an OpenAI voice.
 
 Export choices:
 
@@ -206,34 +220,44 @@ Open video first, then **Import SRT / VTT** (Ctrl+I). Import replaces current cu
 | Remove audio | Strips audio from prepared video. Gemini then loses dialogue evidence; Ollama already receives no audio. |
 | Background ducking | −40 to 0 dB, default −15 dB. More negative reduces the original bed more. |
 | Speech rate / volume | Native export voice rate −10 to 10. Speech volume 0–100 scales live Qt speech, measured WAV playback and exported narration, including OpenAI narration. Newly planned Windows WAVs are synthesized at 100% and scaled using their recorded level. A screen reader controls its own volume/rate; older WAVs without a recorded level require repair. |
-| Playback voice / output | Qt Windows voice or active screen reader; separate from export engine/voice. |
+| Playback voice / output | Qt system voice or active screen reader; separate from export engine/voice. |
 | Interruption | Allow new cue speech to interrupt, or queue it. |
 | Interface language | English, Arabic, Spanish, French, Italian, Portuguese, Russian, Turkish, Ukrainian or Vietnamese. Arabic uses RTL. Unmatched strings/help/logs fall back to English; no native-speaker acceptance is claimed. |
 | Presets | Draft with AI selects a language-specific prompt preset or accepts multiline guidance. Original prompt data can be imported through File → Import original data. Use **File → Manage presets** to add/edit, rename or delete a prompt preset in the current description language. Rename preserves its prompt and selection; an existing name is refused and Cancel preserves settings. Manage voice presets stores speech personalities. |
 | Download quality | Best, 360p, 480p, 720p or 1080p, subject to available formats. |
 | Notifications / diagnostics | Enable sounds and choose DEBUG through CRITICAL logging. |
 | Gemini BLOCK_NONE | Requests supported adjustable thresholds only; provider core safeguards/account restrictions remain. |
-| Update feed / startup check | Blank feed uses the official latest stable GitHub release. Optional trusted HTTPS/local JSON feed remains available. Startup checks are opt-in; staging requires hash and publisher-signature verification. |
+| Update feed / startup check | Windows: blank feed uses the official latest stable GitHub release; optional trusted feed and opt-in startup check; staging requires hash and publisher signatures. Mac/Linux: opens the add-on download page for manual replacement. |
 
 ## 11. Accessibility and keyboard use
 
-Controls have Qt accessibility labels; timed cues appear in the Descriptions list and as focusable timeline buttons, and main file actions have shortcuts. Scene Explorer has its own keys. **Screen reader** playback asks an active supported reader to speak, with asynchronous Windows speech fallback if unavailable. Workbench cannot measure screen-reader speech duration for ducking.
+Controls have Qt accessibility labels; timed cues appear in the Descriptions list and as focusable timeline buttons, and main file actions have shortcuts. Scene Explorer has its own keys. **Screen reader** playback asks an active supported reader to speak, with asynchronous Qt system speech fallback if unavailable. Workbench cannot measure screen-reader speech duration for ducking.
 
-NVDA/JAWS end-to-end acceptance was not performed. The presence of controller modules or accessible labels does not establish usability for every assistive setup. Test your reader, voice and workflow before relying on them for a production session.
+NVDA/JAWS/VoiceOver/Orca end-to-end acceptance was not performed. The presence of controller modules or accessible labels does not establish usability for every assistive setup. Test your reader, voice and workflow before relying on them for a production session.
 
 ## 12. Privacy, storage and recovery
 
 Projects are user-selected `.adproject` JSON files with `version`, `video`, `duration`, `cues` and `glossary`, plus optional coverage/analysis and event/placement fields. Existing version-1 projects remain readable. Video is an absolute path, not embedded media. Moving a project to another computer requires moving the media separately; **Open project** prompts you to locate a missing video and revalidates cue durations. Projects contain description text and paths; inspect before sharing. Save is written to a sibling temporary file then replaced.
 
-On Windows, settings live at `%LOCALAPPDATA%/DescriberWorkbench/settings.json`. Mac/Linux paths, secure keyring requirements and manual updates are in [the platform guide](UNIX-INSTALL.md). API keys are DPAPI-protected for the current Windows user. Moving this file to a different account does not move working keys. If a key cannot be unlocked, re-enter it. Damaged/incompatible settings, including malformed nested connection/model entries or a missing selected profile, load defaults with a warning and are preserved in a `.recovery-*` copy before saving. Other settings are not encrypted.
+Settings are in `settings.json` under the host data folder below. Logs live beside settings; engine jobs and narration live in its `engine` subfolder.
 
-Logs live beside settings, rotate at 1 MiB with one backup and redact configured key strings. They may still include paths, descriptions and error text. Temporary clips/frames/audio are created for jobs and normally removed when their temporary directories close. Downloaded videos and exported files remain where you chose to save them. Engine jobs, snapshots, checkpoints and narration persist under `%LOCALAPPDATA%/DescriberWorkbench/engine` (or `DESCRIBER_HOME/engine`); they are needed for resume and planned playback. Keep them with projects. There is no automatic deletion. API keys are omitted from saved jobs.
+| Host | Data folder | Saved credentials |
+| --- | --- | --- |
+| Windows | `%LOCALAPPDATA%/DescriberWorkbench` | Current-user DPAPI |
+| macOS | `~/Library/Application Support/DescriberWorkbench` | macOS Keychain, opaque references in settings |
+| Linux | `${XDG_DATA_HOME:-~/.local/share}/DescriberWorkbench` | Desktop Secret Service, opaque references in settings |
+
+Unix requires an unlocked keyring and has no plaintext fallback. Native CLI subscriptions retain their own sign-in stores. See [the platform guide](UNIX-INSTALL.md) for setup and migration. Windows API keys are DPAPI-protected for the current Windows user. Moving this file to a different account does not move working keys. If a key cannot be unlocked, re-enter it. Damaged/incompatible settings, including malformed nested connection/model entries or a missing selected profile, load defaults with a warning and are preserved in a `.recovery-*` copy before saving. Other settings are not encrypted.
+
+Logs live beside settings, rotate at 1 MiB with one backup and redact configured key strings. They may still include paths, descriptions and error text. Temporary clips/frames/audio are created for jobs and normally removed when their temporary directories close. Downloaded videos and exported files remain where you chose to save them. Engine jobs, snapshots, checkpoints and narration persist under the host data folder’s `engine` directory (or `DESCRIBER_HOME/engine`); they are needed for resume and planned playback. Keep them with projects. There is no automatic deletion. API keys are omitted from saved jobs.
 
 No analytics or application telemetry is configured. The engine disables ONNX telemetry and sets telemetry-off defaults for Hugging Face/OTEL. HTTP tracing, metrics and auto exporters are explicitly disabled. External provider and explicit asset-download calls still make the documented network requests.
 
 **Cancel operation** stops owned FFmpeg work and prevents subsequent chunks. It is cooperative around network streaming; an idle read may delay completion. It cannot retract already transmitted media or cancel a provider charge. Closing during a job requests cancellation and keeps the app open until the job ends. Save before long operations.
 
-For manual updates, close Workbench and extract the new portable build separately; retain the old folder and projects until the new version works. Settings remain under LocalAppData. With a blank feed the app checks the official latest stable GitHub release. Staging verifies the archive digest and timestamped Valid Scott Converse signatures on GUI and CLI, then installation rechecks every staged payload hash. It swaps sibling directories after the exact running process exits and retains the previous folder; receipts go under LocalAppData's `updates` directory. To roll back, close the app and restore the retained folder. Startup checking is opt-in. A custom feed is trusted input; a matching hash alone is insufficient.
+**Windows updates:** close Workbench and extract the new portable build separately; retain the old folder and projects until the new version works. Settings remain under LocalAppData. With a blank feed the app checks the official latest stable GitHub release. Staging verifies the archive digest and timestamped Valid Scott Converse signatures on GUI and CLI, then installation rechecks every staged payload hash. It swaps sibling directories after the exact running process exits and retains the previous folder; receipts go under LocalAppData's `updates` directory. To roll back, close the app and restore the retained folder. Startup checking is opt-in. A custom feed is trusted input; a matching hash alone is insufficient.
+
+**Mac/Linux updates:** Check for updates opens the separate add-on release page. Quit the app, download the matching CPU/OS package and replace/install it manually. Retain the old app or package for rollback. Settings/projects and the durable workspace remain separate. Mac/Linux never use Windows signed ZIP staging. Removal instructions are in [the platform guide](UNIX-INSTALL.md#updates-recovery-and-removal).
 
 ## 13. Troubleshooting
 
@@ -249,7 +273,9 @@ For manual updates, close Workbench and extract the new portable build separatel
 | Narration talks over dialogue | Inspect the actual sound-classifier spans; supply captions through developer settings if available and correct false negatives. Vision does not determine gaps. Do not treat the plan as a compliance certificate. |
 | Missing speech detector | Use File → Install local speech detector, or provide a verified `sound_model` path through developer settings. |
 | Nothing happens when analyzing | Open video first, finish/cancel any current job, confirm replacement/transmission prompts and inspect the log. |
-| No voice / native export fails | Select an installed voice from the correct engine/bitness. Test export voice; playback and export use separate settings. |
+| No voice / native export fails | Select an installed voice for this host. Windows: check SAPI/OneCore and bitness. Mac: check installed system voices. Linux: install/test `espeak-ng` and desktop audio. Test export voice; live text and export have separate choices. |
+| Mac cannot open app | Verify the matching DMG checksum and use normal Privacy & Security approval; there is no Apple publisher certificate/notarization. |
+| Linux cannot save API key | Start/unlock a Secret Service keyring in your desktop session. Plaintext storage is refused. |
 | Many pause descriptions | The narration does not fit within its visual event at up to 1.15x. Edit the wording or accept the extended timeline; descriptions are retained. |
 | Cloud authentication/quota error | Check provider access, key, model ID and billing/limits. Workbench does not silently switch providers. Never paste keys into an issue. |
 | Project video missing | Relocate the original video when prompted. The project contains no copy. |
@@ -259,7 +285,7 @@ For manual updates, close Workbench and extract the new portable build separatel
 
 ## 14. Runtime and source setup
 
-The original delivered artifact is a 64-bit Windows PyInstaller folder bundle; separate macOS/Linux packages and source launchers are described in the platform installation guide above. Source was tested with Python 3.13, PySide6 6.12.0, google-genai 2.34.0, yt-dlp 2026.10.26, accessible-output2 0.17 and cryptography 50.0.2. FFmpeg/FFprobe are separate source prerequisites; Windows/Mac downloads bundle them, while Linux resolves system dependencies. Native speech requires the corresponding platform's installed voices.
+Native downloads are the Windows x64 portable folder, macOS 15+ Apple Silicon/Intel DMGs and Ubuntu 24.04 x64 DEB/portable tar. For Mac/Linux repository setup, install the prerequisites in [the platform guide](UNIX-INSTALL.md#install-from-the-repository), then run `python3 tools/install_unix.py`; it prints the isolated environment/CLI and creates a desktop launcher. The commands below are for **Windows**. Source was tested with Python 3.13, PySide6 6.12.0, google-genai 2.34.0, yt-dlp 2026.10.26, accessible-output2 0.17 and cryptography 50.0.2. FFmpeg/FFprobe are separate source prerequisites; Windows/Mac downloads bundle them, while Linux resolves system dependencies. Native speech requires the corresponding platform's installed voices.
 
 ```powershell
 git clone https://github.com/scottconverse/Describer-Workbench.git
@@ -275,7 +301,7 @@ Place `ffmpeg.exe` and `ffprobe.exe` on PATH or in `bin/`. Run `build.ps1` for t
 
 ![System architecture and external service boundary.](diagrams/system.svg)
 
-`app.py` owns Qt UI, state, confirmations, worker lifecycle and project operations. `model_picker.py` manages discovery and selection. `engine/` owns the headless serial service, independent audio protection, event planning, checkpoints and complete exports. `services.py` supplies segmentation, provider/speech adapters and settings. `adapters/` plus `cli.py` expose REST/MCP/CLI over that same core. `models.py` implements Ollama HTTP/discovery/streaming and frame extraction. `project.py` validates JSON/cues, imports subtitles and persists projects. Dedicated modules handle Windows speech, playback queues, compatibility, translations, diagnostics and updates.
+`app.py` owns Qt UI, state, confirmations, worker lifecycle and project operations. `model_picker.py` manages discovery and selection. `engine/` owns the headless serial service, independent audio protection, event planning, checkpoints and complete exports. `services.py` supplies segmentation, provider/speech adapters and settings. `adapters/` plus `cli.py` expose REST/MCP/CLI over that same core. `models.py` implements Ollama HTTP/discovery/streaming and frame extraction. `project.py` validates JSON/cues, imports subtitles and persists projects. `platforms.py` handles host paths and secure credential backends; `unix_speech.py` provides measured macOS/eSpeak narration. Dedicated modules handle Windows speech, playback queues, compatibility, translations, diagnostics and updates.
 
 ![Analysis sequence: snapshot, segment, select provider, validate and replace on success.](diagrams/analysis.svg)
 
@@ -313,7 +339,7 @@ Example `.adproject` (illustrative; update the media path):
 
 Project schema version is independent of application version. Loading requires version 1, finite nonnegative timings, valid text and cue bounds. Import validation is strict; AI chunks require valid text, timing and metadata for every returned observation; invalid chunks fail without accepting partial results. Settings schema is separate and migrates bundled presets. Do not use source-controlled settings files to distribute credentials.
 
-Optional update-feed shape (example only; no service is supplied):
+Windows-only optional update-feed shape (example only; no custom service is supplied):
 
 ```json
 {
@@ -337,11 +363,13 @@ Run the standard suite on Windows:
 
 The optional second command opens an owned window, makes a short clip, tests editing/seeking/playback, DPAPI, native speech and MP3. It writes local artifacts and is not a cloud test. Additional acceptance scripts in `tests/` exercise library formats, audio mixing and update staging/rollback; read their inputs before running. `verify_payload.py` compares frozen source code fingerprints to the executable and checks reader dependencies. It does not prove human usability or visual accuracy.
 
-The v0.5.1 suite passes 51 tests and 3 subtests. The earlier v0.5.0 suite passed 43 tests and 3 subtests. Real native vision/classifier/speech checks covered three 120-second samples, and packaged GUI/CLI/HTTP/MCP startup passed. These are historical results. See the [0.6.1 release acceptance record](V061-ACCEPTANCE.md), [historical desktop acceptance](V051-ACCEPTANCE.md) and [historical engine acceptance](V050-ACCEPTANCE.md) for scope and limits. These results are functional evidence, not a visual-accuracy percentage.
+The Windows 0.6.1 suite passed 182 tests and 3 subtests; its signed-package and installation evidence is in the [0.6.1 acceptance record](V061-ACCEPTANCE.md). Historically, v0.5.1 passed 51 tests and 3 subtests and v0.5.0 passed 43 tests and 3 subtests. Real vision/classifier/speech checks covered three 120-second samples, and packaged GUI/CLI/HTTP/MCP startup passed. See [historical desktop acceptance](V051-ACCEPTANCE.md) and [historical engine acceptance](V050-ACCEPTANCE.md) in their original version context. These results are functional evidence, not a visual-accuracy percentage.
 
 Historical 0.4.2 evidence: its suite passed 28 tests. Actual GUI Bunny seconds 62–122 with Gemma 26B and Qwen Q6 completed four requests per model with a clean initial glossary. The eight requests carried the requested off/32K/64K settings, runner contexts were 64K and no thinking output or truncation occurred. Projects matched responses; cue counts (29/25) are not quality scores. The release verification asset pins the executable and source identity. Raw local receipts are excluded from Git/public downloads because they include images and paths.
 
-Still unverified: live Gemini/OpenAI/keyed-cloud operation, full-film analysis/AD quality, NVDA/JAWS user acceptance, native-speaker translations, third-party legacy voices, live public YouTube extraction ; production update evidence is recorded in the release verification asset. Fixtures validate adapter/format behavior without proving live provider acceptance. Documentation-only publication does not rebuild or change an accepted executable.
+Current Unix native package evidence is recorded in [the add-on receipt](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.6.1-unix.1/release-verification.json): secure credential storage, measured speech, MP4/MP3, packaged startup/close, CLI/HTTP/MCP and repository launchers. Native CI is not VoiceOver/Orca or human-listening acceptance.
+
+Still unverified: separate keyed Gemini/OpenAI/Anthropic and LM Studio/llama.cpp live operation, full-film analysis/AD quality, NVDA/JAWS user acceptance, native-speaker translations, third-party legacy voices, live public YouTube extraction ; production update evidence is recorded in the release verification asset. Fixtures validate adapter/format behavior without proving live provider acceptance. Documentation-only publication does not rebuild or change an accepted executable.
 
 When extending a provider, trace selection → saved exact tag → capability/preflight → confirmation → request → normalized response → GUI/project. Preserve cancellation and existing cue data on failure. Add focused affected tests and document real transmission/compatibility limits. Do not claim another provider is supported solely because it is named by a discovery endpoint.
 
@@ -353,7 +381,7 @@ This is newly written reconstruction source, not recovered original source or an
 
 ## Redesigned desktop interface
 
-The 0.6.1 Windows portable and source tree include the Industry PySide6 interface described here. New scene answers are marked for review. **Mark as checked** appears only on Needs review descriptions. Use it only after verifying visual facts; editing invalidates measured narration and the engine replans it at media export. Saved projects and engine protocols remain compatible.
+All 0.6.1 native platform packages and the source tree include the Industry PySide6 interface described here. New scene answers are marked for review. **Mark as checked** appears only on Needs review descriptions. Use it only after verifying visual facts; editing invalidates measured narration and the engine replans it at media export. Saved projects and engine protocols remain compatible.
 
 ### Timeline navigation and desktop visual controls
 
@@ -361,7 +389,7 @@ Use Ctrl+mouse-wheel over the timeline to zoom around the pointer, and the mouse
 
 The Draft dialog accepts multiline editorial instructions and preserves the selected provider/model. Scene questions have a labeled Context range; every answer card has Speak, Copy and Add as description actions for its captured position. Glossary cards keep Add character beneath the list. The model chip shows the actual selected ID, and the status separates ordinary in-gap, sped-up, pause and review counts.
 
-At export, choose a narration engine and a voice in the dropdowns. Windows voices are read asynchronously for that engine; changing engines refreshes the list. OpenAI lists the configured base voice and saved presets. Accepting Export saves the choice for subsequent exports; cancellation preserves settings. Voice listing does not send description text to any provider.
+At export, choose a narration engine and a voice in the dropdowns. Native voices are read asynchronously for that engine; changing engines refreshes the list. OpenAI lists the configured base voice and saved presets. Accepting Export saves the choice for subsequent exports; cancellation preserves settings. Voice listing does not send description text to any provider.
 
 
 ## Setup and recovery changes (0.5.2)
@@ -375,4 +403,4 @@ These recovery controls were introduced in 0.5.2 and retained in 0.6.1. [Current
 - **File > Repair narration** regenerates missing narration and placement through the shared engine without repeating vision. Missing referenced audio is also reported on load/playback. Consent precedes cloud speech. Save the repaired project to retain its new audio references.
 - **File > Recover interrupted jobs** lists readable failed/cancelled/interrupted jobs with original source and operation. Resume uses original saved settings plus current keys, and opens the result as an unsaved recovered project. Checkpoints are reused only when source, model, settings and implementation identity match. An older release's checkpoints may be incompatible with this version; rejection preserves them. Damaged job records are reported and left unchanged; restore them from a backup rather than deleting the engine workspace.
 - The developer API announces readiness only after startup. A busy port is reported; no conflicting process is terminated. Stop/retry once the conflict is resolved.
-- URL failures offer connection/account/extractor guidance and a local-file fallback. The app does not import browser cookies or bypass bot challenges. In 0.6.1, Check for updates with a blank feed queries the official latest stable GitHub release; the older0.5.2 behavior only offered the releases page.
+- URL failures offer connection/account/extractor guidance and a local-file fallback. The app does not import browser cookies or bypass bot challenges. On Windows 0.6.1, Check for updates with a blank feed queries the official latest stable GitHub release; the older0.5.2 behavior only offered the releases page. Mac/Linux open the separate add-on downloads for manual replacement.

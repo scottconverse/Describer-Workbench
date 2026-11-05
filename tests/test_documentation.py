@@ -25,13 +25,14 @@ class DocumentationTests(unittest.TestCase):
         from tools import build_site
         with tempfile.TemporaryDirectory() as tmp:
             with patch('sys.argv', ['build_site.py','--output',tmp]):build_site.main()
-            for name in ('manual.md','architecture.md','developer.md'):
+            for name in ('quick-start.md','manual.md','architecture.md','developer.md','unix.md','connections.md','signing.md'):
                 text=(Path(tmp)/name).read_text(encoding='utf-8')
                 links=Navigation(markdown.markdown(text,extensions=['fenced_code','tables'])).targets
                 self.assertTrue(links)
                 for target in links:
                     self.assertTrue(urlsplit(target).scheme=='https' or target.startswith('#'),(name,target))
-                self.assertIn(build_site.ORIGIN+'/diagrams/system.svg',links)
+                if name in ('manual.md','architecture.md','developer.md'):
+                    self.assertIn(build_site.ORIGIN+'/diagrams/system.svg',links)
             self.assertIn(build_site.ORIGIN+'/architecture.html',Navigation(markdown.markdown((Path(tmp)/'manual.md').read_text(encoding='utf-8'))).targets)
 
     def test_generated_html_links_and_fragments_exist(self):
@@ -52,5 +53,29 @@ class DocumentationTests(unittest.TestCase):
                     if p.is_dir():p=p/'index.html'
                     self.assertTrue(p.is_file(),(name,target))
                     if url.fragment and p.suffix=='.html':self.assertIn(url.fragment,pages[p.name].ids,(name,target))
+
+    def test_primary_downloads_and_platform_instructions_are_visible(self):
+        """A matching generated page can still advertise the wrong platforms."""
+        from tools import build_site
+        source=(build_site.ROOT/'website/index.html').read_text(encoding='utf-8')
+        hero=source.split('<section class="hero"',1)[1].split('</section>',1)[0]
+        for platform in ('windows','macos-arm64','macos-x64','linux'):
+            self.assertIn(f'data-platform="{platform}"',hero)
+        for extension in ('windows-x64.zip','macos-arm64.dmg','macos-x64.dmg','linux-x64.deb'):
+            self.assertIn(extension,hero)
+        self.assertNotIn('A Windows workspace',source)
+        self.assertNotIn('<h3>Windows speech</h3>',source)
+        for name in ('README.md','docs/QUICK-START.md','docs/USER-MANUAL.md'):
+            text=(build_site.ROOT/name).read_text(encoding='utf-8')
+            for target in ('macos-arm64.dmg','macos-x64.dmg','linux-x64.deb','windows-x64.zip'):
+                self.assertIn(target,text,(name,target))
+        architecture=(build_site.ROOT/'docs/ARCHITECTURE.md').read_text(encoding='utf-8')
+        for concept in ('Keychain','Secret Service','ad-hoc','platforms.svg','manual replacement'):
+            self.assertIn(concept,architecture)
+        import xml.etree.ElementTree as ET
+        for path in (build_site.ROOT/'docs/diagrams').glob('*.svg'):
+            diagram=ET.fromstring(path.read_text(encoding='utf-8'))
+            self.assertEqual(diagram.attrib['role'],'img')
+            self.assertTrue(diagram.find('{http://www.w3.org/2000/svg}desc').text)
 
 if __name__=='__main__':unittest.main()
