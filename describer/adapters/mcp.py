@@ -37,7 +37,7 @@ def create_mcp(service):
 
     @mcp.tool()
     def get_job(job_id: str) -> dict:
-        """Get progress. done/error/cancelled/interrupted are terminal; errors require action, not more polling."""
+        """Get progress. done/done_with_gaps/error/cancelled/interrupted are terminal; errors require action, not more polling. done_with_gaps: results are readable, failed_chunks lists the holes; resume retries them."""
         return service.get_job(job_id)
 
     @mcp.tool()

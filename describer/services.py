@@ -259,8 +259,12 @@ def video_request(video,prompt,settings,cancel,log,as_json=True):
     return subscription_request(video,prompt,settings,cancel,log,as_json)
 
 
+class RejectedChunk(ValueError):
+    """The model replied, but the reply is not a usable chunk; worth a retry."""
+
+
 def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, checkpoint=None):
-    cues=[];glossary=project.glossary
+    cues=[];glossary=project.glossary;failed=[]
     from .project import glossary_labels, speakable
     labels=glossary_labels(glossary)
     chunk=max(15,int(settings['chunk'])) if settings.get('chunking',True) else max(1,__import__('math').ceil(project.duration))
@@ -298,12 +302,25 @@ def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, c
                     raise
             from .project import normalize_chunk
             def validate(data):
-                normalize_chunk(data,start,length)
+                try:normalize_chunk(data,start,length)
+                except ValueError as exc:raise RejectedChunk(str(exc)) from exc
                 if settings.get('auto_glossary',False) and isinstance(data,dict) and 'character_glossary' in data:
                     from .compatibility import merge_glossary
                     merge_glossary(glossary,data['character_glossary'])
-            data=checkpoint(f'observe-{start:.6f}',request,validate) if checkpoint else request()
-            validate(data)
+            attempts=1+max(0,int(settings.get('chunk_retries',2)))
+            for attempt in range(attempts):
+                try:
+                    data=checkpoint(f'observe-{start:.6f}',request,validate) if checkpoint else request()
+                    validate(data);break
+                except RejectedChunk as exc:
+                    if attempt+1<attempts:
+                        log(f'Chunk {start:.0f}–{start+length:.0f} s was malformed; retrying ({attempt+1} of {attempts-1}).')
+                        continue
+                    log(f'Chunk {start:.0f}–{start+length:.0f} s failed after {attempts} tries; recorded as a gap.')
+                    failed.append({'start':start,'end':start+length,'error':str(exc)})
+                    data=None
+            if data is None:
+                start+=length;continue
             if settings.get("auto_glossary",False) and isinstance(data,dict) and "character_glossary" in data:
                 from .compatibility import merge_glossary
                 glossary=merge_glossary(glossary,data["character_glossary"])
@@ -321,8 +338,9 @@ def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, c
     stage(log,'observation',total,total)
     from dataclasses import asdict
     cues=normalize_generated([asdict(c) for c in cues],project.duration,log)
-    if not cues: raise ValueError('No descriptions were returned.')
+    if not cues: raise ValueError('No descriptions were returned.'+(f' {len(failed)} chunks failed: {failed[-1]["error"]}' if failed else ''))
     project.glossary=glossary
+    project.analysis['failed_chunks']=failed
     return cues
 
 

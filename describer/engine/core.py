@@ -180,6 +180,11 @@ def prepare(project, settings, root, cancel, log, checkpoint):
                    narration_text=cue.narration_text or cue.text)
         coverage.append(row)
     stage(log,'narration',len(project.cues),len(project.cues))
+    for gap in project.analysis.get('failed_chunks', []):
+        # A chunk the model never answered properly: show the hole, never hide it.
+        coverage.append({'event_id': f'failed-{gap["start"]:.6f}', 'cue_id': None, 'text': '', 'kind': 'gap',
+                         'event_start': gap['start'], 'event_end': gap['end'],
+                         'disposition': 'failed_chunk', 'reason': gap['error']})
     project.coverage = coverage
     project.analysis.update(protected=safety['protected'], safe_gaps=safety['safe_gaps'], requires_replan=False,
                             limitations=['Coverage accounts for observed events, not a guarantee that vision found every essential event.',
@@ -194,6 +199,11 @@ def describe(project, settings, prompt, root, cancel, log, start=0, duration=Non
     narration_preflight(settings,cancel)
     checkpoint = Checkpoints(root, identity(project, settings, prompt, start, duration))
     check_cancel(cancel)
+    from ..providers import provider_name
+    if provider_name(settings) == 'Ollama':
+        # Refuse a blind model before any frame is described (DW-12).
+        from .. import models
+        models.vision_check(settings, cancel, log, Path(root).parents[1] / 'vision-checks.json')
     # Audio preflight before expensive inference. No unsafe fallback on missing assets.
     stage(log,'protected-audio')
     checkpoint.stage('protected-audio', lambda: protected_audio(project, settings, cancel, log))
