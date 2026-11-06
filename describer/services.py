@@ -265,6 +265,8 @@ class RejectedChunk(ValueError):
 
 def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, checkpoint=None):
     cues=[];glossary=project.glossary;failed=[]
+    from .project import glossary_labels, speakable
+    labels=glossary_labels(glossary)
     chunk=max(15,int(settings['chunk'])) if settings.get('chunking',True) else max(1,__import__('math').ceil(project.duration))
     if settings.get('analysis_provider','Gemini')!='Gemini':
         chunk=min(chunk,8*int(settings.get('ollama_frame_interval',2)))
@@ -326,7 +328,13 @@ def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, c
             if settings.get("auto_glossary",False) and isinstance(data,dict) and "character_glossary" in data:
                 from .compatibility import merge_glossary
                 glossary=merge_glossary(glossary,data["character_glossary"])
+            if isinstance(data,dict):labels.update(glossary_labels('',data.get('character_glossary',[])))
             for cue in normalize_chunk(data,start,length,log):
+                # Models reuse glossary IDs ("man_1") in text; never speak them.
+                cue.text,meaningful=speakable(cue.text,labels)
+                if not meaningful:
+                    cue.disposition='unresolved'
+                    cue.uncertainty=cue.uncertainty or 'Only an internal identity label was returned; review this description.'
                 cue.start+=start;cue.end+=start;cue.event_start+=start;cue.event_end+=start
                 cue.event_id=f'{start:.6f}:{cue.event_start:.6f}:{cue.event_end:.6f}:{len(cues)}'
                 cues.append(cue)
