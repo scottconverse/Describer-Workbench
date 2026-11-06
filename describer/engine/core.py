@@ -194,6 +194,11 @@ def describe(project, settings, prompt, root, cancel, log, start=0, duration=Non
     narration_preflight(settings,cancel)
     checkpoint = Checkpoints(root, identity(project, settings, prompt, start, duration))
     check_cancel(cancel)
+    from ..providers import provider_name
+    if provider_name(settings) == 'Ollama':
+        # Refuse a blind model before any frame is described (DW-12).
+        from .. import models
+        models.vision_check(settings, cancel, log, Path(root).parents[1] / 'vision-checks.json')
     # Audio preflight before expensive inference. No unsafe fallback on missing assets.
     stage(log,'protected-audio')
     checkpoint.stage('protected-audio', lambda: protected_audio(project, settings, cancel, log))
