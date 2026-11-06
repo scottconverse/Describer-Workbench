@@ -176,7 +176,7 @@ match. Provider keys are never written to jobs/checkpoints; supply keys again
 after restarting a cloud-backed engine. Cancellation cannot undo a sent cloud
 request. A waiting read can take up to its configured timeout.
 
-Observation checkpoints are reusable only after whole-chunk timestamp, text, metadata and glossary validation. Rejected provider data is retained under `stages/rejected-*.json` with `complete:false` and its stage name; it is diagnostic data, not a project result. Resume requests a corrected response for the failed chunk while retaining validated earlier chunks. A legacy invalid cached stage is preserved under `invalid-*.json` instead of being reused. These files can include provider text and should be inspected before sharing. Changed implementation identity still requires a new job rather than resuming an older executable's work.
+Observation checkpoints are reusable only after whole-chunk timestamp, text, metadata and glossary validation. Rejected provider data is retained under `stages/rejected-*.json` with `complete:false` and its stage name; it is diagnostic data, not a project result. A rejected chunk is retried in the job (`chunk_retries`, default 2). If every try fails, the job finishes as `done_with_gaps`: results are readable, the job's `failed_chunks` lists each hole (`start`, `end`, `error`), coverage has a `failed_chunk` row for it, and the CLI exits with code 2. Resume requests a corrected response for each failed chunk while retaining validated earlier chunks. A legacy invalid cached stage is preserved under `invalid-*.json` instead of being reused. These files can include provider text and should be inspected before sharing. Changed implementation identity still requires a new job rather than resuming an older executable's work.
 
 One process owns a workspace. Do not start multiple owners against the same
 directory. Clients sharing desktop jobs attach to its HTTP service. Separate
@@ -235,7 +235,7 @@ OpenAPI schema: authenticated `GET /openapi.json`. The API defines:
 
 Submission fields are `source` or `project`, `settings`, `prompt`, `start`,
 `duration`, `operation`, `export_format`, `mode`. Read pagination filters by the original event interval, not a shifted narration slot. `total` is the filtered count. Pagination uses `offset`,
-`limit` (1..500), optional `start`/`end`. Poll terminal states `done`, `error`,
+`limit` (1..500), optional `start`/`end`. Poll terminal states `done`, `done_with_gaps`, `error`,
 `cancelled`, `interrupted`; do not keep polling an error. Media is not embedded
 in job status or MCP tool responses.
 

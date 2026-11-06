@@ -195,6 +195,42 @@ def test_connection(settings,cancel,log):
     return 'Connection answered: '+answer[:300]+'. Text connection tested; visual accuracy requires a video test.'
 
 
+VISION_QUESTION='Read all text in this image exactly, and name the colour of the shape. Reply in one short sentence.'
+
+
+def vision_check(settings,cancel,log,cache=None):
+    """Refuse a model that cannot read a known image (DW-12).
+
+    The built-in image shows the text "CIVIC 42" and a red circle. The result
+    is cached per model digest, so each installed model is tested once.
+    """
+    from pathlib import Path
+    from .services import asset_path
+    name=settings['ollama_model']
+    info=model_info(settings)
+    tags=json_request(settings,'/api/tags').get('models',[])
+    digest=next((r.get('digest') for r in tags if r.get('name') in (name,name+':latest')),None) or 'unknown'
+    key=f'{name}@{digest}'
+    store={}
+    if cache and Path(cache).is_file():
+        try:store=json.loads(Path(cache).read_text('utf-8'))
+        except (OSError,ValueError):store={}
+    result=store.get(key) if digest!='unknown' else None
+    if result is None:
+        log(f'Checking that {name} can read a test image before the job starts…')
+        image=base64.b64encode(asset_path('vision-check.png').read_bytes()).decode('ascii')
+        answer=chat(dict(settings,_ollama_info=info),[{'role':'user','content':VISION_QUESTION,'images':[image]}],cancel,log,False)
+        text=answer.casefold()
+        result={'passed':'civic' in text and '42' in text and 'red' in text,'answer':answer[:300]}
+        if cache and digest!='unknown':
+            store[key]=result
+            Path(cache).parent.mkdir(parents=True,exist_ok=True)
+            Path(cache).write_text(json.dumps(store,indent=2),'utf-8')
+    if not result.get('passed'):
+        raise ValueError(f'Model {name} failed the vision check (could not read a test image). Choose a vision-capable model.')
+    log(f'{name} passed the vision check.')
+
+
 def video_request(video,prompt,settings,cancel,log,as_json=True):
     from .services import probe
     from .frames import sample

@@ -166,6 +166,51 @@ def normalize_generated(data,duration,log=lambda _:None,*,strict=False):
     return cues
 
 
+INTERNAL_ID = re.compile(r'\b[a-z]+(?:_[a-z0-9]+)+\b')
+
+
+def glossary_labels(glossary='', entries=()):
+    """Map model identity labels (for example man_1) to speakable words."""
+    labels = {}
+    for line in str(glossary or '').splitlines():
+        key, _, detail = line.partition(':')
+        if INTERNAL_ID.fullmatch(key.strip()):
+            labels[key.strip()] = {'name': '', 'description': detail.strip()}
+    for entry in entries if isinstance(entries, list) else []:
+        if not isinstance(entry, dict):continue
+        key = str(entry.get('id') or '').strip()
+        if not key:continue
+        name = str(entry.get('name') or entry.get('character_name') or '').strip()
+        if INTERNAL_ID.fullmatch(name):name = ''
+        detail = str(entry.get('description') or entry.get('visual_description') or '').strip()
+        labels[key] = {'name': name, 'description': detail}
+    return labels
+
+
+def _spoken_label(entry):
+    if entry and entry.get('name'):return entry['name']
+    detail = ' '.join(INTERNAL_ID.sub('', (entry or {}).get('description', '')).split()[:8]).rstrip('.,;:')
+    if not detail:return 'a person'
+    first = detail.split()[0].lower()
+    return detail[0].lower()+detail[1:] if first in ('a', 'an', 'the', 'one', 'two', 'three') else 'a '+detail
+
+
+def speakable(text, labels):
+    """Replace internal labels. Return (text, meaningful).
+
+    meaningful is False when nothing but replaced labels remains, so the cue
+    is held for review instead of being spoken.
+    """
+    if not INTERNAL_ID.search(text):return text, True
+    pattern = re.compile(r'\b(?:(?i:the|a|an)\s+)?(' + INTERNAL_ID.pattern + r')')
+    def replace(match):
+        return _spoken_label(labels.get(match.group(1)))
+    cleaned = ' '.join(pattern.sub(replace, text).split())
+    rest = re.sub(r'[^\w]', '', pattern.sub('', text))
+    if cleaned:cleaned = cleaned[0].upper() + cleaned[1:]
+    return cleaned, bool(rest)
+
+
 def normalize_chunk(data, start, length, log=lambda _:None):
     """Reconcile clip-relative and unambiguous source-absolute model times.
 
@@ -175,6 +220,9 @@ def normalize_chunk(data, start, length, log=lambda _:None):
     """
     import copy
     data = response_json(data)
+    if isinstance(data, dict) and not any(key in data for key in ('descriptions', 'audio_descriptions', 'cues')):
+        # A reply with only a glossary is a failed chunk, not "nothing happened".
+        raise ValueError('Malformed chunk output; retry the chunk. The reply had no descriptions list.')
     rows = data.get('descriptions', data.get('audio_descriptions', data.get('cues', []))) if isinstance(data, dict) else data
     if not isinstance(rows, list):raise ValueError('Expected a description list.')
     if not rows:return []
@@ -188,8 +236,10 @@ def normalize_chunk(data, start, length, log=lambda _:None):
         except (AttributeError, TypeError, ValueError) as exc:
             raise ValueError('Malformed chunk output; retry the chunk. No partial chunk was accepted as complete.') from exc
         values.append((a, b))
-    relative = all(0 <= a < b <= length + .05 for a,b in values)
-    absolute = start > 0 and all(start <= a < b <= start + length + .05 for a,b in values)
+    # Only the event start must fall inside the chunk. An end that runs past
+    # a short (final) chunk is clamped to the chunk end, not rejected.
+    relative = all(0 <= a < length for a,b in values)
+    absolute = start > 0 and all(start <= a < start + length for a,b in values)
     reference = data.get('timestamp_reference') if isinstance(data, dict) else None
     if reference == 'clip':absolute = False
     elif reference == 'source':relative = False
@@ -200,7 +250,7 @@ def normalize_chunk(data, start, length, log=lambda _:None):
     adjusted = []
     for row,(a,b) in zip(rows, values):
         row = copy.deepcopy(row)
-        row['start'],row['end'] = (a-start,b-start) if absolute else (a,b)
+        row['start'],row['end'] = (a-start,min(b,start+length)-start) if absolute else (a,min(b,length))
         # Observation metadata comes from the normalized response, not arbitrary
         # provider-supplied scheduling/audio fields.
         for key in ('event_start','event_end','audio','speech_seconds','speed','audio_volume','timing_start','timing_end','narration_text', 'cue_id', 'origin', 'manually_edited', 'review_status', 'review_history'):

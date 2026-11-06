@@ -259,8 +259,14 @@ def video_request(video,prompt,settings,cancel,log,as_json=True):
     return subscription_request(video,prompt,settings,cancel,log,as_json)
 
 
+class RejectedChunk(ValueError):
+    """The model replied, but the reply is not a usable chunk; worth a retry."""
+
+
 def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, checkpoint=None):
-    cues=[];glossary=project.glossary
+    cues=[];glossary=project.glossary;failed=[]
+    from .project import glossary_labels, speakable
+    labels=glossary_labels(glossary)
     chunk=max(15,int(settings['chunk'])) if settings.get('chunking',True) else max(1,__import__('math').ceil(project.duration))
     if settings.get('analysis_provider','Gemini')!='Gemini':
         chunk=min(chunk,8*int(settings.get('ollama_frame_interval',2)))
@@ -268,12 +274,16 @@ def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, c
     stop=min(project.duration,start_at+duration) if duration is not None else project.duration
     from .engine.progress import stage
     total=__import__('math').ceil((stop-start_at)/chunk)
+    if total>1 and (stop-start_at)-(total-1)*chunk<4:total-=1
     with tempfile.TemporaryDirectory(prefix='describer-') as tmp:
         start=start_at
         while start<stop:
             stage(log,'observation',round((start-start_at)/chunk),total)
             if cancel.is_set():raise InterruptedError('Cancelled.')
             length=min(chunk, stop-start)
+            # Fold a short remainder into this chunk rather than sending a clip
+            # too short to describe (DW-13).
+            if 0 < stop-start-length < 4: length=stop-start
             if length < .1: break
             log(f'Preparing {start:.0f}–{start+length:.0f} seconds…')
             clip=Path(tmp)/'segment.mp4';segment(project.video, clip, start, length, settings['fps'], cancel, settings.get('silent_upload',False))
@@ -296,16 +306,35 @@ def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, c
                     raise
             from .project import normalize_chunk
             def validate(data):
-                normalize_chunk(data,start,length)
+                try:normalize_chunk(data,start,length)
+                except ValueError as exc:raise RejectedChunk(str(exc)) from exc
                 if settings.get('auto_glossary',False) and isinstance(data,dict) and 'character_glossary' in data:
                     from .compatibility import merge_glossary
                     merge_glossary(glossary,data['character_glossary'])
-            data=checkpoint(f'observe-{start:.6f}',request,validate) if checkpoint else request()
-            validate(data)
+            attempts=1+max(0,int(settings.get('chunk_retries',2)))
+            for attempt in range(attempts):
+                try:
+                    data=checkpoint(f'observe-{start:.6f}',request,validate) if checkpoint else request()
+                    validate(data);break
+                except RejectedChunk as exc:
+                    if attempt+1<attempts:
+                        log(f'Chunk {start:.0f}–{start+length:.0f} s was malformed; retrying ({attempt+1} of {attempts-1}).')
+                        continue
+                    log(f'Chunk {start:.0f}–{start+length:.0f} s failed after {attempts} tries; recorded as a gap.')
+                    failed.append({'start':start,'end':start+length,'error':str(exc)})
+                    data=None
+            if data is None:
+                start+=length;continue
             if settings.get("auto_glossary",False) and isinstance(data,dict) and "character_glossary" in data:
                 from .compatibility import merge_glossary
                 glossary=merge_glossary(glossary,data["character_glossary"])
+            if isinstance(data,dict):labels.update(glossary_labels('',data.get('character_glossary',[])))
             for cue in normalize_chunk(data,start,length,log):
+                # Models reuse glossary IDs ("man_1") in text; never speak them.
+                cue.text,meaningful=speakable(cue.text,labels)
+                if not meaningful:
+                    cue.disposition='unresolved'
+                    cue.uncertainty=cue.uncertainty or 'Only an internal identity label was returned; review this description.'
                 cue.start+=start;cue.end+=start;cue.event_start+=start;cue.event_end+=start
                 cue.event_id=f'{start:.6f}:{cue.event_start:.6f}:{cue.event_end:.6f}:{len(cues)}'
                 cues.append(cue)
@@ -313,8 +342,9 @@ def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, c
     stage(log,'observation',total,total)
     from dataclasses import asdict
     cues=normalize_generated([asdict(c) for c in cues],project.duration,log)
-    if not cues: raise ValueError('No descriptions were returned.')
+    if not cues: raise ValueError('No descriptions were returned.'+(f' {len(failed)} chunks failed: {failed[-1]["error"]}' if failed else ''))
     project.glossary=glossary
+    project.analysis['failed_chunks']=failed
     return cues
 
 
