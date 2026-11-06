@@ -1,5 +1,6 @@
 """Ollama discovery and vision requests. No sign-in, downloads or fallback on selection."""
 import base64
+import http.client
 import ipaddress
 import json
 import time
@@ -44,8 +45,31 @@ def open_request(settings,path,payload=None,timeout=10):
         hint={401:'Check Ollama sign-in or the server API key.',403:'Check Ollama sign-in or account access.',
               404:'The selected model or endpoint was not found. Open Settings > Keys & privacy to check the server address, then Draft > Refresh models. Install your chosen vision model in Ollama if it is absent.',429:'Ollama usage limit reached; try later.'}.get(exc.code,'Check the Ollama server status.')
         raise RuntimeError(f'Ollama HTTP {exc.code}. {hint}') from None
-    except (urllib.error.URLError,TimeoutError,OSError):
-        raise RuntimeError('Could not reach Ollama. Start the Ollama application/server. If it is not installed, use https://ollama.com/download/windows. Check Settings > Keys & privacy > Ollama server address, then retry Draft > Refresh models. No model is downloaded automatically.') from None
+    except urllib.error.URLError:
+        # urllib wraps only failures before the request was sent: refused,
+        # no route, name lookup or connect timeout.
+        raise RuntimeError(unreachable(settings)) from None
+    except (OSError,http.client.HTTPException):
+        # The server took the request, then dropped, reset or timed out.
+        raise Unfinished(unfinished(settings)) from None
+
+
+class Unfinished(RuntimeError):
+    """Ollama accepted a request but did not finish it."""
+
+
+HEADLESS_HINT=('In the app, use Settings > Keys & privacy and Draft > Refresh models. '
+               'Headless: pass ollama_url in the settings file, then run "describer models" (CLI) or POST /models (REST).')
+
+
+def unreachable(settings):
+    return (f'Could not reach Ollama at {endpoint(settings)}. Start the Ollama application/server. '
+            'If it is not installed, use https://ollama.com/download. '+HEADLESS_HINT+' No model is downloaded automatically.')
+
+
+def unfinished(settings):
+    return (f'Ollama at {endpoint(settings)} accepted the request but did not finish it (the model may still be loading). '
+            'Check the Ollama server log and retry. '+HEADLESS_HINT)
 
 
 def json_request(settings,path,payload=None):
@@ -122,22 +146,37 @@ def chat(settings,messages,cancel,log,as_json=True):
     if as_json and not is_cloud(settings,settings.get('_ollama_info',{})):payload['format']='json'
     # Scott's exact 1017 policy; leave every other model's thinking default alone.
     if model.startswith('deepseek-v4.1-flash:1017'):payload['think']='low'
-    parts=[];done=None;size=0;thinking_chars=0;last_progress=time.monotonic()
-    with open_request(settings,'/api/chat',payload,timeout=min(120,settings.get('ollama_timeout',600))) as response:
-        for line in response:
-            if cancel.is_set():raise InterruptedError('Cancelled; no more requests will be sent.')
-            if time.monotonic()>deadline:raise TimeoutError('Ollama exceeded the configured request timeout.')
-            size+=len(line)
-            if size>4*1024*1024:raise ValueError('Ollama response exceeded the size limit.')
-            if not line.strip():continue
-            event=json.loads(line)
-            if event.get('error'):raise RuntimeError('Ollama rejected the request. Check model access and the server log.')
-            parts.append(event.get('message',{}).get('content',''))
-            thinking_chars+=len(event.get('message',{}).get('thinking',''))
-            if time.monotonic()-last_progress>=15:
-                log(f'Ollama is generating: {thinking_chars} thinking characters; {sum(map(len,parts))} answer characters received.')
-                last_progress=time.monotonic()
-            if event.get('done'):done=event;break
+    def stream():
+        parts=[];done=None;size=0;thinking_chars=0;last_progress=time.monotonic()
+        with open_request(settings,'/api/chat',payload,timeout=min(120,settings.get('ollama_timeout',600))) as response:
+            lines=iter(response)
+            while True:
+                try:line=next(lines)
+                except StopIteration:break
+                except (OSError,http.client.HTTPException):raise Unfinished(unfinished(settings)) from None
+                if cancel.is_set():raise InterruptedError('Cancelled; no more requests will be sent.')
+                if time.monotonic()>deadline:raise TimeoutError('Ollama exceeded the configured request timeout.')
+                size+=len(line)
+                if size>4*1024*1024:raise ValueError('Ollama response exceeded the size limit.')
+                if not line.strip():continue
+                event=json.loads(line)
+                if event.get('error'):raise RuntimeError('Ollama rejected the request. Check model access and the server log.')
+                parts.append(event.get('message',{}).get('content',''))
+                thinking_chars+=len(event.get('message',{}).get('thinking',''))
+                if time.monotonic()-last_progress>=15:
+                    log(f'Ollama is generating: {thinking_chars} thinking characters; {sum(map(len,parts))} answer characters received.')
+                    last_progress=time.monotonic()
+                if event.get('done'):done=event;break
+        return parts,done
+    try:parts,done=stream()
+    except Unfinished:
+        # A cold start can outlast the read timeout (DW-1). Wait for the model
+        # to load with an empty-prompt warm-up, then retry once.
+        if cancel.is_set():raise InterruptedError('Cancelled.')
+        log('Ollama accepted the request but did not finish it. Waiting for the model to load, then retrying once.')
+        with open_request(settings,'/api/generate',{'model':model,'prompt':'','keep_alive':'10m','stream':False},
+                          timeout=settings.get('ollama_timeout',600)) as response:response.read()
+        parts,done=stream()
     if cancel.is_set():raise InterruptedError('Cancelled.')
     if not done:raise RuntimeError('Ollama stream ended without a completed response.')
     if done.get('done_reason')=='length':raise ValueError(f'Ollama output was cut off at the {payload["options"]["num_predict"]}-token response budget. Existing descriptions are preserved.')
