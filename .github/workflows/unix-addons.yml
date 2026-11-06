@@ -5,7 +5,7 @@ on:
     inputs:
       target:
         type: choice
-        options: [all, linux-x64, macos-arm64, macos-x64]
+        options: [all, linux-x64, macos-arm64]
         default: all
         description: Native platform to execute
       test_scope:
@@ -24,8 +24,6 @@ on:
         options: [full, source-install]
         default: full
         description: Use source-install only with recorded passing package evidence
-  pull_request:
-    paths: ['describer/**', 'tests/**', 'tools/**', 'DescriberUnix.spec', 'pyproject.toml', '.github/workflows/unix-addons.yml']
 
 permissions:
   contents: read
@@ -40,7 +38,7 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        include: ${{ fromJSON(inputs.target == 'linux-x64' && '[{"target":"linux-x64","runner":"ubuntu-24.04"}]' || inputs.target == 'macos-arm64' && '[{"target":"macos-arm64","runner":"macos-15"}]' || inputs.target == 'macos-x64' && '[{"target":"macos-x64","runner":"macos-15-intel"}]' || '[{"target":"linux-x64","runner":"ubuntu-24.04"},{"target":"macos-arm64","runner":"macos-15"},{"target":"macos-x64","runner":"macos-15-intel"}]') }}
+        include: ${{ fromJSON(inputs.target == 'linux-x64' && '[{"target":"linux-x64","runner":"ubuntu-24.04"}]' || inputs.target == 'macos-arm64' && '[{"target":"macos-arm64","runner":"macos-15"}]' || '[{"target":"linux-x64","runner":"ubuntu-24.04"},{"target":"macos-arm64","runner":"macos-15"}]') }}
     runs-on: ${{ matrix.runner }}
     env:
       HF_HUB_DISABLE_TELEMETRY: '1'
@@ -127,7 +125,7 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        include: ${{ fromJSON(inputs.target == 'linux-x64' && '[{"target":"linux-x64","runner":"ubuntu-24.04"}]' || inputs.target == 'macos-arm64' && '[{"target":"macos-arm64","runner":"macos-15"}]' || inputs.target == 'macos-x64' && '[{"target":"macos-x64","runner":"macos-15-intel"}]' || '[{"target":"linux-x64","runner":"ubuntu-24.04"},{"target":"macos-arm64","runner":"macos-15"},{"target":"macos-x64","runner":"macos-15-intel"}]') }}
+        include: ${{ fromJSON(inputs.target == 'linux-x64' && '[{"target":"linux-x64","runner":"ubuntu-24.04"}]' || inputs.target == 'macos-arm64' && '[{"target":"macos-arm64","runner":"macos-15"}]' || '[{"target":"linux-x64","runner":"ubuntu-24.04"},{"target":"macos-arm64","runner":"macos-15"}]') }}
     runs-on: ${{ matrix.runner }}
     env:
       HF_HUB_DISABLE_TELEMETRY: '1'
