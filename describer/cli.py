@@ -11,8 +11,8 @@ from pathlib import Path
 def wait(service, job_id):
     while True:
         job = service.get_job(job_id)
-        if job['state'] in ('done','error','cancelled','interrupted'):
-            if job['state'] != 'done':raise RuntimeError(job.get('error') or job['state'])
+        if job['state'] in ('done','done_with_gaps','error','cancelled','interrupted'):
+            if job['state'] not in ('done','done_with_gaps'):raise RuntimeError(job.get('error') or job['state'])
             return job
         time.sleep(.1)
 
@@ -91,7 +91,9 @@ def main(argv=None):
         elif command=='edit':value=service.edit(args.job_id,**json.loads(Path(args.file).read_text('utf-8')))
         elif command=='models':value=service.models(settings)
         else:value=service.capabilities()
-        print(json.dumps(value,ensure_ascii=False,indent=2));return 0
+        print(json.dumps(value,ensure_ascii=False,indent=2))
+        # Exit 2: the job finished, but some chunks have no descriptions (see failed_chunks).
+        return 2 if isinstance(value,dict) and value.get('state')=='done_with_gaps' else 0
     except (ValueError,RuntimeError,OSError,KeyError) as exc:
         print(json.dumps({'error':str(exc)}),file=sys.stderr);return 1
     finally:

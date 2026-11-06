@@ -18,7 +18,8 @@ from ..project import Project, parse_cues
 from .assets import default_root
 from .core import atomic_json, check_cancel
 
-TERMINAL = {'done', 'error', 'cancelled', 'interrupted'}
+TERMINAL = {'done', 'done_with_gaps', 'error', 'cancelled', 'interrupted'}
+READABLE = {'done', 'done_with_gaps'}
 
 
 class DescriptionService:
@@ -244,7 +245,9 @@ class DescriptionService:
                 result.save(root / 'result.adproject')
                 progress=self.get_job(job_id)['pipeline']
                 progress=advance(progress,progress['stages'][-1]['id'],1,1)
-                self._update(job_id, state='done', progress='done', pipeline=progress,revision=data['revision']+1)
+                failed=result.analysis.get('failed_chunks',[]) if data['operation']=='describe' else []
+                state='done_with_gaps' if failed else 'done'
+                self._update(job_id, state=state, progress=state, pipeline=progress,revision=data['revision']+1,failed_chunks=failed)
         except InterruptedError as exc:
             self._update(job_id, state='cancelled', progress='cancelled', error=str(exc))
         except Exception as exc:
@@ -281,8 +284,8 @@ class DescriptionService:
     def resume(self, job_id, settings=None):
         with self._mutex:
             job = self.get_job(job_id)
-            if job['state'] not in ('error', 'cancelled', 'interrupted') or (job_id in self._futures and not self._futures[job_id].done()):
-                raise ValueError('Only a terminal interrupted, failed or cancelled job may resume')
+            if job['state'] not in ('error', 'cancelled', 'interrupted', 'done_with_gaps') or (job_id in self._futures and not self._futures[job_id].done()):
+                raise ValueError('Only a terminal interrupted, failed, cancelled or done-with-gaps job may resume')
             # Non-secret changed settings are validated against checkpoint identity.
             selected = {**self.settings, **job['settings'], **self._secrets.get(job_id, {}), **(settings or {})}
             self._check_permissions(selected,job['operation'],job.get('export_format'))
@@ -293,7 +296,7 @@ class DescriptionService:
 
     def result(self, job_id):
         job = self.get_job(job_id)
-        if job['state'] != 'done':
+        if job['state'] not in READABLE:
             raise ValueError('Job is not done; inspect status before reading results')
         return Project.load(self._path(job_id) / 'result.adproject')
 
@@ -383,7 +386,9 @@ class DescriptionService:
             if snapshot!=previous_snapshot and getattr(log,'snapshot',None):
                 log.snapshot(snapshot);previous_snapshot=snapshot
             if job['state'] in TERMINAL:
-                if job['state'] != 'done':
+                if job['state'] == 'done_with_gaps':
+                    log(f'Done with gaps: {len(job.get("failed_chunks", []))} chunks failed and have no descriptions. See coverage; resume the job to retry them.')
+                elif job['state'] != 'done':
                     if job['state'] == 'cancelled':
                         raise InterruptedError(job.get('error') or 'Cancelled')
                     raise RuntimeError(job.get('error') or job['state'])
