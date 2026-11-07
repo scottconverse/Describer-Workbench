@@ -231,7 +231,7 @@ def vision_check(settings,cancel,log,cache=None):
     log(f'{name} passed the vision check.')
 
 
-def video_request(video,prompt,settings,cancel,log,as_json=True):
+def video_request(video,prompt,settings,cancel,log,as_json=True,gate=None):
     from .services import probe
     from .frames import sample
     import tempfile
@@ -242,6 +242,13 @@ def video_request(video,prompt,settings,cancel,log,as_json=True):
     messages=[]
     with tempfile.TemporaryDirectory(prefix='describer-frames-') as tmp:
         frames=sample(video,tmp,interval,cancel)
+        if gate:
+            sampled=len(frames);frames=gate(frames,cancel)
+            if not frames:
+                # Public meeting mode: nothing changed, so the model is not asked.
+                log(f'No visible change in {sampled} frames; the model was not asked.')
+                return {'descriptions':[],'timestamp_reference':'clip','no_change':True}
+            if len(frames)<sampled:log(f'Sending {len(frames)} of {sampled} frames; the others show no visible change.')
         for frame,timestamp in frames:
             messages.append({'role':'user','content':f'Video frame at {timestamp:.3f} seconds in this clip.',
                 'images':[base64.b64encode(frame.read_bytes()).decode('ascii')]})
