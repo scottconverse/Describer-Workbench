@@ -3,6 +3,7 @@
 Other genres keep the default behavior. Only `drafting_mode = "Public meeting"`
 turns on the change gate, the prior-cue prompt and the repeat merge.
 """
+import html
 import re
 
 MODE = 'Public meeting'
@@ -101,6 +102,37 @@ class ChangeGate:
         self.sent += len(kept)
         self.skipped += len(frames) - len(kept)
         return kept
+
+
+# F2: a 2 s event has no room for a 3 s line. In meeting mode a line may use
+# a pause up to this many seconds from its event.
+NARRATION_REACH = 5.0
+
+
+def narration_reach(settings):
+    return NARRATION_REACH if enabled(settings) else 0.0
+
+
+def transcript(captions):
+    """(start, end, line) rows from caption cues, each spoken line once.
+
+    Rolling captions (YouTube) show the last line again in the next cue.
+    """
+    rows, last = [], ''
+    for cue in captions:
+        for line in (html.unescape(part).strip() for part in cue.text.splitlines()):
+            if line and line != last:
+                rows.append((cue.start, cue.end, line))
+                last = line
+    return rows
+
+
+def transcript_instruction(rows, start, length):
+    said = [f'[{max(0.0, a - start):.1f}] {text}' for a, b, text in rows if b > start and a < start + length]
+    if not said:
+        return ''
+    return ('Transcript of what is said aloud in this clip, with clip times: ' + ' '.join(said) + ' (end of transcript). '
+            'Do not describe anything the speakers say aloud; describe only what a listener cannot learn from the audio. ')
 
 
 def prior_instruction(texts):

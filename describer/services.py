@@ -279,6 +279,11 @@ def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, c
     meeting_mode=meeting.enabled(settings)
     gate=meeting.ChangeGate() if meeting_mode else None
     if meeting_mode:log('Public meeting mode: only frames with a visible change are described.')
+    said=[]
+    if meeting_mode and settings.get('captions'):
+        from .project import import_subtitles
+        said=meeting.transcript(import_subtitles(settings['captions'],project.duration))
+        log(f'Public meeting mode: the transcript ({len(said)} lines) is given to the model.')
     chunk=max(15,int(settings['chunk'])) if settings.get('chunking',True) else max(1,__import__('math').ceil(project.duration))
     if settings.get('analysis_provider','Gemini')!='Gemini':
         chunk=min(chunk,8*int(settings.get('ollama_frame_interval',2)))
@@ -309,6 +314,7 @@ def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, c
                 f'Prior character glossary: {glossary}\nEditorial guidance: {prompt}')
             if meeting_mode:
                 instruction += '\n'+meeting.prior_instruction([c.text for c in cues if c.disposition!='unresolved'])
+                instruction += meeting.transcript_instruction(said,start,length)
             if settings.get("auto_glossary",False):
                 instruction += ' Also return "character_glossary": [{"id":"stable_visual_label","name":null,"description":"visual identity"}]. '+('Keep name=null because no audio is supplied. ' if ollama else 'Use a personal name only if clearly spoken and unambiguously linked; otherwise name=null. ')+'Reuse prior identities; include only visible characters.'
             verbosity={'Short':'Use 1-3 words for each description.','Standard':'Aim for 3-6 words per description.','Detailed':'Aim for 6-12 words per description.'}.get(settings.get('verbosity','Standard'),'')
