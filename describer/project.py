@@ -166,7 +166,8 @@ def normalize_generated(data,duration,log=lambda _:None,*,strict=False):
     return cues
 
 
-INTERNAL_ID = re.compile(r'\b[a-z]+(?:_[a-z0-9]+)+\b')
+# Models write IDs in any case: man_1, Man_plaid, Woman_3.
+INTERNAL_ID = re.compile(r'\b[a-z]+(?:_[a-z0-9]+)+\b', re.I)
 
 
 def glossary_labels(glossary='', entries=()):
@@ -202,9 +203,10 @@ def speakable(text, labels):
     is held for review instead of being spoken.
     """
     if not INTERNAL_ID.search(text):return text, True
-    pattern = re.compile(r'\b(?:(?i:the|a|an)\s+)?(' + INTERNAL_ID.pattern + r')')
+    pattern = re.compile(r'\b(?:(?:the|a|an)\s+)?(' + INTERNAL_ID.pattern + r')', re.I)
+    folded = {str(key).lower(): entry for key, entry in labels.items()}
     def replace(match):
-        return _spoken_label(labels.get(match.group(1)))
+        return _spoken_label(labels.get(match.group(1)) or folded.get(match.group(1).lower()))
     cleaned = ' '.join(pattern.sub(replace, text).split())
     rest = re.sub(r'[^\w]', '', pattern.sub('', text))
     if cleaned:cleaned = cleaned[0].upper() + cleaned[1:]

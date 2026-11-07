@@ -61,3 +61,19 @@ def test_cue_left_without_meaning_is_held_for_review():
     assert not ID_PATTERN.search(held.text)
     assert held.disposition == 'unresolved' and held.uncertainty
     assert kept.disposition == 'unplanned' and not kept.uncertainty
+
+
+def test_capitalized_ids_are_never_spoken():
+    """gemma4 also writes IDs with a capital letter ("Man_plaid", "Woman_3")."""
+    project = draft([reply(
+        cue('Man_plaid sits at the table.', 1, 2),
+        cue('Woman_3 raises a hand.', 3, 4),
+        cue('Woman_maroon sits down next to man_1.', 5, 6),
+        glossary=[{'id': 'man_plaid', 'name': None, 'description': 'man in a plaid shirt'},
+                  {'id': 'Woman_maroon', 'name': None, 'description': 'woman in a maroon jacket'},
+                  {'id': 'man_1', 'name': 'Mayor Ruiz', 'description': ''}])])
+    texts = [c.text for c in project.cues]
+    assert texts == ['A man in a plaid shirt sits at the table.',
+                     'A person raises a hand.',
+                     'A woman in a maroon jacket sits down next to Mayor Ruiz.']
+    assert not any(re.search(ID_PATTERN.pattern, t, re.I) for t in texts)
