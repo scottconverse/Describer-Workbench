@@ -8,12 +8,18 @@ import re
 MODE = 'Public meeting'
 MODES = ('', MODE)
 
-# A frame is "changed" when the whole picture moves a little or one area of it
-# (for example a slide on a wall screen) moves a lot. Values are 0..255 grey.
-THUMB_W, THUMB_H = 64, 36
+# A frame is "changed" when the whole picture moves a little, one area of it
+# moves a lot, or enough pixels change sharply. Values are 0..255 grey.
+# The sharp-pixel rule finds a new slide that uses the same template as the
+# old one: only thin text changes, so area averages stay small. Measured on
+# real slides: a text-only change moves 1-11 % of pixels by more than 40;
+# the same slide 2 s later moves 0-0.1 %.
+THUMB_W, THUMB_H = 256, 144
 GRID_X, GRID_Y = 8, 4
 WHOLE_DIFF = 6.0
 CELL_DIFF = 24.0
+SHARP_DIFF = 40
+SHARP_SHARE = .004
 
 PRIOR_CUES = 3
 MERGE_SIMILARITY = .8
@@ -56,8 +62,10 @@ def changed(a, b):
     """True when thumbnail b shows a visible change from thumbnail a."""
     if a is None:
         return True
-    total = sum(abs(x - y) for x, y in zip(a, b))
-    if total / len(a) > WHOLE_DIFF:
+    diffs = [abs(x - y) for x, y in zip(a, b)]
+    if sum(diffs) / len(a) > WHOLE_DIFF:
+        return True
+    if sum(d > SHARP_DIFF for d in diffs) >= SHARP_SHARE * len(a):
         return True
     cw, ch = THUMB_W // GRID_X, THUMB_H // GRID_Y
     for gy in range(GRID_Y):
