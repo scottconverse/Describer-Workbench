@@ -18,6 +18,8 @@ CELL_DIFF = 24.0
 PRIOR_CUES = 3
 MERGE_SIMILARITY = .8
 RESTATE_SIMILARITY = .5
+# A repeat of any cue from the last 3 minutes is removed, not only the cue just before.
+MERGE_WINDOW = 180
 RESTATE_WORDS = re.compile(r'\b(remains?|remaining|continues?|continuing|still)\b', re.I)
 _ARTICLES = {'a', 'an', 'the'}
 _TOKEN = re.compile(r"[a-z0-9']+")
@@ -115,27 +117,38 @@ def similarity(a, b, labels=()):
     return len(ta & tb) / len(ta | tb)
 
 
-def merge_repeats(cues, log=lambda _: None, labels=()):
-    """Join consecutive cues that say the same thing; drop "still" restatements.
+def _repeats(prev, cue, labels):
+    if prev.get('manually_edited') or cue.get('manually_edited'):
+        return None
+    score = similarity(prev['text'], cue['text'], labels)
+    if score >= MERGE_SIMILARITY:
+        return 'merged'
+    if RESTATE_WORDS.search(cue['text']) and score >= RESTATE_SIMILARITY:
+        return 'dropped'
+    return None
 
-    `cues` are dicts sorted by event start. A merged cue keeps the first text
-    and spans both events.
+
+def merge_repeats(cues, log=lambda _: None, labels=()):
+    """Remove cues that say again what a recent cue said.
+
+    `cues` are dicts sorted by event start. A repeat of the cue just before
+    is joined to it (the kept cue spans both events). A repeat of an earlier
+    cue from the last MERGE_WINDOW seconds is dropped. "Still" restatements
+    are dropped the same way.
     """
     out = []
-    merged = dropped = 0
+    counts = {'merged': 0, 'dropped': 0}
     for cue in cues:
-        prev = out[-1] if out else None
-        if prev is not None and not prev.get('manually_edited') and not cue.get('manually_edited'):
-            score = similarity(prev['text'], cue['text'], labels)
-            if score >= MERGE_SIMILARITY or (RESTATE_WORDS.search(cue['text']) and score >= RESTATE_SIMILARITY):
-                prev['end'] = max(prev['end'], cue['end'])
-                prev['event_end'] = max(prev.get('event_end', prev['end']), cue.get('event_end', cue['end']))
-                if score >= MERGE_SIMILARITY:
-                    merged += 1
-                else:
-                    dropped += 1
-                continue
-        out.append(cue)
-    if merged or dropped:
-        log(f'Public meeting mode: merged {merged} repeated and dropped {dropped} restating descriptions.')
+        recent = [c for c in out if cue['start'] - c['start'] <= MERGE_WINDOW]
+        kind = next((k for k in (_repeats(c, cue, labels) for c in reversed(recent)) if k), None)
+        if kind is None:
+            out.append(cue)
+            continue
+        counts[kind] += 1
+        prev = out[-1]
+        if _repeats(prev, cue, labels):
+            prev['end'] = max(prev['end'], cue['end'])
+            prev['event_end'] = max(prev.get('event_end', prev['end']), cue.get('event_end', cue['end']))
+    if counts['merged'] or counts['dropped']:
+        log(f"Public meeting mode: merged {counts['merged']} repeated and dropped {counts['dropped']} restating descriptions.")
     return out

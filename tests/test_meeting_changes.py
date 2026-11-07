@@ -135,3 +135,16 @@ def test_real_ffmpeg_measures_every_frame(tmp_path):
     assert len(thumbs) == 8
     kept = meeting.ChangeGate()([(p, i * 2.0) for i, p in enumerate(paths)])
     assert [p.name for p, _ in kept] == ['000.ppm', '004.ppm']
+
+
+def test_repeats_of_earlier_cues_that_are_not_next_are_dropped():
+    """L3: the model sent 4 cues for one event, then the same 4 again."""
+    from describer import meeting
+    said = ['People sit around tables.', 'Woman standing addresses group.', 'People use laptops and eat.', 'Room has white walls.']
+    cues = [dict(start=0 + i, end=1 + i, text=t) for i, t in enumerate(said)]
+    cues += [dict(start=48 + i, end=49 + i, text=t) for i, t in enumerate(said[1:])]
+    cues += [dict(start=164, end=176, text=said[0]), dict(start=170, end=172, text='A man in a tan jacket stands up.')]
+    cues += [dict(start=400, end=402, text=said[0])]  # minutes later: say it again
+    out = meeting.merge_repeats(cues)
+    assert [(c['start'], c['text']) for c in out] == [(i, t) for i, t in enumerate(said)] + [
+        (170, 'A man in a tan jacket stands up.'), (400, said[0])]
