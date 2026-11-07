@@ -213,6 +213,11 @@ def speakable(text, labels):
     return cleaned, bool(rest)
 
 
+# Models often give a one-frame event as one point (start == end). It lasts
+# one sampled frame (2 s by default); the chunk-end clamp below still applies.
+POINT_EVENT = 2.0
+
+
 def normalize_chunk(data, start, length, log=lambda _:None):
     """Reconcile clip-relative and unambiguous source-absolute model times.
 
@@ -233,6 +238,8 @@ def normalize_chunk(data, start, length, log=lambda _:None):
         try:
             a = seconds(row.get('start', row.get('start_time_mmss')))
             b = seconds(row.get('end', row.get('end_time_mmss')))
+            if b == a:  # one frame, one point in time: give it a frame's length
+                b = a + POINT_EVENT
             if b <= a or not isinstance(row.get('text', row.get('description_text')), str) or not row.get('text', row.get('description_text', '')).strip():
                 raise ValueError('Invalid description')
         except (AttributeError, TypeError, ValueError) as exc:
