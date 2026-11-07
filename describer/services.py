@@ -88,7 +88,7 @@ DEFAULTS = {'ui_theme':'light','recent_projects':[], 'model': 'gemini-2.5-flash'
             'provider_models':{},'connections':{},'connection_id':'','gateway_url':'http://127.0.0.1:8317/v1','gateway_key_file':'',
             'cli_paths':{},'analysis_timeout':600,'analysis_effort':'','anthropic_key':'',
             'codex_cli':'','claude_cli':'','gemini_cli':'',
-            'ollama_key':'','ollama_timeout':600,'ollama_frame_interval':2,
+            'ollama_key':'','ollama_timeout':600,'ollama_frame_interval':2,'drafting_mode':'',
             'voice_engine': native_engine(), 'voice': 'alloy', 'tts_model': 'gpt-4o-mini-tts',
             'voice_presets': VOICE_PRESETS, 'settings_version': 3,
             'voice_preset': '', 'voice_speed': 1.0, 'voice_instructions': '', 'windows_voice': '', 'speech_rate': 0,
@@ -173,7 +173,8 @@ def validate_connection_settings(settings):
         if not isinstance(entry.get('enabled',True),bool) or not isinstance(entry.get('model',''),str):raise ValueError('Invalid connection choices.')
     if settings['connection_id'] and settings['connection_id'] not in settings['connections']:raise ValueError('Selected connection is missing.')
     choices={'voice_engine':('Windows','Windows 32-bit','Windows OneCore','macOS','eSpeak NG','OpenAI'),
-             'playback_output':('Windows speech','System speech','Screen reader'), 'analysis_effort':('','low','medium','high','xhigh','max')}
+             'playback_output':('Windows speech','System speech','Screen reader'), 'analysis_effort':('','low','medium','high','xhigh','max'),
+             'drafting_mode':('','Public meeting')}
     for field,values in choices.items():
         if settings[field] not in values:raise ValueError('Invalid '+field+'.')
 
@@ -248,12 +249,12 @@ def google_request(video, prompt, settings, cancel, log, as_json=True):
         client.close()
 
 
-def video_request(video,prompt,settings,cancel,log,as_json=True):
+def video_request(video,prompt,settings,cancel,log,as_json=True,gate=None):
     from .providers import provider_name
     provider=provider_name(settings)
     if provider=='Ollama':
         from .models import video_request as ollama_request
-        return ollama_request(video,prompt,settings,cancel,log,as_json)
+        return ollama_request(video,prompt,settings,cancel,log,as_json,gate=gate)
     if provider=='Gemini':return google_request(video,prompt,settings,cancel,log,as_json)
     from .subscriptions import video_request as subscription_request
     return subscription_request(video,prompt,settings,cancel,log,as_json)
@@ -264,9 +265,13 @@ class RejectedChunk(ValueError):
 
 
 def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, checkpoint=None):
-    cues=[];glossary=project.glossary;failed=[]
+    cues=[];glossary=project.glossary;failed=[];unchanged=[]
     from .project import glossary_labels, speakable
+    from . import meeting
     labels=glossary_labels(glossary)
+    meeting_mode=meeting.enabled(settings)
+    gate=meeting.ChangeGate() if meeting_mode else None
+    if meeting_mode:log('Public meeting mode: only frames with a visible change are described.')
     chunk=max(15,int(settings['chunk'])) if settings.get('chunking',True) else max(1,__import__('math').ceil(project.duration))
     if settings.get('analysis_provider','Gemini')!='Gemini':
         chunk=min(chunk,8*int(settings.get('ollama_frame_interval',2)))
@@ -295,12 +300,14 @@ def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, c
                 'Use objective visible facts. Quote printed text exactly; state uncertainty instead of inventing unreadable words or actions. '
                 f'Times are numeric seconds relative to this {length:.2f}-second clip and must fit within it. Set the top-level timestamp_reference field to "clip". '
                 f'Prior character glossary: {glossary}\nEditorial guidance: {prompt}')
+            if meeting_mode:
+                instruction += '\n'+meeting.prior_instruction([c.text for c in cues if c.disposition!='unresolved'])
             if settings.get("auto_glossary",False):
                 instruction += ' Also return "character_glossary": [{"id":"stable_visual_label","name":null,"description":"visual identity"}]. '+('Keep name=null because no audio is supplied. ' if ollama else 'Use a personal name only if clearly spoken and unambiguously linked; otherwise name=null. ')+'Reuse prior identities; include only visible characters.'
             verbosity={'Short':'Use 1-3 words for each description.','Standard':'Aim for 3-6 words per description.','Detailed':'Aim for 6-12 words per description.'}.get(settings.get('verbosity','Standard'),'')
             instruction += '\n'+verbosity+' Do not omit essential information to meet a timing or verbosity target. The engine schedules narration separately.'+(' Describe visual changes concisely.' if ollama else ' Avoid describing sounds already audible.')
             def request():
-                try:return response_json(video_request(clip,instruction,settings,cancel,log))
+                try:return response_json(video_request(clip,instruction,settings,cancel,log,gate=gate))
                 except IncompleteResponse as exc:
                     exc.context={'clip_start':start,'clip_duration':length,'timestamp_reference':'clip'}
                     raise
@@ -329,7 +336,11 @@ def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, c
                 from .compatibility import merge_glossary
                 glossary=merge_glossary(glossary,data["character_glossary"])
             if isinstance(data,dict):labels.update(glossary_labels('',data.get('character_glossary',[])))
-            for cue in normalize_chunk(data,start,length,log):
+            rows=normalize_chunk(data,start,length,log)
+            if meeting_mode and not rows:
+                unchanged.append({'start':start,'end':start+length,
+                    'reason':'No visible change; the model was not asked.' if isinstance(data,dict) and data.get('no_change') else 'The model saw nothing new.'})
+            for cue in rows:
                 # Models reuse glossary IDs ("man_1") in text; never speak them.
                 cue.text,meaningful=speakable(cue.text,labels)
                 if not meaningful:
@@ -341,10 +352,15 @@ def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, c
             start+=length
     stage(log,'observation',total,total)
     from dataclasses import asdict
-    cues=normalize_generated([asdict(c) for c in cues],project.duration,log)
+    rows=[asdict(c) for c in cues]
+    if meeting_mode:
+        rows=meeting.merge_repeats(sorted(rows,key=lambda r:r['start']),log,labels)
+        log(f'Public meeting mode: {gate.sent} frames described, {gate.skipped} unchanged frames skipped.')
+    cues=normalize_generated(rows,project.duration,log)
     if not cues: raise ValueError('No descriptions were returned.'+(f' {len(failed)} chunks failed: {failed[-1]["error"]}' if failed else ''))
     project.glossary=glossary
     project.analysis['failed_chunks']=failed
+    if meeting_mode:project.analysis['no_change_chunks']=unchanged
     return cues
 
 

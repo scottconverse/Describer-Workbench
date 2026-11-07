@@ -185,6 +185,11 @@ def prepare(project, settings, root, cancel, log, checkpoint):
         coverage.append({'event_id': f'failed-{gap["start"]:.6f}', 'cue_id': None, 'text': '', 'kind': 'gap',
                          'event_start': gap['start'], 'event_end': gap['end'],
                          'disposition': 'failed_chunk', 'reason': gap['error']})
+    for span in project.analysis.get('no_change_chunks', []):
+        # Public meeting mode: a span with no visible change is recorded, not hidden.
+        coverage.append({'event_id': f'nochange-{span["start"]:.6f}', 'cue_id': None, 'text': '', 'kind': 'gap',
+                         'event_start': span['start'], 'event_end': span['end'],
+                         'disposition': 'no_change', 'reason': span['reason']})
     project.coverage = coverage
     project.analysis.update(protected=safety['protected'], safe_gaps=safety['safe_gaps'], requires_replan=False,
                             limitations=['Coverage accounts for observed events, not a guarantee that vision found every essential event.',
