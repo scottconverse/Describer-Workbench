@@ -11,15 +11,17 @@ from describer.services import DEFAULTS, validate_connection_settings
 MEETING = dict(DEFAULTS, allow_cloud=True, auto_glossary=False, chunk=15, drafting_mode='Public meeting')
 DEFAULT = dict(MEETING, drafting_mode='')
 
-BLANK = bytes(64 * 36)
+from describer.meeting import THUMB_H, THUMB_W
+
+BLANK = bytes(THUMB_W * THUMB_H)
 
 
 def slide_changed():
-    """A thumbnail that differs from BLANK only in one 8x9 cell (a new slide)."""
+    """A thumbnail that differs from BLANK only in one grid cell (a new slide)."""
     thumb = bytearray(BLANK)
-    for y in range(9):
-        for x in range(8):
-            thumb[y * 64 + x] = 200
+    for y in range(THUMB_H // 4):
+        for x in range(THUMB_W // 8):
+            thumb[y * THUMB_W + x] = 200
     return bytes(thumb)
 
 
@@ -148,3 +150,33 @@ def test_repeats_of_earlier_cues_that_are_not_next_are_dropped():
     out = meeting.merge_repeats(cues)
     assert [(c['start'], c['text']) for c in out] == [(i, t) for i, t in enumerate(said)] + [
         (170, 'A man in a tan jacket stands up.'), (400, said[0])]
+
+
+def slide_frame(path, lines, noise=0):
+    """A 1280x720 slide: dark template, title bar, thin bright text strokes."""
+    import random
+    width, height = 1280, 720
+    rng = random.Random(len(lines) * 7 + noise)
+    pixels = bytearray([40]) * (width * height * 3)
+    for y in range(40, 100):  # the template's title bar, the same on every slide
+        pixels[y * width * 3:(y + 1) * width * 3] = b'\x80' * (width * 3)
+    for top in lines:  # one line of text: short strokes, 3 px high
+        for y in range(top, top + 3):
+            for x in range(200, 1000, 20):
+                start = (y * width + x) * 3
+                pixels[start:start + 36] = b'\xf0' * 36
+    if noise:  # small compression-like noise on the same slide
+        for i in range(0, len(pixels), 97):
+            pixels[i] = max(0, min(255, pixels[i] + rng.randint(-noise, noise)))
+    path.write_bytes(f'P6 {width} {height} 255\n'.encode() + bytes(pixels))
+    return path
+
+
+def test_a_new_slide_that_changes_only_text_is_sent(tmp_path):
+    """L4b: same template, new text. The old 64x36 gate called this "no change"."""
+    from describer import meeting
+    old = slide_frame(tmp_path / 'old.ppm', [200, 260, 320, 380, 440, 500])
+    same = slide_frame(tmp_path / 'same.ppm', [200, 260, 320, 380, 440, 500], noise=12)
+    new = slide_frame(tmp_path / 'new.ppm', [230, 290, 350, 410, 470, 530])
+    kept = meeting.ChangeGate()([(old, 0.0), (same, 2.0), (new, 4.0)])
+    assert [p.name for p, _ in kept] == ['old.ppm', 'new.ppm']
