@@ -241,7 +241,8 @@ def video_request(video,prompt,settings,cancel,log,as_json=True,gate=None):
     interval=max(interval,duration/8)
     messages=[]
     with tempfile.TemporaryDirectory(prefix='describer-frames-') as tmp:
-        frames=sample(video,tmp,interval,cancel)
+        from .meeting import frame_side
+        frames=sample(video,tmp,interval,cancel,max_side=frame_side(settings))
         if gate:
             sampled=len(frames);frames=gate(frames,cancel)
             if not frames:

@@ -60,9 +60,16 @@ def probe(path):
     return float(j['format']['duration'])
 
 
-def segment(source, output, start, duration, fps=2, cancel=None, silent=False):
+def scale_filter(max_side=640):
+    if max_side==640:return 'scale=640:-2'
+    # Keep the source size, but cap the long side; never upscale (F4).
+    return (f"scale='min({max_side},iw)':'min({max_side},ih)'"
+            ':force_original_aspect_ratio=decrease:force_divisible_by=2')
+
+
+def segment(source, output, start, duration, fps=2, cancel=None, silent=False, max_side=640):
     run([tool('ffmpeg'), '-v', 'error', '-y', '-ss', str(start), '-i', str(source), '-t', str(duration),
-         '-vf', f'scale=640:-2,fps={fps}', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '28',
+         '-vf', f'{scale_filter(max_side)},fps={fps}', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '28' if max_side==640 else '20',
          *(['-an'] if silent else ['-c:a', 'aac', '-b:a', '64k']), str(output)], cancel)
 
 
@@ -291,7 +298,7 @@ def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, c
             if 0 < stop-start-length < 4: length=stop-start
             if length < .1: break
             log(f'Preparing {start:.0f}–{start+length:.0f} seconds…')
-            clip=Path(tmp)/'segment.mp4';segment(project.video, clip, start, length, settings['fps'], cancel, settings.get('silent_upload',False))
+            clip=Path(tmp)/'segment.mp4';segment(project.video, clip, start, length, settings['fps'], cancel, settings.get('silent_upload',False),max_side=meeting.frame_side(settings))
             ollama=settings.get('analysis_provider','Gemini')!='Gemini'
             instruction=(f'Create concise audio descriptions in {settings["language"]}. Describe visible action, people and settings. '
                 +('Use visible evidence only. No audio is supplied; do not infer speech, sounds or dialogue gaps. Do not invent facts. ' if ollama else 'Use visible evidence and supplied audio; do not repeat dialogue or invent facts. ')+
