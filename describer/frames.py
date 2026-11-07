@@ -4,14 +4,14 @@ import re
 from pathlib import Path
 
 
-def sample(video,root,interval,cancel):
-    from .services import run,tool
+def sample(video,root,interval,cancel,max_side=640):
+    from .services import run,tool,scale_filter
     interval=float(interval)
     if not math.isfinite(interval) or interval<=0:raise ValueError('Frame sampling interval must be positive and finite.')
     # fps chooses interval-centred source frames and rewrites their PTS. select
     # preserves the source time; showinfo reports it before image encoding.
     trace=run([tool('ffmpeg'),'-hide_banner','-nostats','-loglevel','info','-y','-i',str(video),
-               '-vf',f'select=isnan(prev_selected_t)+gte(t-prev_selected_t\\,{interval}),showinfo,scale=640:-2',
+               '-vf',f'select=isnan(prev_selected_t)+gte(t-prev_selected_t\\,{interval}),showinfo,'+scale_filter(max_side),
                '-fps_mode','vfr','-frames:v','8','-q:v','3',str(Path(root)/'%03d.jpg')],cancel,return_stderr=True)
     files=sorted(Path(root).glob('*.jpg'))
     times=[float(value) for value in re.findall(r'\bn:\s*\d+.*?pts_time:([-+\d.eE]+)',trace.decode(errors='replace'))][:len(files)]

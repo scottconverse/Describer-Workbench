@@ -27,6 +27,14 @@ def enabled(settings):
     return (settings or {}).get('drafting_mode', '') == MODE
 
 
+# Slides on a wall screen need more pixels than 640 to be read (F4).
+FRAME_SIDE = 1280
+
+
+def frame_side(settings):
+    return FRAME_SIDE if enabled(settings) else 640
+
+
 def thumbnails(paths, cancel=None):
     """Small grey thumbnails of image files, one bytes object per file."""
     from .services import run, tool
