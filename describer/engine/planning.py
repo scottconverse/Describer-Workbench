@@ -59,13 +59,23 @@ class Placement:
 
 
 def place(start: float, end: float, seconds: float, safe: list[tuple[float, float]],
-          occupied: list[tuple[float, float]], max_speed: float = 1.15) -> Placement:
-    if not all(math.isfinite(v) for v in (start, end, seconds, max_speed)):
+          occupied: list[tuple[float, float]], max_speed: float = 1.15, reach: float = 0.0) -> Placement:
+    """Find protected-audio-safe space for a line about the event [start, end].
+
+    `reach` lets the line use a pause up to that many seconds away: inside the
+    event first, then just after it, then just before it. 0 keeps the line
+    inside the event.
+    """
+    if not all(math.isfinite(v) for v in (start, end, seconds, max_speed, reach)):
         raise ValueError("Non-finite placement value")
-    if start < 0 or end <= start or seconds <= 0 or not 1 <= max_speed <= 1.15:
+    if start < 0 or end <= start or seconds <= 0 or not 1 <= max_speed <= 1.15 or reach < 0:
         raise ValueError("Invalid event window, speech duration or speed ceiling")
-    for speed in dict.fromkeys((1.0, min(1.08, max_speed), max_speed)):
-        at = slot(start, end, seconds / speed, safe, occupied)
-        if at is not None:
-            return Placement("in-gap", at, at + seconds / speed, speed)
+    windows = [(start, end)]
+    if reach:
+        windows += [(start, end + reach), (max(0.0, start - reach), end + reach)]
+    for a, b in windows:
+        for speed in dict.fromkeys((1.0, min(1.08, max_speed), max_speed)):
+            at = slot(a, b, seconds / speed, safe, occupied)
+            if at is not None:
+                return Placement("in-gap", at, at + seconds / speed, speed)
     return Placement("pause", start, start, reason="No protected-audio-safe space within event interval")

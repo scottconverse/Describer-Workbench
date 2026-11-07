@@ -153,8 +153,11 @@ def prepare(project, settings, root, cancel, log, checkpoint):
 
         audio = checkpoint.stage(f'speech-{i:05}', speak)
         window_start, window_end = cue.narration_window()
+        # Authored timing is kept as written; generated cues may use a nearby pause.
+        from ..meeting import narration_reach
+        reach = narration_reach(settings) if cue.timing_start is None else 0.0
         placement = place(window_start, window_end, audio['seconds'], safety['safe_gaps'], occupied,
-                          float(settings.get('max_speech_speed', 1.15)))
+                          float(settings.get('max_speech_speed', 1.15)), reach)
         cue.narration_text=''
         if placement.disposition=='pause':
             from .shortening import concise
@@ -162,7 +165,7 @@ def prepare(project, settings, root, cancel, log, checkpoint):
             if shortened!=cue.text:
                 candidate=checkpoint.stage(f'short-speech-{i:05}',lambda:speak(shortened,'-short'))
                 fitted=place(window_start,window_end,candidate['seconds'],safety['safe_gaps'],occupied,
-                             float(settings.get('max_speech_speed',1.15)))
+                             float(settings.get('max_speech_speed',1.15)),reach)
                 if fitted.disposition=='in-gap':
                     audio,placement=candidate,fitted;cue.narration_text=shortened
                     log('Removed a redundant visual lead-in; original description and evidence retained.')
