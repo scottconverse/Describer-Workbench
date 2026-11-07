@@ -139,6 +139,15 @@ def test_real_ffmpeg_measures_every_frame(tmp_path):
     assert [p.name for p, _ in kept] == ['000.ppm', '004.ppm']
 
 
+def test_meeting_mode_asks_for_the_exact_slide_title(tmp_path):
+    """F4: bigger frames alone did not make the model read slide titles (M4: 0 of 4)."""
+    _, prompts = draft(tmp_path, MEETING, [reply('A slide appears.'), reply('A woman speaks.'), reply('A man sits.')])
+    assert 'exact title' in prompts[0] and 'word for word' in prompts[0]
+    (tmp_path / 'default').mkdir()
+    _, prompts = draft(tmp_path / 'default', DEFAULT, [reply('A slide appears.'), reply('A woman speaks.'), reply('A man sits.')])
+    assert not any('exact title' in p for p in prompts)
+
+
 def test_repeats_of_earlier_cues_that_are_not_next_are_dropped():
     """L3: the model sent 4 cues for one event, then the same 4 again."""
     from describer import meeting

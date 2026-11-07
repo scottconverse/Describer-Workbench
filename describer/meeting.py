@@ -106,7 +106,9 @@ class ChangeGate:
 def prior_instruction(texts):
     texts = [t for t in texts if t][-PRIOR_CUES:]
     rule = ('This is a public meeting. Describe only what is new since the previous descriptions. '
-            'If nothing new is visible, return an empty descriptions list: {"descriptions":[]}. ')
+            'If nothing new is visible, return an empty descriptions list: {"descriptions":[]}. '
+            'When a new slide or screen with text appears, give its exact title word for word in quotes, '
+            'then its main point in a few words. ')
     if texts:
         rule += 'Previous descriptions, oldest first: ' + ' | '.join(texts) + '. '
     return rule
