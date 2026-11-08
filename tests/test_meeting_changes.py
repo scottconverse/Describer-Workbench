@@ -218,3 +218,19 @@ def test_merge_repeats_reports_what_it_drops():
     out = meeting.merge_repeats(cues, dropped=dropped)
     assert [c['start'] for c in out] == [0, 20]
     assert [(d['start'], d['end']) for d in dropped] == [(40, 47)]
+
+
+def test_meeting_prompt_example_asks_for_a_short_version_and_a_meeting_kind(tmp_path):
+    """Step 3 regrade: only 19 of 703 cues had short_text, and 119 had the
+    non-meeting kind "action". The model copies the JSON example, and the
+    example had no short_text and kind "action"."""
+    import json, re
+    _, prompts = draft(tmp_path, MEETING, [reply('People sit around tables.')] * 3)
+    example = json.loads(re.search(r'Return JSON (\{"descriptions".*?\}\]\})', prompts[0]).group(1))['descriptions'][0]
+    assert example.get('short_text'), 'the example shows a short version'
+    assert example['kind'] in ('vote', 'speaker_change', 'slide', 'on_screen_text', 'scene_change', 'other')
+
+
+def test_default_prompt_example_is_unchanged(tmp_path):
+    _, prompts = draft(tmp_path, DEFAULT, [reply('A dog runs.')] * 3)
+    assert '"kind":"action"' in prompts[0] and 'short_text' not in prompts[0]

@@ -337,7 +337,9 @@ def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, c
             ollama=settings.get('analysis_provider','Gemini')!='Gemini'
             instruction=(f'Create concise audio descriptions in {settings["language"]}. Describe visible action, people and settings. '
                 +('Use visible evidence only. No audio is supplied; do not infer speech, sounds or dialogue gaps. Do not invent facts. ' if ollama else 'Use visible evidence and supplied audio; do not repeat dialogue or invent facts. ')+
-                'Return JSON {"descriptions":[{"start":0.0,"end":2.0,"text":"description","kind":"action","evidence":"visible evidence","uncertainty":""}]}. '
+                ('Return JSON {"descriptions":[{"start":0.0,"end":2.0,"text":"description","short_text":"main fact in 4 words","kind":"other","evidence":"visible evidence","uncertainty":""}]}. '
+                 if meeting_mode else  # the model copies this example, so it shows the meeting fields (F2, F3)
+                 'Return JSON {"descriptions":[{"start":0.0,"end":2.0,"text":"description","kind":"action","evidence":"visible evidence","uncertainty":""}]}. ')+
                 'Times describe the VISUAL EVENT, not a proposed speech slot. Cover meaningful unspoken printed text, actions, identities and scene changes. '
                 'Use objective visible facts. Quote printed text exactly; state uncertainty instead of inventing unreadable words or actions. '
                 f'Times are numeric seconds relative to this {length:.2f}-second clip and must fit within it. Set the top-level timestamp_reference field to "clip". '
