@@ -13,11 +13,15 @@ MODEL_SHA256 = "1510041dce24a2e9e84ec546807ac408ae496da6d1ed41bc3ccba649623f8e19
 MODEL_URL = f"https://huggingface.co/zeropointnine/yamnet-onnx/resolve/{MODEL_REVISION}/yamnet.onnx"
 
 
+SPEECH_THRESHOLD = 0.10
+VOCAL_THRESHOLD = 0.30
+
+
 def protected_frames(scores: Any) -> bool:
     # Fixed Google AudioSet map: speech/shouts/whispers 0:13; human
     # laughter/crying/singing 13:35. Protect speech even with music present.
     # Vocal effects have a separate higher threshold, not a music veto.
-    return bool(max(scores[:13]) >= 0.10 or max(scores[13:35]) >= 0.30)
+    return bool(max(scores[:13]) >= SPEECH_THRESHOLD or max(scores[13:35]) >= VOCAL_THRESHOLD)
 
 
 def speech_spans(source: Path, duration: float, model_file: Path, cancel=None) -> tuple[list[list[float]], list[dict[str, Any]]]:

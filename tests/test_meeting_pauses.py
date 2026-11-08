@@ -147,3 +147,28 @@ def test_pause_cues_are_marked_and_dropped_cues_left_out_of_text_exports(tmp_pat
     assert 'pause-2\n00:00:10.000' in v and 'in-gap-1\n00:00:01.000' in v
     assert '[Pause] Needs a pause.' in s and '[Pause] Fits a gap.' not in s
     assert 'No room.' not in v and 'No room.' not in s
+
+
+def test_word_timings_overrule_a_detector_that_hears_speech_everywhere(tmp_path):
+    """Measured S2: the speech detector marked 653 of 661 frames as speech, so no gap was left.
+
+    With word times in meeting mode, the words say where speech is. A non-speech
+    vocal sound (laughter, a shout) found by the detector stays protected.
+    """
+    from describer.engine.core import protected_audio
+    captions = tmp_path / 'captions.vtt'; captions.write_text(WORDS_VTT, encoding='utf-8')
+    project = Project(str(tmp_path / 'm.mp4'), 30)
+    trace = [{'time': round(t * .48, 4), 'speech': .9, 'vocal': .9 if 13.4 <= t * .48 <= 13.5 else 0.0, 'music': 0.0}
+             for t in range(63)]
+    everywhere = ([[0.0, 30.0]], trace)
+
+    def measure(settings):
+        with patch('describer.services.run', return_value=b'{"streams":[{"codec_type":"audio"}]}'), \
+             patch('describer.engine.core.speech_model'), \
+             patch('describer.engine.speech_cache.measured', return_value=everywhere):
+            return protected_audio(project, dict(settings, captions=str(captions)), None, lambda _: None)['safe_gaps']
+    gaps = measure(MEETING)
+    assert covers(gaps, 11.5, 12.9), gaps
+    assert not covers(gaps, 13.3, 13.6), 'a vocal sound the detector found stays protected'
+    assert not covers(gaps, 10.0, 11.0), 'spoken words stay protected'
+    assert not covers(measure(DEFAULT), 11.5, 12.9), 'default mode keeps the detector'
