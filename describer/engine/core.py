@@ -86,8 +86,12 @@ def protected_audio(project, settings, cancel, log):
         from ..meeting import enabled, word_spans
         words = word_spans(settings['captions'], project.duration) if enabled(settings) else None
         if words is not None:
-            # F2: word times show the pauses inside a caption line.
-            spans.extend(words)
+            # F2: word times show the pauses inside a caption line. They also
+            # replace the detector's speech frames, which can mark a whole
+            # meeting room as speech. Non-speech vocal sounds stay protected.
+            from .sound import VOCAL_THRESHOLD
+            spans = [[max(0.0, r['time'] - .3), min(project.duration, r['time'] + .96 + .3)]
+                     for r in trace if r.get('vocal', 0) >= VOCAL_THRESHOLD] + words
         else:
             for c in import_subtitles(settings['captions'], project.duration):
                 spans.append([max(0, c.start - .3), min(project.duration, c.end + .3)])
