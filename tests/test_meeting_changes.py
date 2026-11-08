@@ -46,6 +46,8 @@ def draft(tmp_path, settings, replies):
     prompts = []
 
     def provider(clip, instruction, settings, cancel, log, as_json=True, gate=None):
+        if 'raising a hand' in instruction:  # F3 vote pass: no hands up here
+            return {'timestamp_reference': 'clip', 'descriptions': []}
         prompts.append(instruction)
         return replies[len(prompts) - 1]
     with boundaries(), patch('describer.services.video_request', side_effect=provider):

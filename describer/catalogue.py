@@ -9,7 +9,12 @@ PROMPTS={
  'Documentary / Educational':'Prioritize relevant demonstrations, diagrams, maps, labels, archival images and on-screen text.',
  'Cooking / Recipe':'Describe ingredients, tools, techniques and visible changes in food texture, color and consistency.',
  'DIY / Tutorial':'Describe the tools, materials and each visible step, including the state before and after the action.',
- "Gaming / Let's Play":'Describe important avatar actions and meaningful changes to game interfaces, health, objectives and maps.'}
+ "Gaming / Let's Play":'Describe important avatar actions and meaningful changes to game interfaces, health, objectives and maps.',
+ # F3: meeting events first, each kind with a short fixed form.
+ 'Public meeting':'Report meeting events first. Set "kind" to one of: vote, speaker_change, slide, on_screen_text, scene_change, other. '
+  'Use these short forms. vote: "<N> members raise their hands". speaker_change: "<who> speaks at <where>". '
+  'slide: "Slide: <exact title>. <key number or point>". on_screen_text: "Text: <exact words>". scene_change: "<the new view>". '
+  'Say "people" or "board members", never a gender, unless the person is in close-up.'}
 
 VOICE_PRESETS={
  'Narrator':{'base_voice':'alloy','speed':1.0,'instructions':'Speak clearly with a steady narration tone.'},

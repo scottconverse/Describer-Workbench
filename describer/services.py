@@ -271,6 +271,36 @@ class RejectedChunk(ValueError):
     """The model replied, but the reply is not a usable chunk; worth a retry."""
 
 
+def vote_pass(project,settings,w0,wl,lines,labels,count,cancel,log,clip,checkpoint=None):
+    """F3: ask who raises a hand around a vote line, one frame per second.
+
+    A failed pass is logged and skipped; it never fails the job.
+    """
+    from . import meeting
+    from .project import normalize_chunk, speakable
+    log(f'Public meeting mode: vote words at {w0:.0f} s; checking for raised hands.')
+    segment(project.video,clip,w0,wl,settings['fps'],cancel,settings.get('silent_upload',False),max_side=meeting.frame_side(settings))
+    ask=lambda:response_json(video_request(clip,meeting.vote_instruction(lines,wl),dict(settings,ollama_frame_interval=1),cancel,log))
+    def validate(data):
+        try:normalize_chunk(data,0,wl)
+        except ValueError as exc:raise RejectedChunk(str(exc)) from exc
+    try:
+        data=checkpoint(f'vote-{w0:.6f}',ask,validate) if checkpoint else ask()
+        validate(data)
+        rows=normalize_chunk(data,0,wl,log)
+    except (ValueError,TypeError,IncompleteResponse) as exc:
+        log(f'Vote check at {w0:.0f} s failed; no vote cue added. {exc}')
+        return []
+    out=[]
+    for cue in rows:
+        cue.kind='vote'
+        cue.text,_=speakable(cue.text,labels)
+        cue.start+=w0;cue.end+=w0;cue.event_start+=w0;cue.event_end+=w0
+        cue.event_id=f'vote-{w0:.6f}:{cue.event_start:.6f}:{cue.event_end:.6f}:{count+len(out)}'
+        out.append(cue)
+    return out
+
+
 def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, checkpoint=None):
     cues=[];glossary=project.glossary;failed=[];unchanged=[]
     from .project import glossary_labels, speakable
@@ -315,6 +345,7 @@ def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, c
             if meeting_mode:
                 instruction += '\n'+meeting.prior_instruction([c.text for c in cues if c.disposition!='unresolved'])
                 instruction += meeting.transcript_instruction(said,start,length)
+                instruction += meeting.event_instruction(prompt)
             if settings.get("auto_glossary",False):
                 instruction += ' Also return "character_glossary": [{"id":"stable_visual_label","name":null,"description":"visual identity"}]. '+('Keep name=null because no audio is supplied. ' if ollama else 'Use a personal name only if clearly spoken and unambiguously linked; otherwise name=null. ')+'Reuse prior identities; include only visible characters.'
             verbosity={'Short':'Use 1-3 words for each description.','Standard':'Aim for 3-6 words per description.','Detailed':'Aim for 6-12 words per description.'}.get(settings.get('verbosity','Standard'),'')
@@ -363,6 +394,9 @@ def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, c
                 cue.event_id=f'{start:.6f}:{cue.event_start:.6f}:{cue.event_end:.6f}:{len(cues)}'
                 cues.append(cue)
             start+=length
+        if meeting_mode:
+            for w0,wl,lines in meeting.vote_windows(said,start_at,stop):
+                cues+=vote_pass(project,settings,w0,wl,lines,labels,len(cues),cancel,log,Path(tmp)/'vote.mp4',checkpoint)
     stage(log,'observation',total,total)
     from dataclasses import asdict
     rows=[asdict(c) for c in cues]
