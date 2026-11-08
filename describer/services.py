@@ -295,6 +295,7 @@ def vote_pass(project,settings,w0,wl,lines,labels,count,cancel,log,clip,checkpoi
     for cue in rows:
         cue.kind='vote'
         cue.text,_=speakable(cue.text,labels)
+        cue.short_text,_=speakable(cue.short_text,labels)
         cue.start+=w0;cue.end+=w0;cue.event_start+=w0;cue.event_end+=w0
         cue.event_id=f'vote-{w0:.6f}:{cue.event_start:.6f}:{cue.event_end:.6f}:{count+len(out)}'
         out.append(cue)
@@ -389,6 +390,7 @@ def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, c
             for cue in rows:
                 # Models reuse glossary IDs ("man_1") in text; never speak them.
                 cue.text,meaningful=speakable(cue.text,labels)
+                cue.short_text,_=speakable(cue.short_text,labels)  # the short version is spoken too (F2)
                 if not meaningful:
                     cue.disposition='unresolved'
                     cue.uncertainty=cue.uncertainty or 'Only an internal identity label was returned; review this description.'

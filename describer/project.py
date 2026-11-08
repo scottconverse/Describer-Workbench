@@ -169,6 +169,10 @@ def normalize_generated(data,duration,log=lambda _:None,*,strict=False):
 
 # Models write IDs in any case: man_1, Man_plaid, Woman_3.
 INTERNAL_ID = re.compile(r'\b[a-z]+(?:_[a-z0-9]+)+\b', re.I)
+# They also write labels with a space: Speaker 1, Board member 3, Attendee 7.
+# A count comes before its noun ("3 members"), so it does not match.
+SPACED_ID = re.compile(r'\b(speaker|person|attendee|participant|presenter|individual|figure|resident|'
+                       r'board\s+member|council\s+member|councilmember|commissioner|member|man|woman)\s+(\d{1,2})\b(?!\s*(?:of|%))', re.I)
 
 
 def glossary_labels(glossary='', entries=()):
@@ -203,13 +207,19 @@ def speakable(text, labels):
     meaningful is False when nothing but replaced labels remains, so the cue
     is held for review instead of being spoken.
     """
-    if not INTERNAL_ID.search(text):return text, True
+    if not INTERNAL_ID.search(text) and not SPACED_ID.search(text):return text, True
     pattern = re.compile(r'\b(?:(?:the|a|an)\s+)?(' + INTERNAL_ID.pattern + r')', re.I)
+    spaced = re.compile(r'\b(?:(?:the|a|an)\s+)?' + SPACED_ID.pattern, re.I)
     folded = {str(key).lower(): entry for key, entry in labels.items()}
     def replace(match):
         return _spoken_label(labels.get(match.group(1)) or folded.get(match.group(1).lower()))
-    cleaned = ' '.join(pattern.sub(replace, text).split())
-    rest = re.sub(r'[^\w]', '', pattern.sub('', text))
+    def replace_spaced(match):
+        role, number = ' '.join(match.group(1).lower().split()), match.group(2)
+        entry = folded.get(f"{role.replace(' ', '_')}_{number}")
+        if entry:return _spoken_label(entry)
+        return ('an ' if role[0] in 'aeiou' else 'a ') + role
+    cleaned = ' '.join(spaced.sub(replace_spaced, pattern.sub(replace, text)).split())
+    rest = re.sub(r'[^\w]', '', spaced.sub('', pattern.sub('', text)))
     if cleaned:cleaned = cleaned[0].upper() + cleaned[1:]
     return cleaned, bool(rest)
 

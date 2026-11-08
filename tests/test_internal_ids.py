@@ -77,3 +77,34 @@ def test_capitalized_ids_are_never_spoken():
                      'A person raises a hand.',
                      'A woman in a maroon jacket sits down next to Mayor Ruiz.']
     assert not any(re.search(ID_PATTERN.pattern, t, re.I) for t in texts)
+
+
+def test_spaced_labels_are_never_spoken():
+    """gemma4 also writes labels with a space: "Speaker 1", "Board member 3" (seen in M4, L3, L4a)."""
+    project = draft([reply(
+        cue('Speaker 1 stands and gestures to the slide.', 1, 2),
+        cue('Board member 3 looks forward.', 3, 4),
+        cue('Attendee 7 leans back.', 5, 6),
+        cue('Person 4 looks at a laptop.', 7, 8),
+        glossary=[{'id': 'person_4', 'name': None, 'description': 'woman in a red jacket'}])])
+    texts = [c.text for c in project.cues]
+    assert texts == ['A speaker stands and gestures to the slide.',
+                     'A board member looks forward.',
+                     'An attendee leans back.',
+                     'A woman in a red jacket looks at a laptop.']
+
+
+def test_counts_and_ordinary_numbers_are_kept():
+    project = draft([reply(cue('3 members raise their hands.', 1, 2),
+                           cue('Slide: "Item 4 of 10".', 3, 4))])
+    assert [c.text for c in project.cues] == ['3 members raise their hands.', 'Slide: "Item 4 of 10".']
+
+
+def test_short_version_never_speaks_an_id():
+    """The short version is spoken when it fits a gap, so it is cleaned the same way."""
+    row = cue('man_plaid looks down at papers.', 1, 2)
+    row['short_text'] = 'man_plaid looks down'
+    row2 = cue('Speaker 1 points at the screen.', 3, 4)
+    row2['short_text'] = 'Speaker 1 points'
+    project = draft([reply(row, row2, glossary=[{'id': 'man_plaid', 'name': None, 'description': 'man in a plaid shirt'}])])
+    assert [c.short_text for c in project.cues] == ['A man in a plaid shirt looks down', 'A speaker points']
