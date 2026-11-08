@@ -108,3 +108,13 @@ def test_short_version_never_speaks_an_id():
     row2['short_text'] = 'Speaker 1 points'
     project = draft([reply(row, row2, glossary=[{'id': 'man_plaid', 'name': None, 'description': 'man in a plaid shirt'}])])
     assert [c.short_text for c in project.cues] == ['A man in a plaid shirt looks down', 'A speaker points']
+
+
+def test_a_long_description_is_never_cut_mid_phrase():
+    from describer.project import speakable
+    labels = {'man_check': {'id': 'man_check', 'name': None, 'description': 'man in a checkered shirt standing at the front'},
+              'man_stripe': {'id': 'man_stripe', 'name': None, 'description': 'man in a light blue striped shirt on the left side of the table'},
+              'man_pink': {'id': 'man_pink', 'name': None, 'description': 'A man with short hair and glasses wearing a pink shirt'}}
+    assert speakable('man_check points at the screen.', labels)[0] == 'A man in a checkered shirt standing at the front points at the screen.'
+    assert speakable('man_stripe looks down.', labels)[0] == 'A man in a light blue striped shirt looks down.'
+    assert speakable('man_pink nods.', labels)[0] == 'A man with short hair and glasses nods.'

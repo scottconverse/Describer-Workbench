@@ -193,9 +193,27 @@ def glossary_labels(glossary='', entries=()):
     return labels
 
 
+# A cut never ends on these words ("standing at the").
+_SMALL = {'a', 'an', 'the', 'at', 'on', 'in', 'of', 'with', 'and', 'to', 'near', 'wearing', 'by', 'or'}
+# A long description is cut where a new phrase starts ("on the left side of the table").
+_PHRASE = {'on', 'at', 'near', 'in', 'wearing', 'standing', 'sitting', 'seated', 'holding', 'behind', 'beside'}
+MAX_LABEL_WORDS = 10
+
+
+def _short_description(description):
+    words = description.split()
+    if len(words) > MAX_LABEL_WORDS:
+        cuts = [i for i in range(3, MAX_LABEL_WORDS + 1) if words[i].lower() in _PHRASE]
+        words = words[:cuts[-1] if cuts else MAX_LABEL_WORDS]
+    words = [w.rstrip('.,;:') for w in words]
+    while words and words[-1].lower() in _SMALL:
+        words.pop()
+    return ' '.join(words)
+
+
 def _spoken_label(entry):
     if entry and entry.get('name'):return entry['name']
-    detail = ' '.join(INTERNAL_ID.sub('', (entry or {}).get('description', '')).split()[:8]).rstrip('.,;:')
+    detail = _short_description(INTERNAL_ID.sub('', (entry or {}).get('description', '')))
     if not detail:return 'a person'
     first = detail.split()[0].lower()
     return detail[0].lower()+detail[1:] if first in ('a', 'an', 'the', 'one', 'two', 'three') else 'a '+detail
