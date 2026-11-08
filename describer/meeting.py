@@ -139,7 +139,100 @@ def event_instruction(prompt=''):
     """F3: typed meeting events and the gender rule, once per prompt."""
     from .catalogue import PROMPTS
     rules = PROMPTS[MODE]
-    return '' if rules in (prompt or '') else rules + ' '
+    short = ('Also give "short_text": the same main fact in at most 4 words, '
+             'for a short pause in the speech. ')
+    return short if rules in (prompt or '') else rules + ' ' + short
+
+
+# F2: pauses come from word timings, not whole caption lines. A caption line
+# often holds a long silence between two words.
+WORD_TIME = re.compile(r'<(\d+:\d\d:\d\d\.\d+)>')
+CUE_TIME = re.compile(r'(\d+:\d\d:\d\d\.\d+)\s+-->\s+(\d+:\d\d:\d\d\.\d+)')
+WORD_LONGEST = .7  # a word lasts at most this long; the rest is silence
+WORD_PAD = .1
+
+
+def _clock(value):
+    h, m, s = value.split(':')
+    return int(h) * 3600 + int(m) * 60 + float(s)
+
+
+def word_spans(path, duration):
+    """Speech spans from a VTT file with word times (<00:00:01.200> tags).
+
+    Returns None when the file has no word times; the caller then protects
+    each whole caption line, as before. A plain line that is not a repeat of
+    a recent line (rolling captions) protects its whole caption span.
+    """
+    from pathlib import Path
+    text = Path(path).read_text(encoding='utf-8-sig', errors='replace')
+    if not WORD_TIME.search(text):
+        return None
+    spans, recent = [], []
+    for block in re.split(r'\n\s*\n', text.replace('\r\n', '\n')):
+        lines = block.strip().split('\n')
+        timing = next((i for i, line in enumerate(lines) if CUE_TIME.search(line)), None)
+        if timing is None:
+            continue
+        a, b = (_clock(v) for v in CUE_TIME.search(lines[timing]).groups())
+        for line in lines[timing + 1:]:
+            plain = ' '.join(re.sub(r'<[^>]*>', '', line).split())
+            if not plain:
+                continue
+            if not WORD_TIME.search(line):
+                if plain not in recent:
+                    spans.append([max(0.0, a - WORD_PAD), min(duration, b + WORD_PAD)])
+            else:
+                parts = WORD_TIME.split(line)
+                times = ([a] if re.sub(r'<[^>]*>', '', parts[0]).strip() else []) + [_clock(t) for t in parts[1::2]]
+                for i, t in enumerate(times):
+                    following = times[i + 1] if i + 1 < len(times) else b
+                    end = min(max(t, following), t + WORD_LONGEST)
+                    spans.append([max(0.0, t - WORD_PAD), min(duration, end + WORD_PAD)])
+            recent = (recent + [plain])[-3:]
+    return spans
+
+
+# F2: pause budget. Only the most important pause cues may stop the video.
+PAUSE_BUDGET = 8.0
+PRIORITY = {'vote': 0, 'speaker_change': 1, 'slide': 2, 'on_screen_text': 2, 'scene_change': 3}
+
+
+def pause_budget(settings):
+    """Seconds of pause narration allowed per minute of video, or None (no limit)."""
+    if not enabled(settings):
+        return None
+    value = (settings or {}).get('max_pause_seconds_per_minute', PAUSE_BUDGET)
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0 <= value < float('inf'):
+        raise ValueError('max_pause_seconds_per_minute must be a number of 0 or more.')
+    return float(value)
+
+
+def apply_pause_budget(cues, coverage, budget, log=lambda _: None):
+    """Drop pause cues over the budget in each minute, least important first.
+
+    Votes always keep their pause. A dropped cue gets disposition
+    "dropped_no_gap" and is listed in coverage; it is never spoken.
+    """
+    rows = {row.get('cue_id'): row for row in coverage if row.get('cue_id')}
+    minutes = {}
+    for cue in cues:
+        if cue.disposition == 'pause':
+            minutes.setdefault(int(cue.start // 60), []).append(cue)
+    dropped = 0
+    for group in minutes.values():
+        used = 0.0
+        for cue in sorted(group, key=lambda c: (PRIORITY.get(c.kind, len(PRIORITY)), c.start)):
+            if cue.kind == 'vote' or used + cue.speech_seconds <= budget + 1e-6:
+                used += cue.speech_seconds
+                continue
+            cue.disposition = 'dropped_no_gap'
+            dropped += 1
+            if cue.cue_id in rows:
+                rows[cue.cue_id].update(disposition='dropped_no_gap',
+                    reason=f'No speech-free gap, and over the pause budget of {budget:g} s per minute.')
+    if dropped:
+        log(f'Public meeting mode: {dropped} descriptions had no gap and were over the pause budget; they are listed in coverage, not spoken.')
 
 
 # F3: the transcript says when a vote happens; a 1 s frame pass says who and how many.

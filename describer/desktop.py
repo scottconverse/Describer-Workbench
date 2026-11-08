@@ -86,6 +86,7 @@ class CueDelegate(QStyledItemDelegate):
 
 def cue_status(cue):
     if cue.disposition=='unresolved':return 'Needs review'
+    if cue.disposition=='dropped_no_gap':return 'Dropped: no gap'
     if cue.disposition=='pause':return f'Pause {cue.speech_seconds:.1f}s' if cue.speech_seconds else 'Pauses picture'
     if cue.speed>1:return f'Sped up · {cue.speed:.2f}×'
     return 'In gap' if cue.disposition=='in-gap' else 'Not yet placed'

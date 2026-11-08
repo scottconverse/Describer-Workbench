@@ -83,8 +83,14 @@ def protected_audio(project, settings, cancel, log):
         from .speech_cache import measured
         spans, trace = measured(Path(project.video), project.duration, speech_model(settings), cancel,log,speech_spans)
     if settings.get('captions'):
-        for c in import_subtitles(settings['captions'], project.duration):
-            spans.append([max(0, c.start - .3), min(project.duration, c.end + .3)])
+        from ..meeting import enabled, word_spans
+        words = word_spans(settings['captions'], project.duration) if enabled(settings) else None
+        if words is not None:
+            # F2: word times show the pauses inside a caption line.
+            spans.extend(words)
+        else:
+            for c in import_subtitles(settings['captions'], project.duration):
+                spans.append([max(0, c.start - .3), min(project.duration, c.end + .3)])
     return {'protected': intervals(spans, project.duration), 'classification': trace,
             'safe_gaps': gaps(spans, project.duration)}
 
@@ -169,6 +175,15 @@ def prepare(project, settings, root, cancel, log, checkpoint):
                 if fitted.disposition=='in-gap':
                     audio,placement=candidate,fitted;cue.narration_text=shortened
                     log('Removed a redundant visual lead-in; original description and evidence retained.')
+        brief=cue.short_text.strip()
+        if placement.disposition=='pause' and brief and brief!=cue.text:
+            # F2: the model's own short version may fit a gap the full line does not.
+            candidate=checkpoint.stage(f'brief-speech-{i:05}',lambda b=brief:speak(b,'-brief'))
+            fitted=place(window_start,window_end,candidate['seconds'],safety['safe_gaps'],occupied,
+                         float(settings.get('max_speech_speed',1.15)),reach)
+            if fitted.disposition=='in-gap':
+                audio,placement=candidate,fitted;cue.narration_text=brief
+                log('Used the short version of a description to fit a gap; the full text is kept.')
         cue.audio, cue.speech_seconds, cue.audio_volume = audio['audio'], audio['seconds'], 100
         cue.disposition, cue.speed = placement.disposition, placement.speed
         if placement.disposition == 'in-gap':
@@ -183,6 +198,9 @@ def prepare(project, settings, root, cancel, log, checkpoint):
                    narration_text=cue.narration_text or cue.text)
         coverage.append(row)
     stage(log,'narration',len(project.cues),len(project.cues))
+    from ..meeting import apply_pause_budget, pause_budget
+    budget=pause_budget(settings)
+    if budget is not None:apply_pause_budget(project.cues,coverage,budget,log)
     for gap in project.analysis.get('failed_chunks', []):
         # A chunk the model never answered properly: show the hole, never hide it.
         coverage.append({'event_id': f'failed-{gap["start"]:.6f}', 'cue_id': None, 'text': '', 'kind': 'gap',
