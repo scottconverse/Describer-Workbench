@@ -135,6 +135,42 @@ def transcript_instruction(rows, start, length):
             'Do not describe anything the speakers say aloud; describe only what a listener cannot learn from the audio. ')
 
 
+def event_instruction(prompt=''):
+    """F3: typed meeting events and the gender rule, once per prompt."""
+    from .catalogue import PROMPTS
+    rules = PROMPTS[MODE]
+    return '' if rules in (prompt or '') else rules + ' '
+
+
+# F3: the transcript says when a vote happens; a 1 s frame pass says who and how many.
+VOTE_WORDS = re.compile(r"\b(all (those )?in favou?r|ayes?|motion (carries|passes|passed|fails|failed)|opposed|roll call)\b", re.IGNORECASE)
+VOTE_LEAD = 1.0
+VOTE_SPAN = 8.0  # 8 frames at 1 s: the frame sampler sends at most 8 frames
+
+
+def vote_windows(rows, start, stop):
+    """(window start, length, lines) for each vote in [start, stop), in video time."""
+    windows = []
+    for a, _, text in rows:
+        if not (start <= a < stop) or not VOTE_WORDS.search(text):
+            continue
+        if windows and a < windows[-1][0] + windows[-1][1]:
+            windows[-1][2].append(text)
+            continue
+        w0 = max(start, a - VOTE_LEAD)
+        windows.append((w0, min(stop, w0 + VOTE_SPAN) - w0, [text]))
+    return [w for w in windows if w[1] >= 1]
+
+
+def vote_instruction(lines, length):
+    return ('Question: is anyone raising a hand to vote? The transcript says a vote happens in this clip: "'
+            + ' '.join(lines) + '". Look at every frame. Count the people with a raised hand in the frame where the most hands are up. '
+            'Say "members" or "people", never a gender. '
+            'Return JSON {"timestamp_reference":"clip","descriptions":[{"start":0.0,"end":2.0,"text":"<N> members raise their hands","kind":"vote"}]} '
+            f'with numeric clip times that fit within this {length:.2f}-second clip. '
+            'If no hand is raised, return {"timestamp_reference":"clip","descriptions":[]}.')
+
+
 def prior_instruction(texts):
     texts = [t for t in texts if t][-PRIOR_CUES:]
     rule = ('This is a public meeting. Describe only what is new since the previous descriptions. '
