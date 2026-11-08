@@ -91,6 +91,9 @@ class ChangeGate:
         self.last = None
         self.sent = 0
         self.skipped = 0
+        # Clip time of the first frame sent in the last call. Nothing the model
+        # says can start before it: the earlier frames showed nothing new.
+        self.first_kept = None
 
     def __call__(self, frames, cancel=None):
         thumbs = (self.measure or thumbnails)([path for path, _ in frames], cancel)
@@ -99,6 +102,7 @@ class ChangeGate:
             if changed(self.last, thumb):
                 kept.append(frame)
                 self.last = thumb
+        self.first_kept = kept[0][1] if kept else None
         self.sent += len(kept)
         self.skipped += len(frames) - len(kept)
         return kept
