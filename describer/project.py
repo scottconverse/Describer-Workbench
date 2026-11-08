@@ -34,6 +34,7 @@ class Cue:
     event_start: float | None = None
     event_end: float | None = None
     kind: str = 'action'
+    short_text: str = ''
     evidence: str = ''
     uncertainty: str = ''
     disposition: str = 'unplanned'
@@ -83,7 +84,7 @@ class Cue:
 
     def validate(self, duration=0):
         self.start, self.end = seconds(self.start), seconds(self.end)
-        for name in ('text', 'event_id', 'kind', 'evidence', 'uncertainty', 'audio','narration_text', 'cue_id', 'origin'):
+        for name in ('text', 'event_id', 'kind', 'short_text', 'evidence', 'uncertainty', 'audio','narration_text', 'cue_id', 'origin'):
             if not isinstance(getattr(self, name), str):
                 raise ValueError('Description metadata must contain text values.')
         if not self.cue_id or self.review_status not in ('unreviewed', 'needs-review', 'reviewed', 'approved') or not isinstance(self.manually_edited, bool) or not isinstance(self.review_history, list):
@@ -109,7 +110,7 @@ class Cue:
             self.timing_start, self.timing_end = seconds(self.timing_start), seconds(self.timing_end)
             if self.timing_end <= self.timing_start or (duration and self.timing_end > duration + .05):
                 raise ValueError('Invalid authored narration interval.')
-        if self.disposition not in ('unplanned', 'in-gap', 'pause', 'unresolved'):
+        if self.disposition not in ('unplanned', 'in-gap', 'pause', 'unresolved', 'dropped_no_gap'):
             raise ValueError('Invalid description disposition.')
         if not math.isfinite(self.speed) or not 1 <= self.speed <= 1.15:
             raise ValueError('Narration speed must be between 1 and 1.15.')
@@ -335,8 +336,12 @@ class Project:
         return cls(j['video'], seconds(j['duration']), cues, j.get('glossary', ''), j.get('coverage', []), j.get('analysis', {}))
 
     def export(self, path):
+        # F2: a cue with no gap over the pause budget is never spoken or shown.
+        cues = [c for c in self.cues if c.disposition != 'dropped_no_gap']
         if Path(path).suffix.lower() == '.srt':
-            text = '\n\n'.join(f'{i}\n{stamp(c.start)} --> {stamp(c.end)}\n{c.text}' for i, c in enumerate(self.cues, 1)) + '\n'
+            # Pause cues stop the video; mark them so a player can offer a standard and an extended track.
+            text = '\n\n'.join(f'{i}\n{stamp(c.start)} --> {stamp(c.end)}\n{"[Pause] " if c.disposition == "pause" else ""}{c.text}'
+                               for i, c in enumerate(cues, 1)) + '\n'
         else:
-            text = '\n'.join(c.text for c in self.cues) + '\n'
+            text = '\n'.join(c.text for c in cues) + '\n'
         Path(path).write_text(text, encoding='utf-8')

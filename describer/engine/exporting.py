@@ -31,7 +31,11 @@ def export(project, output, settings, cancel, log, mode='complete'):
     if suffix in ('.srt', '.txt', '.vtt'):
         if suffix == '.vtt':
             from ..project import stamp
-            body = 'WEBVTT\n\n' + '\n\n'.join(f'{stamp(c.start).replace(",", ".")} --> {stamp(c.end).replace(",", ".")}\n{c.text}' for c in project.cues)
+            # F2: each cue's ID says how it plays: "pause-N" stops the video, "in-gap-N" does not.
+            cues = [c for c in project.cues if c.disposition != 'dropped_no_gap']
+            body = 'WEBVTT\n\n' + '\n\n'.join(
+                f'{c.disposition if c.disposition in ("pause", "in-gap") else "cue"}-{i}\n'
+                f'{stamp(c.start).replace(",", ".")} --> {stamp(c.end).replace(",", ".")}\n{c.text}' for i, c in enumerate(cues, 1))
             target.write_text(body, encoding='utf-8')
         else:
             project.export(target)

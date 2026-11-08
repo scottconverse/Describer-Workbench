@@ -95,7 +95,7 @@ DEFAULTS = {'ui_theme':'light','recent_projects':[], 'model': 'gemini-2.5-flash'
             'provider_models':{},'connections':{},'connection_id':'','gateway_url':'http://127.0.0.1:8317/v1','gateway_key_file':'',
             'cli_paths':{},'analysis_timeout':600,'analysis_effort':'','anthropic_key':'',
             'codex_cli':'','claude_cli':'','gemini_cli':'',
-            'ollama_key':'','ollama_timeout':600,'ollama_frame_interval':2,'drafting_mode':'',
+            'ollama_key':'','ollama_timeout':600,'ollama_frame_interval':2,'drafting_mode':'','max_pause_seconds_per_minute':8,
             'voice_engine': native_engine(), 'voice': 'alloy', 'tts_model': 'gpt-4o-mini-tts',
             'voice_presets': VOICE_PRESETS, 'settings_version': 3,
             'voice_preset': '', 'voice_speed': 1.0, 'voice_instructions': '', 'windows_voice': '', 'speech_rate': 0,
