@@ -365,6 +365,7 @@ def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, c
                 if settings.get('auto_glossary',False) and isinstance(data,dict) and 'character_glossary' in data:
                     from .compatibility import merge_glossary
                     merge_glossary(glossary,data['character_glossary'])
+            if gate:gate.first_kept=None  # a resumed chunk does not call the gate
             attempts=1+max(0,int(settings.get('chunk_retries',2)))
             for attempt in range(attempts):
                 try:
@@ -394,6 +395,11 @@ def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, c
                 if not meaningful:
                     cue.disposition='unresolved'
                     cue.uncertainty=cue.uncertainty or 'Only an internal identity label was returned; review this description.'
+                first=gate.first_kept if gate else None
+                if first is not None and cue.event_start<first:
+                    # The model copies the example time 0.0; the event is first seen at this frame.
+                    cue.event_start=first;cue.event_end=max(cue.event_end,first)
+                    cue.start=max(cue.start,first);cue.end=max(cue.end,cue.start)
                 cue.start+=start;cue.end+=start;cue.event_start+=start;cue.event_end+=start
                 cue.event_id=f'{start:.6f}:{cue.event_start:.6f}:{cue.event_end:.6f}:{len(cues)}'
                 cues.append(cue)
