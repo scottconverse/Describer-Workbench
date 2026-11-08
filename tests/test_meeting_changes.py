@@ -191,3 +191,30 @@ def test_a_new_slide_that_changes_only_text_is_sent(tmp_path):
     new = slide_frame(tmp_path / 'new.ppm', [230, 290, 350, 410, 470, 530])
     kept = meeting.ChangeGate()([(old, 0.0), (same, 2.0), (new, 4.0)])
     assert [p.name for p, _ in kept] == ['old.ppm', 'new.ppm']
+
+
+def test_a_dropped_repeat_leaves_a_flag_not_a_silent_hole(tmp_path):
+    """Step 3 regrade (L3, M1): the model described a chunk again with an
+    earlier cue's words. The repeat was dropped and its chunk had no cue and
+    no flag. The dropped span must be recorded as "no change"."""
+    result, _ = draft(tmp_path, MEETING, [
+        reply('People sit around tables.'),
+        reply('A man in a tan jacket stands up.'),
+        reply('People sit around tables.', start=2, end=9),
+    ])
+    assert [c.text for c in result.cues] == ['People sit around tables.', 'A man in a tan jacket stands up.']
+    flagged = [(r['event_start'], r['event_end']) for r in result.coverage if r.get('disposition') == 'no_change']
+    assert flagged == [(32, 39)], 'the dropped repeat is flagged where it was'
+    reason = next(r['reason'] for r in result.coverage if r.get('disposition') == 'no_change')
+    assert 'repeat' in reason.lower()
+
+
+def test_merge_repeats_reports_what_it_drops():
+    from describer import meeting
+    cues = [dict(start=0, end=2, event_start=0, event_end=2, text='People sit around tables.'),
+            dict(start=20, end=22, event_start=20, event_end=22, text='A man in a tan jacket stands up.'),
+            dict(start=40, end=42, event_start=40, event_end=47, text='People sit around tables.')]
+    dropped = []
+    out = meeting.merge_repeats(cues, dropped=dropped)
+    assert [c['start'] for c in out] == [0, 20]
+    assert [(d['start'], d['end']) for d in dropped] == [(40, 47)]

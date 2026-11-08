@@ -299,13 +299,14 @@ def _repeats(prev, cue, labels):
     return None
 
 
-def merge_repeats(cues, log=lambda _: None, labels=()):
+def merge_repeats(cues, log=lambda _: None, labels=(), dropped=None):
     """Remove cues that say again what a recent cue said.
 
     `cues` are dicts sorted by event start. A repeat of the cue just before
     is joined to it (the kept cue spans both events). A repeat of an earlier
     cue from the last MERGE_WINDOW seconds is dropped. "Still" restatements
-    are dropped the same way.
+    are dropped the same way. Each dropped span is added to `dropped`, so
+    coverage can flag it instead of leaving a silent hole.
     """
     out = []
     counts = {'merged': 0, 'dropped': 0}
@@ -320,6 +321,9 @@ def merge_repeats(cues, log=lambda _: None, labels=()):
         if _repeats(prev, cue, labels):
             prev['end'] = max(prev['end'], cue['end'])
             prev['event_end'] = max(prev.get('event_end', prev['end']), cue.get('event_end', cue['end']))
+        elif dropped is not None:
+            dropped.append({'start': cue.get('event_start', cue['start']), 'end': cue.get('event_end', cue['end']),
+                            'reason': 'No new change: the model repeated an earlier description, so it was not said again.'})
     if counts['merged'] or counts['dropped']:
         log(f"Public meeting mode: merged {counts['merged']} repeated and dropped {counts['dropped']} restating descriptions.")
     return out
