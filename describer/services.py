@@ -398,8 +398,13 @@ def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, c
                 first=gate.first_kept if gate else None
                 if first is not None and cue.event_start<first:
                     # The model copies the example time 0.0; the event is first seen at this frame.
-                    cue.event_start=first;cue.event_end=max(cue.event_end,first)
-                    cue.start=max(cue.start,first);cue.end=max(cue.end,cue.start)
+                    # Keep each length, so a short event is not left with zero length and dropped.
+                    shift=first-cue.event_start
+                    cue.event_start=first;cue.event_end=min(length,max(cue.event_end,cue.event_end+shift))
+                    if cue.event_end<=first:cue.event_end=min(length,first+0.5)
+                    if cue.start<first:
+                        size=cue.end-cue.start;cue.start=first;cue.end=min(length,max(cue.end,first+size))
+                    if cue.end<=cue.start:cue.end=min(length,cue.start+0.5)
                 cue.start+=start;cue.end+=start;cue.event_start+=start;cue.event_end+=start
                 cue.event_id=f'{start:.6f}:{cue.event_start:.6f}:{cue.event_end:.6f}:{len(cues)}'
                 cues.append(cue)

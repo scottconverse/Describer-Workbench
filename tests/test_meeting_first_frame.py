@@ -54,3 +54,15 @@ def test_an_event_after_the_first_new_frame_is_not_moved(tmp_path):
                                     row('Slide: "Budget".', 6, 9, 'slide')])
     slide = [c for c in result.cues if c.kind == 'slide']
     assert [c.event_start for c in slide] == [21]
+
+
+def test_a_short_event_moved_to_the_first_frame_is_kept(tmp_path):
+    # S1 48-64 s: the model said 0-2 s, the slide is first seen at 12 s.
+    # Moving the start must not leave a zero-length event that is thrown away.
+    thumbs = [[BLANK] * 8, [BLANK] * 6 + [SLIDE] * 2, [SLIDE] * 8]
+    result = run(tmp_path, thumbs, [row('Members sit at the dais.', 1, 3),
+                                    row('Slide: "Space Usage".', 0, 2, 'slide')])
+    slide = [c for c in result.cues if c.kind == 'slide']
+    assert len(slide) == 1, 'the slide cue was dropped'
+    assert slide[0].event_start == 27
+    assert slide[0].event_end > slide[0].event_start and slide[0].end > slide[0].start
