@@ -28,6 +28,14 @@ RESTATE_SIMILARITY = .5
 # A repeat of any cue from the last 3 minutes is removed, not only the cue just before.
 MERGE_WINDOW = 180
 RESTATE_WORDS = re.compile(r'\b(remains?|remaining|continues?|continuing|still)\b', re.I)
+# Option 1b: small body moves add nothing for a listener (graded "trivial").
+SMALL_MOVES = re.compile(r'\b(looks?|looking|leans?|leaning|nods?|nodding|smiles?|smiling|sits?|sitting|seated|'
+                         r'listens?|listening|gestures?|gesturing|rests?|resting|glances?|glancing|maintains?)\b', re.I)
+NO_NEW = re.compile(r'\bno (new|visible|further)\b|\bnothing (new|changes)\b', re.I)
+# Words that mean something new happened; a cue with one of these is kept.
+NEWS = re.compile(r'\b(walks?|stands?|enters?|leaves?|arrives?|exits?|raises?|votes?|speaks?|appears?|shows?|'
+                  r'holds? up|points? to|hands?|passes|picks? up|writes?|reads?|approaches|joins?|steps?)\b', re.I)
+TRIVIAL_KINDS = {'other', 'scene_change', 'action', ''}
 _ARTICLES = {'a', 'an', 'the'}
 _TOKEN = re.compile(r"[a-z0-9']+")
 
@@ -305,6 +313,32 @@ def _repeats(prev, cue, labels):
     if RESTATE_WORDS.search(cue['text']) and score >= RESTATE_SIMILARITY:
         return 'dropped'
     return None
+
+
+def trivial(text, kind=''):
+    """True when a cue only says a person looks, leans, sits or that nothing changed."""
+    text = str(text or '')
+    if (kind or '') not in TRIVIAL_KINDS or re.search('["“”0-9]', text):
+        return False
+    if NO_NEW.search(text):
+        return True
+    return bool((SMALL_MOVES.search(text) or RESTATE_WORDS.search(text)) and not NEWS.search(text))
+
+
+def drop_trivial(cues, log=lambda _: None, dropped=None):
+    """Remove trivial cues; record each dropped span so coverage flags it."""
+    out = []
+    for n, cue in enumerate(cues):
+        # The first cue sets the scene for the listener, so it is always kept.
+        if n == 0 or cue.get('manually_edited') or not trivial(cue.get('text'), cue.get('kind', '')):
+            out.append(cue)
+        elif dropped is not None:
+            dropped.append({'start': cue.get('event_start', cue['start']), 'end': cue.get('event_end', cue['end']),
+                            'reason': 'Nothing new: the description only told of a small move or that nothing changed.'})
+    if len(out) < len(cues):
+        log(f'Public meeting mode: dropped {len(cues) - len(out)} descriptions that told nothing new.')
+    return out
+
 
 
 def merge_repeats(cues, log=lambda _: None, labels=(), dropped=None):

@@ -236,6 +236,36 @@ def test_default_prompt_example_is_unchanged(tmp_path):
     assert '"kind":"action"' in prompts[0] and 'short_text' not in prompts[0]
 
 
+def test_trivial_cues_that_only_say_someone_looks_or_remains_are_dropped():
+    """Option 1b: the grader marked "looks forward", "leans forward" and "the slide remains" trivial."""
+    from describer import meeting
+    def cue(start, text, kind='other'):
+        return dict(start=start, end=start + 2, event_start=start, event_end=start + 3, text=text, kind=kind)
+    cues = [cue(-5, 'People sit around tables.'), cue(0, 'A man looks forward.'), cue(5, 'She leans forward slightly and smiles.'),
+            cue(10, 'The slide remains on screen.', 'scene_change'), cue(15, 'No new visual events occur.'),
+            cue(20, 'A woman walks to the podium.'), cue(25, 'Slide: "Budget 2027". $4.2 million.', 'slide'),
+            cue(30, 'A man still sits at "Table 3".'), cue(35, 'Three members raise their hands.', 'vote'),
+            cue(40, 'The presenter looks at the slide.', 'slide')]
+    dropped = []
+    out = meeting.drop_trivial(cues, dropped=dropped)
+    assert [c['start'] for c in out] == [-5, 20, 25, 30, 35, 40], 'the opening cue sets the scene and is kept'
+    assert [(d['start'], d['end']) for d in dropped] == [(0, 3), (5, 8), (10, 13), (15, 18)]
+    assert all('nothing new' in d['reason'].lower() for d in dropped)
+
+
+def test_meeting_mode_drops_trivial_cues_and_flags_them(tmp_path):
+    result, _ = draft(tmp_path, MEETING, [reply('A woman walks to the podium.'), reply('A man looks forward.'),
+                                          reply('People remain seated.')])
+    assert [c.text for c in result.cues] == ['A woman walks to the podium.']
+    flagged = [(r['event_start'], r['event_end']) for r in result.coverage if r.get('disposition') == 'no_change']
+    assert (16, 19) in flagged and (31, 34) in flagged
+
+
+def test_default_mode_keeps_small_moves(tmp_path):
+    result, _ = draft(tmp_path, DEFAULT, [reply('A man looks forward.'), reply('A woman walks to the podium.'),
+                                          reply('People remain seated.')])
+    assert len(result.cues) == 3
+
 def test_meeting_mode_tells_the_model_to_skip_small_body_moves(tmp_path):
     """Option 1a: 296 of 460 dropped cues were small moves ("looks forward", "leans", "smiles")."""
     _, prompts = draft(tmp_path, MEETING, [reply('A slide appears.'), reply('A woman speaks.'), reply('A man sits.')])
