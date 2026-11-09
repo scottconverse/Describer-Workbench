@@ -202,9 +202,11 @@ def prepare(project, settings, root, cancel, log, checkpoint):
                    narration_text=cue.narration_text or cue.text)
         coverage.append(row)
     stage(log,'narration',len(project.cues),len(project.cues))
-    from ..meeting import apply_pause_budget, pause_budget
+    from ..meeting import apply_pause_budget, pause_budget, pause_only_events
     budget=pause_budget(settings)
-    if budget is not None:apply_pause_budget(project.cues,coverage,budget,log)
+    if budget is not None:
+        pause_only_events(project.cues,coverage,log)
+        apply_pause_budget(project.cues,coverage,budget,log)
     for gap in project.analysis.get('failed_chunks', []):
         # A chunk the model never answered properly: show the hole, never hide it.
         coverage.append({'event_id': f'failed-{gap["start"]:.6f}', 'cue_id': None, 'text': '', 'kind': 'gap',
