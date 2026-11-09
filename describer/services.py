@@ -417,6 +417,7 @@ def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, c
     rows=[asdict(c) for c in cues]
     if meeting_mode:
         rows=meeting.merge_repeats(sorted(rows,key=lambda r:r['start']),log,labels,dropped=unchanged)
+        rows=meeting.drop_trivial(rows,log,dropped=unchanged)
         log(f'Public meeting mode: {gate.sent} frames described, {gate.skipped} unchanged frames skipped.')
     cues=normalize_generated(rows,project.duration,log)
     if not cues: raise ValueError('No descriptions were returned.'+(f' {len(failed)} chunks failed: {failed[-1]["error"]}' if failed else ''))
