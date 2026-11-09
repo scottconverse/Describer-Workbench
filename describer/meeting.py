@@ -365,8 +365,10 @@ def drop_trivial(cues, log=lambda _: None, dropped=None):
     """Remove trivial cues; record each dropped span so coverage flags it."""
     out = []
     for n, cue in enumerate(cues):
-        # The first cue sets the scene for the listener, so it is always kept.
-        if n == 0 or cue.get('manually_edited') or not trivial(cue.get('text'), cue.get('kind', '')):
+        # The first cue sets the scene for the listener, so a small move there is kept.
+        # A first cue that only says nothing changed tells the listener nothing; it is dropped.
+        first = n == 0 and not NO_NEW.search(str(cue.get('text') or ''))
+        if first or cue.get('manually_edited') or not trivial(cue.get('text'), cue.get('kind', '')):
             out.append(cue)
         elif dropped is not None:
             dropped.append({'start': cue.get('event_start', cue['start']), 'end': cue.get('event_end', cue['end']),
