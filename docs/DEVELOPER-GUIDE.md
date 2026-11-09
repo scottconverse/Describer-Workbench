@@ -1,4 +1,4 @@
-# Technical user and developer guide — 0.7.0
+# Technical user and developer guide — 0.8.1
 
 **Editor boundaries:** `editor_history.py` contains existing project
 undo/redo commands and keyboard routing; `editor_selection.py` holds cue identity
@@ -26,17 +26,17 @@ the shared `prepare` pipeline. The preview shares `included_pauses` with the
 exporter, never estimates speech from word counts. Missing/stale measurements
 are explicit. Measuring uses the existing preflight, consent and job ownership;
 the full project transaction applies only if the input fingerprint still matches.
-Export remeasures, so the displayed finished duration is approximate. This behavior is included in 0.7.0.
+Export remeasures, so the displayed finished duration is approximate. This behavior was added in 0.7.0.
 
-**File compatibility:** Version 0.7.0 reads project formats 1 and 2 and saves format 2. This prevents older 0.6.1 readers from silently dropping cue identity/review metadata on re-save: they reject format 2. Existing version-1 files are not rewritten until explicitly saved; keep an original copy when comparing older and newer applications.
+**File compatibility:** Since 0.7.0, the app reads project formats 1 and 2 and saves format 2. This prevents older 0.6.1 readers from silently dropping cue identity/review metadata on re-save: they reject format 2. Existing version-1 files are not rewritten until explicitly saved; keep an original copy when comparing older and newer applications.
 
-Version 0.7.0 adds a stable `cue_id` separate from `event_id`, plus `origin`, `manually_edited`, `review_status` and `review_history`. Saved project version 1 remains readable; missing legacy fields receive defaults and persist on save. `DraftProposal` uses a complete-project fingerprint, half-open ranges, explicit accepted/replaced cue ID sets and a glossary choice. Conflicting replacements and stale proposals are rejected; boundary-crossing cues remain whole. Desktop application/undo includes coverage and analysis as well as cues/glossary. Edited reviewed/approved facts require review again; provider output cannot assign human approval. See [preservation rules and acceptance status](STABILIZATION.md). These fields persist in 0.7.0 projects.
+Version 0.7.0 added a stable `cue_id` separate from `event_id`, plus `origin`, `manually_edited`, `review_status` and `review_history`. Saved project version 1 remains readable; missing legacy fields receive defaults and persist on save. `DraftProposal` uses a complete-project fingerprint, half-open ranges, explicit accepted/replaced cue ID sets and a glossary choice. Conflicting replacements and stale proposals are rejected; boundary-crossing cues remain whole. Desktop application/undo includes coverage and analysis as well as cues/glossary. Edited reviewed/approved facts require review again; provider output cannot assign human approval. See [preservation rules and acceptance status](STABILIZATION.md). These fields persist in 0.7.0 projects.
 
-Windows, macOS and Linux · documentation updated November 5, 2026. [Nontechnical quick start](QUICK-START.md) · [Complete user manual](USER-MANUAL.md).
+Windows, macOS and Linux · documentation updated November 9, 2026. [Nontechnical quick start](QUICK-START.md) · [Complete user manual](USER-MANUAL.md).
 
-For the separate macOS/Linux packages, native dependencies, repository installer and build commands, see [the platform installation guide](UNIX-INSTALL.md). Windows packages use Azure Trusted Signing; Unix packages retain their separate integrity policy. Unix builds have separate source/package/acceptance identities and no publisher certificate. The `macOS and Linux add-ons` workflow performs native tests and package installation on Ubuntu 24.04 x64 and macOS 15 arm64/Intel (the 0.7.0 Intel job failed, so 0.7.0 has no Intel DMG); its receipts state which behaviors were actually exercised.
+For the separate macOS/Linux packages, native dependencies, repository installer and build commands, see [the platform installation guide](UNIX-INSTALL.md). Windows packages use Azure Trusted Signing; Unix packages retain their separate integrity policy. Unix builds have separate source/package/acceptance identities and no publisher certificate. The `macOS and Linux add-ons` workflow performs native tests and package installation on Ubuntu 24.04 x64 and macOS 15 arm64 (the Intel DMG was dropped in 0.7.0); its receipts state which behaviors were actually exercised.
 
-Version 0.7.0: [AI connections](AI-CONNECTIONS.md) documents the new routes and evidence limits. Timed narration is synthesized and measured independently of the live-text screen-reader route. New/repair cues record `audio_volume:100`; target gain is `speech_volume / audio_volume`. The desktop prompts repair for older cues with unknown synthesis level. The shared service prepares narration before media export; the raw exporter rejects unknown recorded levels. User and model text remain unchanged when repairing audio.
+Since 0.7.0: [AI connections](AI-CONNECTIONS.md) documents the new routes and evidence limits. Timed narration is synthesized and measured independently of the live-text screen-reader route. New/repair cues record `audio_volume:100`; target gain is `speech_volume / audio_volume`. The desktop prompts repair for older cues with unknown synthesis level. The shared service prepares narration before media export; the raw exporter rejects unknown recorded levels. User and model text remain unchanged when repairing audio.
 
 Reported usage persists with operation and requested/reported model identity. Automatic glossary generation shares the description request; such records have `components:["description","glossary"]` and explicitly unavailable separate glossary counts. The desktop labels that combined category and never fabricates a split or a subscription dollar cost. Scene requests remain separately attributed; unavailable provider token fields remain unknown.
 
@@ -48,7 +48,7 @@ New image adapters share a source-time FFmpeg sampler with at most eight640px im
 
 The Windows updater uses the official latest stable GitHub release when the configured feed is blank. It checks the archive digest, requires timestamped Valid Scott Converse signatures on both Windows executables, and rechecks all staged payload hashes before applying. Manual signed-package acceptance: `python -m tests.update_acceptance SIGNED_ARCHIVE NEW_OUTPUT_DIRECTORY`. Real portable relaunch acceptance: `python -m tests.portable_update_acceptance prepare NEW_OUTPUT_DIRECTORY OLD_INSTALL VERIFIED_STAGED_DIRECTORY`, then close only its disposable window and run the same module with `verify NEW_OUTPUT_DIRECTORY`. These scripts write new receipts beside their disposable installation and preserve historical evidence. A requested launch alone does not verify the running application.
 
-See [0.7.0 release acceptance](V070-ACCEPTANCE.md) for verification scope and limits. The distributed Windows GUI and CLI are signed as Scott Converse using Azure Trusted Signing with Microsoft timestamps. Windows source builds require the [release signing procedure](CODE-SIGNING.md) before publication; the explicitly authorized Mac/Linux distributions use the separate integrity policy below.
+See the [0.8.1 release](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.8.1) for its verification receipt and checksums, and the [0.7.0 acceptance record](V070-ACCEPTANCE.md) for the earlier stabilization checks and limits. The distributed Windows GUI and CLI are signed as Scott Converse using Azure Trusted Signing with Microsoft timestamps. Windows source builds require the [release signing procedure](CODE-SIGNING.md) before publication; the explicitly authorized Mac/Linux distributions use the separate integrity policy below.
 
 Describer Workbench has one headless engine. The Qt desktop, Python API, CLI,
 REST API and MCP tools call the same `DescriptionService`. No WSL, Docker,
@@ -197,6 +197,10 @@ describer --workspace C:\work\jobs export JOB_ID --format mp4
 describer --workspace C:\work\jobs resume JOB_ID
 ```
 
+**Public meeting mode:** add `"drafting_mode": "Public meeting"` to the request settings. Optional keys: `"captions"` (path to an SRT or VTT file for the same video) and `"max_pause_seconds_per_minute"` (default 8; 0 or more). See [Public meeting mode](USER-MANUAL.md#public-meeting-mode) for what changes.
+
+The CLI exits with code 0 on success, 1 on an error and 2 when a describe job ends `done_with_gaps` (results are written, but some chunks have no descriptions; see `failed_chunks`).
+
 Other commands: `capabilities`, `models`, `batch`, `status`, `cancel`, `edit`,
 `ask`, `explore`, `scene`, `voice`, `serve` and `mcp`. Batch JSON is a list of
 submission objects; up to20 items are admitted, with per-item results/errors.
@@ -308,7 +312,7 @@ does not certify legal accessibility compliance or claim99% visual accuracy.
 
 ## Packaging, updates and documentation identity
 
-Windows retains its published Azure Trusted Signed GUI/CLI and portable layout. macOS 15+ DMGs are separate arm64/x64 bundles (0.7.0 ships arm64 only) with ad-hoc integrity signatures only, without Apple publisher signing/notarization. Linux x64 DEB/tar use package-managed media and speech. `DescriberUnix.spec`, `tools/build_unix_media.py` and `tools/package_unix.py` own native add-on packaging; they do not replace `DescriberWorkbench.spec` or `build.ps1`. See [build commands](UNIX-INSTALL.md#install-from-the-repository) and [signing policy](CODE-SIGNING.md).
+Windows retains its published Azure Trusted Signed GUI/CLI and portable layout. macOS 15+ DMGs are arm64 only (the Intel x64 DMG was dropped in 0.7.0) with ad-hoc integrity signatures only, without Apple publisher signing/notarization. Linux x64 DEB/tar use package-managed media and speech. `DescriberUnix.spec`, `tools/build_unix_media.py` and `tools/package_unix.py` own native add-on packaging; they do not replace `DescriberWorkbench.spec` or `build.ps1`. See [build commands](UNIX-INSTALL.md#install-from-the-repository) and [signing policy](CODE-SIGNING.md).
 
 Unix updates open the add-on release page and are installed manually. Windows alone uses signature-gated ZIP staging/rollback. Never send a DMG/DEB through that Windows updater. Current guides may be refreshed separately from application code. A documentation manifest records source and guide hashes; historical application receipts retain their original source/test/artifact identities. A Mac documentation refresh must reseal the resource envelope and verify ad-hoc integrity; it does not establish Apple publisher identity. No application acceptance is invented by regenerating docs.
 

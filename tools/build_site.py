@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ORIGIN = 'https://describer-workbench.sconverse.chatgpt.site'
 REPO = 'https://github.com/scottconverse/Describer-Workbench'
 VERSION = tomllib.loads((ROOT/'pyproject.toml').read_text(encoding='utf-8'))['project']['version']
-DOC_STATUS = 'Version '+VERSION+' · documentation updated November 5, 2026'
+DOC_STATUS = 'Version '+VERSION+' · documentation updated November 9, 2026'
 
 def downloadable_markdown(source):
     """Keep navigation usable after a guide is saved outside the source tree."""
