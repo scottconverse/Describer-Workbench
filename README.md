@@ -2,13 +2,15 @@
 
 **One audio-description engine for a desktop workbench, Python, CLI, REST/OpenAPI and MCP.**
 
-**Version 0.7.0** delivers the [eight-package stabilization plan](docs/STABILIZATION.md): explicit range-draft review that preserves existing work, grouped responsive editing, keyboard/reader cue information, Save As and bounded unsaved recovery, validated speech-analysis reuse, simpler drafting with every advanced connection retained, measured export previews, and cue-identity selection. See [release acceptance and limits](docs/V070-ACCEPTANCE.md).
+**Version 0.8.0** (Windows) improves Public meeting mode: it describes only what changed, reads slide titles, finds votes, speaks in the pauses between talk, and never speaks internal labels such as "Speaker 1". Quality is still below its targets, so check every draft. See the [0.8.0 release notes](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.8.0). Mac and Linux stay on 0.7.0.
+
+**Version 0.7.0** delivered the [eight-package stabilization plan](docs/STABILIZATION.md): explicit range-draft review that preserves existing work, grouped responsive editing, keyboard/reader cue information, Save As and bounded unsaved recovery, validated speech-analysis reuse, simpler drafting with every advanced connection retained, measured export previews, and cue-identity selection. See [release acceptance and limits](docs/V070-ACCEPTANCE.md).
 
 Windows x64 ZIP, an Apple Silicon Mac DMG, and Linux x64 DEB/portable archives are available from the [same release](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.7.0). All three can also be installed from this repository; follow the platform instructions below. Windows executables are signed as Scott Converse using Azure Trusted Signing with Microsoft timestamps. Mac packages have ad-hoc integrity signatures, no Apple publisher certificate and no notarization; Linux packages are unsigned. There is no Intel Mac DMG for 0.7.0. Prior releases and their receipts remain historical.
 
 Open a video, draft descriptions through the selected analysis connection, edit every cue, listen alongside the video, and export subtitles or a narrated audio mix. Version 0.7.0 supports Gemini, Ollama, the existing subscription gateway, native Codex/Claude/Antigravity tools and explicit API profiles. Manual editing, subtitle import and native speech work without an AI API key. These are reviewed drafts: correct visual facts, missing events, readable text and timing before final export.
 
-[Windows 0.7.0](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.7.0) · [Website](https://describer-workbench.sconverse.chatgpt.site) · [User manual](docs/USER-MANUAL.md) · [Architecture](docs/ARCHITECTURE.md) · [Developer guide](docs/DEVELOPER-GUIDE.md) · [Issues](https://github.com/scottconverse/Describer-Workbench/issues)
+[Windows 0.8.0](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.8.0) · [Website](https://describer-workbench.sconverse.chatgpt.site) · [User manual](docs/USER-MANUAL.md) · [Architecture](docs/ARCHITECTURE.md) · [Developer guide](docs/DEVELOPER-GUIDE.md) · [Issues](https://github.com/scottconverse/Describer-Workbench/issues)
 
 > AI output is a draft. Review visual facts, character identities, timing and overlap with dialogue. Ollama receives sampled images **without audio**, so it cannot determine dialogue gaps or audible names. The shared engine measures speech/vocal protection independently with a pinned local YAMNet classifier. This reduces timing conflicts; it does not establish visual accuracy or legal compliance.
 
@@ -31,7 +33,7 @@ Open a video, draft descriptions through the selected analysis connection, edit 
 
 | Computer | Download | Install and start | Publisher signing |
 | --- | --- | --- | --- |
-| Windows x64 (Windows 11 tested) | [Portable ZIP](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.7.0/DescriberWorkbench-0.7.0-windows-x64.zip) | Extract everything; open `DescriberWorkbench/DescriberWorkbench.exe`. Keep `_internal` beside it. | Scott Converse, Azure Trusted Signing with Microsoft timestamps |
+| Windows x64 (Windows 11 tested) | [Portable ZIP 0.8.0](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.8.0/DescriberWorkbench-0.8.0-windows-x64.zip) | Extract everything; open `DescriberWorkbench/DescriberWorkbench.exe`. Keep `_internal` beside it. | Scott Converse, Azure Trusted Signing with Microsoft timestamps |
 | Mac, Apple Silicon, macOS 15+ | [arm64 DMG](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.7.0/DescriberWorkbench-0.7.0-macos-arm64.dmg) | Open DMG; drag the app to Applications. | No Apple publisher certificate or notarization; ad-hoc integrity only |
 | Mac, Intel, macOS 15+ | No DMG for 0.7.0 (its build did not complete) | Install from the repository; see the [platform guide](docs/UNIX-INSTALL.md). Not tested on Intel for 0.7.0. | None (source install) |
 | Ubuntu 24.04 / compatible Debian desktop, x86-64 | [DEB installer](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.7.0/DescriberWorkbench-0.7.0-linux-x64.deb) | `sudo apt install ./DescriberWorkbench-0.7.0-linux-x64.deb`; open Describer Workbench from the applications menu. | Unsigned |
@@ -41,7 +43,7 @@ Open a video, draft descriptions through the selected analysis connection, edit 
 
 The following extraction steps apply to **Windows**; Mac and Linux start from the platform row above.
 
-1. Download `DescriberWorkbench-0.7.0-windows-x64.zip` from the [release](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.7.0).
+1. Download `DescriberWorkbench-0.8.0-windows-x64.zip` from the [release](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.8.0).
 2. Extract the complete ZIP to a writable folder. Open `DescriberWorkbench/DescriberWorkbench.exe`; keep `_internal` beside it. Python, Qt, FFmpeg and FFprobe are bundled.
 3. Select **Open video** and choose your video. Open it before importing subtitle cues. Standalone audio is not a documented input workflow.
 4. Choose an analysis provider/model and a short range, or add cues manually. Follow the [first-project walkthrough](docs/USER-MANUAL.md#3-your-first-project).
@@ -52,7 +54,7 @@ The Windows binary targets 64-bit Windows and has GUI and CLI executables **sign
 Compare your download with the release's `SHA256SUMS.txt`:
 
 ```powershell
-Get-FileHash .\DescriberWorkbench-0.7.0-windows-x64.zip -Algorithm SHA256
+Get-FileHash .\DescriberWorkbench-0.8.0-windows-x64.zip -Algorithm SHA256
 ```
 
 ## Does it need an API key?
