@@ -273,7 +273,11 @@ def prior_instruction(texts):
     rule = ('This is a public meeting. Describe only what is new since the previous descriptions. '
             'If nothing new is visible, return an empty descriptions list: {"descriptions":[]}. '
             'When a new slide or screen with text appears, give its exact title word for word in quotes, '
-            'then its main point in a few words. ')
+            'then its main point in a few words. '
+            'Describe only these events: a new slide, new on-screen text, a vote, a new speaker, '
+            'or a person who arrives or leaves. Skip small body moves such as looking, leaning, '
+            'nodding, smiling, sitting, listening or gesturing. Never say that something remains '
+            'or continues. ')
     if texts:
         rule += 'Previous descriptions, oldest first: ' + ' | '.join(texts) + '. '
     return rule

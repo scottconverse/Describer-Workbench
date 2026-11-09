@@ -234,3 +234,17 @@ def test_meeting_prompt_example_asks_for_a_short_version_and_a_meeting_kind(tmp_
 def test_default_prompt_example_is_unchanged(tmp_path):
     _, prompts = draft(tmp_path, DEFAULT, [reply('A dog runs.')] * 3)
     assert '"kind":"action"' in prompts[0] and 'short_text' not in prompts[0]
+
+
+def test_meeting_mode_tells_the_model_to_skip_small_body_moves(tmp_path):
+    """Option 1a: 296 of 460 dropped cues were small moves ("looks forward", "leans", "smiles")."""
+    _, prompts = draft(tmp_path, MEETING, [reply('A slide appears.'), reply('A woman speaks.'), reply('A man sits.')])
+    rule = prompts[0].lower()
+    assert 'small body moves' in rule
+    for word in ('looking', 'leaning', 'smiling', 'sitting'):
+        assert word in rule
+    for keep in ('slide', 'on-screen text', 'vote', 'new speaker', 'arrives or leaves'):
+        assert keep in rule
+    (tmp_path / 'default').mkdir()
+    _, prompts = draft(tmp_path / 'default', DEFAULT, [reply('A slide appears.'), reply('A woman speaks.'), reply('A man sits.')])
+    assert not any('small body moves' in p.lower() for p in prompts)
