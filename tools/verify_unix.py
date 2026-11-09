@@ -9,6 +9,8 @@ import subprocess
 import sys
 import time
 
+from unix_version import VERSION
+
 
 def command(args,**kwargs):
     value=subprocess.run([str(a) for a in args],capture_output=True,text=True,timeout=kwargs.pop('timeout',180),**kwargs)
@@ -66,9 +68,9 @@ def install_source(out):
     for name,folder in [('RUSTUP_HOME','.rustup'),('CARGO_HOME','.cargo')]:env.setdefault(name,str(Path.home()/folder))
     command([sys.executable,'tools/install_unix.py'],env=env,timeout=600)
     root=home/('Library/Application Support/DescriberWorkbench/source-install' if mac else '.local/share/DescriberWorkbench/source-install')
-    assert command([root/'venv/bin/describer','--version'],env=env).strip()=='0.7.0'
+    assert command([root/'venv/bin/describer','--version'],env=env).strip()==VERSION
     launcher=home/('Applications/Describer Workbench.app/Contents/MacOS/DescriberWorkbench' if mac else '.local/share/applications/describer-workbench.desktop')
-    assert launcher.is_file();return {'cli_version':'0.7.0','launcher':str(launcher)}
+    assert launcher.is_file();return {'cli_version':VERSION,'launcher':str(launcher)}
 
 
 def main():
@@ -131,7 +133,7 @@ def main():
     mp3=json.loads(command([cli,'--workspace',out/'mp3','--settings',config,'batch',mp3_batch]))
     assert mp3[0]['job']['state']=='done',mp3
     run([tool('ffmpeg'),'-v','error','-i',mp3[0]['job']['artifact']['path'],'-f','null','-'])
-    command([sys.executable,'tools/verify_portable_interfaces.py','--cli',cli,'--output',out/'interfaces','--expected-version','0.7.0'])
+    command([sys.executable,'tools/verify_portable_interfaces.py','--cli',cli,'--output',out/'interfaces','--expected-version',VERSION])
     source_gui=gui_source(out,source)
     frozen_gui=packaged_gui(gui,out)
     if mac:
