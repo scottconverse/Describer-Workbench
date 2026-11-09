@@ -358,6 +358,30 @@ def drop_trivial(cues, log=lambda _: None, dropped=None):
 
 
 
+SCREEN_KINDS = {'slide', 'on_screen_text'}
+PERSON_KINDS = {'other', 'scene_change', 'action', ''}
+
+
+def slide_first(cues, log=lambda _: None, dropped=None):
+    """Option 1d: when a slide or on-screen text cue overlaps a cue about a person, keep the slide cue."""
+    screens = [c for c in cues if c.get('kind') in SCREEN_KINDS]
+    def overlaps(a, b):
+        return (a.get('event_start', a['start']) < b.get('event_end', b['end'])
+                and b.get('event_start', b['start']) < a.get('event_end', a['end']))
+    out = []
+    for cue in cues:
+        if (cue.get('kind', '') in PERSON_KINDS and not cue.get('manually_edited')
+                and any(overlaps(cue, s) for s in screens)):
+            if dropped is not None:
+                dropped.append({'start': cue.get('event_start', cue['start']), 'end': cue.get('event_end', cue['end']),
+                                'reason': 'Slide first: a slide or on-screen text cue was said at this time instead.'})
+            continue
+        out.append(cue)
+    if len(out) < len(cues):
+        log(f'Public meeting mode: dropped {len(cues) - len(out)} person descriptions that overlapped a slide.')
+    return out
+
+
 def merge_repeats(cues, log=lambda _: None, labels=(), dropped=None):
     """Remove cues that say again what a recent cue said.
 
