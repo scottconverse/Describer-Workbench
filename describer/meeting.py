@@ -276,6 +276,23 @@ def vote_instruction(lines, length):
             'If no hand is raised, return {"timestamp_reference":"clip","descriptions":[]}.')
 
 
+def check_instruction(text):
+    return ('Question: Is this description true for this frame? Description: "' + str(text) + '". '
+            'Look at the frame. Answer true only if everything it says is visible. '
+            'Return JSON {"true": true} or {"true": false}.')
+
+
+def check_verdict(data):
+    """True or False from a check reply; None when the reply is unclear."""
+    if isinstance(data, dict):
+        value = data.get('true', data.get('answer'))
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str) and value.strip().lower() in ('true', 'false', 'yes', 'no'):
+            return value.strip().lower() in ('true', 'yes')
+    return None
+
+
 def prior_instruction(texts):
     texts = [t for t in texts if t][-PRIOR_CUES:]
     rule = ('This is a public meeting. Describe only what is new since the previous descriptions. '
