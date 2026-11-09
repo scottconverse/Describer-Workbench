@@ -1,18 +1,18 @@
 # Describer Workbench user manual
 
-For **0.7.0** · November 5, 2026 (America/Denver). See [release acceptance](V070-ACCEPTANCE.md) for executed checks and delivery boundaries.
+For **0.8.1** · November 9, 2026 (America/Denver). See the [0.8.1 release](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.8.1) for its notes, verification receipt and checksums. The [0.7.0 acceptance record](V070-ACCEPTANCE.md) keeps the earlier stabilization checks and limits.
 
 [Quick start without programming](QUICK-START.md) · [Technical integration guide](DEVELOPER-GUIDE.md)
 
-**Windows, macOS and Linux:** use the [platform installation guide](UNIX-INSTALL.md) for the Apple Silicon DMG, Linux x64 DEB/portable archives and repository installation. The workflows below are shared; Windows executable names, DPAPI, SAPI/OneCore and signed updater instructions apply specifically to Windows. macOS uses Keychain and measured macOS voices; Linux uses Secret Service and measured eSpeak NG. Their update command opens the manual download page. Windows, macOS and Linux share the v0.7.0 release; only Windows carries publisher signing. Mac/Linux acceptance has its own release receipts; it does not inherit Windows acceptance or signing.
+**Windows, macOS and Linux:** use the [platform installation guide](UNIX-INSTALL.md) for the Apple Silicon DMG, Linux x64 DEB/portable archives and repository installation. The workflows below are shared; Windows executable names, DPAPI, SAPI/OneCore and signed updater instructions apply specifically to Windows. macOS uses Keychain and measured macOS voices; Linux uses Secret Service and measured eSpeak NG. Their update command opens the manual download page. Windows, macOS and Linux share the v0.8.1 release; only Windows carries publisher signing. Mac/Linux acceptance has its own release receipts; it does not inherit Windows acceptance or signing.
 
-This guide describes version 0.7.0 and its [AI connections](AI-CONNECTIONS.md). **Live text playback output** applies to live text and Scene answers. Timed in-gap and pause cues use measured export-voice audio, with the host native voice as the default (Windows on Windows, macOS on Mac, eSpeak NG on Linux). The accepted Windows narration policy remains unchanged. A screen reader controls its own live-text rate and volume; unavailable reader output falls back to Qt system speech. The Speech slider scales measured WAV playback and exported narration. Older WAVs without synthesis-volume metadata need **File > Repair narration** before timed playback; repair preserves source media, descriptions and evidence, asks for applicable cloud consent, and must be saved to retain new audio references.
+This guide describes version 0.8.1 and its [AI connections](AI-CONNECTIONS.md). New in 0.8.x: [Public meeting mode](#public-meeting-mode) for city and council meeting videos. **Live text playback output** applies to live text and Scene answers. Timed in-gap and pause cues use measured export-voice audio, with the host native voice as the default (Windows on Windows, macOS on Mac, eSpeak NG on Linux). The accepted Windows narration policy remains unchanged. A screen reader controls its own live-text rate and volume; unavailable reader output falls back to Qt system speech. The Speech slider scales measured WAV playback and exported narration. Older WAVs without synthesis-volume metadata need **File > Repair narration** before timed playback; repair preserves source media, descriptions and evidence, asks for applicable cloud consent, and must be saved to retain new audio references.
 
-[Windows 0.7.0 download](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.7.0) · [Project](https://github.com/scottconverse/Describer-Workbench) · [Architecture guide](ARCHITECTURE.md)
+[0.8.1 downloads](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.8.1) · [Project](https://github.com/scottconverse/Describer-Workbench) · [Architecture guide](ARCHITECTURE.md)
 
 ## Features retained from 0.6.0
 
-Version 0.7.0 includes the following controls.
+These controls are still included in 0.8.1.
 
 - **AI connections:** gateway subscriptions, native Codex/Claude/Antigravity tools, named OpenAI-compatible profiles and the separate Anthropic API route. Follow [connection setup](AI-CONNECTIONS.md); catalog entries do not establish image support or account entitlement. No route automatically falls back to another model.
 - **Editing and Scene:** changing Start preserves cue duration; authored timing remains separate from the original visual event. Scene answers have individual Speak, Copy and Add actions. Explore supports2/5/10/20-second ranges and optional focus, with glossary context passed to the request.
@@ -40,11 +40,11 @@ Choose your platform below. [The quick start](QUICK-START.md) gives a short firs
 
 | Computer | Download | Install and start | Publisher signing |
 | --- | --- | --- | --- |
-| Windows x64 (Windows 11 tested) | [Portable ZIP](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.7.0/DescriberWorkbench-0.7.0-windows-x64.zip) | Extract everything; open `DescriberWorkbench/DescriberWorkbench.exe`. Keep `_internal` beside it. | Scott Converse, Azure Trusted Signing with Microsoft timestamps |
-| Mac, Apple Silicon, macOS 15+ | [arm64 DMG](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.7.0/DescriberWorkbench-0.7.0-macos-arm64.dmg) | Open DMG; drag the app to Applications. | No Apple publisher certificate or notarization; ad-hoc integrity only |
-| Mac, Intel, macOS 15+ | No DMG for 0.7.0 (its build did not complete) | Install from the repository; see the [platform guide](UNIX-INSTALL.md). Not tested on Intel for 0.7.0. | None (source install) |
-| Ubuntu 24.04 / compatible Debian desktop, x86-64 | [DEB installer](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.7.0/DescriberWorkbench-0.7.0-linux-x64.deb) | `sudo apt install ./DescriberWorkbench-0.7.0-linux-x64.deb`; open Describer Workbench from the applications menu. | Unsigned |
-| Other Linux x86-64 desktops | [Portable tar](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.7.0/DescriberWorkbench-0.7.0-linux-x64.tar.gz) | Extract; run `DescriberWorkbench/DescriberWorkbench` after installing native dependencies. | Unsigned; other distributions not acceptance-tested |
+| Windows x64 (Windows 11 tested) | [Portable ZIP](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.8.1/DescriberWorkbench-0.8.1-windows-x64.zip) | Extract everything; open `DescriberWorkbench/DescriberWorkbench.exe`. Keep `_internal` beside it. | Scott Converse, Azure Trusted Signing with Microsoft timestamps |
+| Mac, Apple Silicon, macOS 15+ | [arm64 DMG](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.8.1/DescriberWorkbench-0.8.1-macos-arm64.dmg) | Open DMG; drag the app to Applications. | No Apple publisher certificate or notarization; ad-hoc integrity only |
+| Mac, Intel, macOS 15+ | No Intel DMG (dropped in 0.7.0) | Install from the repository; see the [platform guide](UNIX-INSTALL.md). Not tested on Intel. | None (source install) |
+| Ubuntu 24.04 / compatible Debian desktop, x86-64 | [DEB installer](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.8.1/DescriberWorkbench-0.8.1-linux-x64.deb) | `sudo apt install ./DescriberWorkbench-0.8.1-linux-x64.deb`; open Describer Workbench from the applications menu. | Unsigned |
+| Other Linux x86-64 desktops | [Portable tar](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.8.1/DescriberWorkbench-0.8.1-linux-x64.tar.gz) | Extract; run `DescriberWorkbench/DescriberWorkbench` after installing native dependencies. | Unsigned; other distributions not acceptance-tested |
 
 Compare the download with its release checksums. Mac/Linux prerequisites, approval, updates and removal are in [the platform guide](UNIX-INSTALL.md). Mac has no Apple publisher certificate/notarization; Linux is unsigned.
 
@@ -90,7 +90,7 @@ The **File** menu includes projects, subtitle import, glossary, prompt presets, 
 | Ctrl+E | Export |
 | F1 | Built-in help |
 
-Press Space to toggle playback when focus is outside single-line and multiline text editors and the key reaches the main window. Text editors retain Space for typing; focused buttons/lists may handle it themselves. The application defines the shortcuts above with Qt `Ctrl` sequences; macOS Qt presents the native command-key equivalent. Use the displayed menu shortcut for your host; the timeline’s Ctrl+wheel modifier is a separate control. The Play/Pause icon always provides an explicit playback action. Ctrl+Z and Ctrl+Shift+Z undo/redo cue edits. Ordinary Tab navigation follows Qt focus order. Version 0.7.0 restores focus painting in custom lists and add visible focus borders. Description and timeline accessibility names include cue number, start/end, placement, review state, text and stated uncertainty. Primary buttons use white on darker blue (above 4.5:1 calculated text contrast). A Windows NVDA 2026.3 workflow exercised cue navigation, editing, undo/redo, save and live-text output; no JAWS, VoiceOver, Orca or human-listening acceptance is claimed.
+Press Space to toggle playback when focus is outside single-line and multiline text editors and the key reaches the main window. Text editors retain Space for typing; focused buttons/lists may handle it themselves. The application defines the shortcuts above with Qt `Ctrl` sequences; macOS Qt presents the native command-key equivalent. Use the displayed menu shortcut for your host; the timeline’s Ctrl+wheel modifier is a separate control. The Play/Pause icon always provides an explicit playback action. Ctrl+Z and Ctrl+Shift+Z undo/redo cue edits. Ordinary Tab navigation follows Qt focus order. Since 0.7.0, custom lists paint focus and show visible focus borders. Description and timeline accessibility names include cue number, start/end, placement, review state, text and stated uncertainty. Primary buttons use white on darker blue (above 4.5:1 calculated text contrast). A Windows NVDA 2026.3 workflow exercised cue navigation, editing, undo/redo, save and live-text output; no JAWS, VoiceOver, Orca or human-listening acceptance is claimed.
 
 ## 5. Draft with AI
 
@@ -110,7 +110,7 @@ Enter **Gemini API key** and **Gemini model** in Settings. Choose Gemini in the 
 
 ### Range, prompts and replacement
 
-**Version 0.7.0 — Draft with AI:** choose the connection and
+**Since 0.7.0 — Draft with AI:** choose the connection and
 section, check the selected model and visible transmission notice, then Start
 draft. **Advanced** reveals all existing exact-model/catalog/test, provider,
 preset/prompt, verbosity and glossary controls in a scrolling panel. The notice
@@ -119,13 +119,37 @@ each provider's configured model; nothing selects a substitute model. Cancel
 restores settings and editorial text. External operations still require their
 existing confirmation. If a connection has no model, open Advanced to choose it.
 
-**Version 0.7.0:** after drafting, use **Review draft** to select proposed descriptions. Conflicting existing descriptions are kept by default; replacing one requires selecting both its replacement and the proposal to use. A description crossing the requested range boundary always stays. The existing glossary also stays unless you explicitly select its proposed replacement after comparing both versions. **Apply** changes the project in one step; Ctrl+Z restores cues, review/provenance, coverage and glossary together. Cancel keeps the project unchanged. Accepted partial-range narration must be repaired before timed playback; media export re-plans the combined project.
+**Since 0.7.0:** after drafting, use **Review draft** to select proposed descriptions. Conflicting existing descriptions are kept by default; replacing one requires selecting both its replacement and the proposal to use. A description crossing the requested range boundary always stays. The existing glossary also stays unless you explicitly select its proposed replacement after comparing both versions. **Apply** changes the project in one step; Ctrl+Z restores cues, review/provenance, coverage and glossary together. Cancel keeps the project unchanged. Accepted partial-range narration must be repaired before timed playback; media export re-plans the combined project.
 
 Choose **Whole video**, **Next 20 seconds** or **Next 60 seconds**. Next ranges start at the current playhead and stop at the end of the video if necessary. Pick a prompt preset or edit the editorial guidance, then choose **Start draft**.
 
 Draft review preserves existing descriptions by default. Replacements require explicit approval; boundary-crossing descriptions stay. Use **File → Save project as** (Ctrl+Shift+S) to keep a separate copy.
 
 The log reports prepared ranges, response progress and available token metadata. Long jobs run sequentially. At the default Ollama frame interval, a 60-second range normally means four requests. Do not assume a single short response represents the whole requested range; inspect the final cue coverage.
+
+### Public meeting mode
+
+Public meeting mode is for city, council and board meeting videos. It was added in 0.8.0 and improved in 0.8.1. Other videos keep the normal behavior.
+
+**Turn it on.** The window has no switch for this mode yet. Close the app. Open `settings.json` in the host data folder (see [section 12](#12-privacy-storage-and-recovery)). Set `"drafting_mode": "Public meeting"`, save the file and start the app. To turn it off, set `"drafting_mode": ""`. For the CLI, REST or MCP, put the same key in the request settings. The **Public meeting** prompt preset only changes the prompt text; it does not turn on the mode.
+
+What the mode changes:
+
+- Only frames with a visible change are described. Unchanged frames are skipped.
+- Ollama frames are up to 1280 pixels on the long side (normally 640), so slide titles and on-screen text can be read.
+- The model is asked for meeting events first: votes, speaker changes, slides, on-screen text and scene changes.
+- Small body moves (a nod, a glance) and "nothing changed" cues are dropped.
+- Each cue gets a second look against the picture. A cue that is not true is dropped.
+- When a slide cue and a cue about a person overlap, the slide cue is kept.
+- Internal labels such as "Speaker 1" are never spoken.
+- Only meeting events may pause the video. A cue about a person that finds no speech-free gap is not spoken. It shows **Dropped: no gap** and stays in the coverage file.
+- Pause narration is limited to 8 seconds per minute of video by default (`max_pause_seconds_per_minute`).
+
+**Captions help.** Set `"captions"` to the path of an SRT or VTT file for the same video. Then the transcript is given to the model, and vote words start a check for raised hands. A VTT file with word times also shows the pauses inside a caption line, so cues fit between words. The desktop has no captions control: a `captions` path in `settings.json` applies to every video you draft, so remove it after that video.
+
+**Measured quality (0.8.1).** On 13 test videos, 105 cues were graded by hand (model `gemma4:12b`): 67.6 % correct (0.8.0: 29.5 %), 3.8 % wrong or made up (15.4 %), 10.5 % trivial (36.5 %). Every cue was spoken in a gap or paused the video for a meeting event. Extra length was 1.6 seconds per minute (6.0). These are results on a small test set, not a promise for your video.
+
+**Known limits.** The model can still report a vote when there is none. On one test video it said "An audience member raises a hand." and no hand was up. Results change from run to run on the same video. Some videos get very few cues (2 in 5 minutes on one test video). Check every draft before you export.
 
 ### Model settings that reproduce tested requests
 
@@ -143,7 +167,7 @@ With **Recognize characters and update the glossary** enabled in Draft with AI, 
 
 For a clean model comparison, use identical media/range/prompts and clear the glossary before each run. Keep each result in a separate project. Do not let incorrect identities become established facts. Ollama is told to leave names unknown because it has no audio; a visual label is not an established personal name.
 
-**Version 0.7.0 — saving and recovery:** File → Save project as…
+**Since 0.7.0 — saving and recovery:** File → Save project as…
 (Ctrl+Shift+S, shown with the host's native modifier) writes a separate version
 and makes it the active save path; cancel/failure keeps the old path and file.
 Choose a different filename to preserve the original.
@@ -159,14 +183,14 @@ saves: an interruption before the first snapshot can lose the latest 30 seconds.
 The store retains at most 3 versions per project, 20 total and 50 MiB; individual
 snapshots over 10 MiB are skipped with a diagnostic. Old versions expire as new
 ones arrive. Saving or explicitly discarding clears this session's snapshots;
-previous-session drafts remain available within those bounds. These changes are
+previous-session drafts remain available within those bounds. These changes were added in
 version 0.7.0.
 
 Glossary cards include **Delete character**. Ctrl+Z
 restores a deleted character; Ctrl+Shift+Z deletes it again. Other glossary lines,
 cues and evidence remain intact.
 
-**Version 0.7.0 — repeated drafting:** speech/vocal measurement
+**Since 0.7.0 — repeated drafting:** speech/vocal measurement
 is reused locally when the video, detector and analysis implementation still
 match. Repeating a short-range draft can therefore avoid scanning the whole
 soundtrack again. Changed videos/detectors or rejected cache data are measured
@@ -175,13 +199,13 @@ reuse AI descriptions or change your selected provider/model.
 
 ## 6. Edit and review descriptions
 
-**Version 0.7.0:** continuous text typing is grouped into one undo step until a pause of 1.2 seconds, cursor navigation, a different cue, or another operation. Ctrl+Z, Ctrl+Shift+Z and the text context menu use the same project history, including review state and coverage. Text edits update the existing cue widgets; timing changes may reorder the full list.
+**Since 0.7.0:** continuous text typing is grouped into one undo step until a pause of 1.2 seconds, cursor navigation, a different cue, or another operation. Ctrl+Z, Ctrl+Shift+Z and the text context menu use the same project history, including review state and coverage. Text edits update the existing cue widgets; timing changes may reorder the full list.
 
 Select a description to seek and expand its inline editor. Start, End and text update the project immediately when valid. Add at playhead inserts and selects a three-second cue. Delete removes the selected cue after confirmation. Ctrl+Z and Ctrl+Shift+Z undo/redo cue edits.
 
 Times accept numeric seconds (`62.5`), minutes/seconds (`1:02.5`) or hours/minutes/seconds (`00:01:02.5`). Changing Start shifts End to preserve cue duration; changing End adjusts only End. The ± buttons nudge by 0.1 seconds. Invalid intermediate input stays in the editor but does not enter the project; correct it before saving or exporting. Text must be nonempty and the end must follow the start within the video duration.
 
-**Version 0.7.0:** the selected description stays selected when
+**Since 0.7.0:** the selected description stays selected when
 changing its time moves it in the list, or when a filter still includes it.
 Deleting it selects a neighboring description. Undo restores the description and
 its metadata; ordinary typing remains grouped into useful undo steps.
@@ -235,7 +259,7 @@ Choose the engine and voice directly in the Export dialog for narrated media. In
 
 Export choices:
 
-**Version 0.7.0:** Export shows the selected format's outcome.
+**Since 0.7.0:** Export shows the selected format's outcome.
 For MP4/MP3/WAV, **Measure narration** uses the selected voice and actual speech
 detector to measure and place narration, then reopens Export with your format,
 voice and path retained. Cloud speech still asks for consent. Measurement is an
@@ -245,7 +269,7 @@ captions, voice/rate or missing audio invalidates it. Export measures again, so
 synthesis and codec rounding can change the final duration. You may export
 without a preview; no guessed duration is presented. Subtitles retain source
 times and cannot reproduce picture pauses; TXT and JSON do not contain narrated
-media. Version 0.7.0 includes this preview.
+media. This preview was added in 0.7.0.
 
 - **SRT:** timed UTF-8 descriptions. This is not a speech transcript unless your cues are transcripts.
 - **Plain text:** one description per line; timing is omitted.
@@ -345,7 +369,7 @@ No analytics or application telemetry is configured. The engine disables ONNX te
 
 ## 14. Runtime and source setup
 
-Native downloads are the Windows x64 portable folder, the macOS 15+ Apple Silicon DMG (no Intel DMG for 0.7.0) and Ubuntu 24.04 x64 DEB/portable tar. For Mac/Linux repository setup, install the prerequisites in [the platform guide](UNIX-INSTALL.md#install-from-the-repository), then run `python3 tools/install_unix.py`; it prints the isolated environment/CLI and creates a desktop launcher. The commands below are for **Windows**. Source was tested with Python 3.13, PySide6 6.12.0, google-genai 2.34.0, yt-dlp 2026.10.26, accessible-output2 0.17 and cryptography 50.0.2. FFmpeg/FFprobe are separate source prerequisites; Windows/Mac downloads bundle them, while Linux resolves system dependencies. Native speech requires the corresponding platform's installed voices.
+Native downloads are the Windows x64 portable folder, the macOS 15+ Apple Silicon DMG (no Intel DMG; dropped in 0.7.0) and Ubuntu 24.04 x64 DEB/portable tar. For Mac/Linux repository setup, install the prerequisites in [the platform guide](UNIX-INSTALL.md#install-from-the-repository), then run `python3 tools/install_unix.py`; it prints the isolated environment/CLI and creates a desktop launcher. The commands below are for **Windows**. Source was tested with Python 3.13, PySide6 6.12.0, google-genai 2.34.0, yt-dlp 2026.10.26, accessible-output2 0.17 and cryptography 50.0.2. FFmpeg/FFprobe are separate source prerequisites; Windows/Mac downloads bundle them, while Linux resolves system dependencies. Native speech requires the corresponding platform's installed voices.
 
 ```powershell
 git clone https://github.com/scottconverse/Describer-Workbench.git
@@ -381,7 +405,7 @@ Gemini uses google-genai file upload, processing polling and generation with the
 
 ## 17. Project format and integrations
 
-**Version 0.7.0:** existing projects still open. Newly saved projects use format 2 to protect identity and review history; older 0.6.1 applications will report an unsupported project version rather than discard those details. Keep your original project copy if you need to continue using 0.6.1. The example below shows version 2; version-1 files are still readable.
+**Since 0.7.0:** existing projects still open. Newly saved projects use format 2 to protect identity and review history; older 0.6.1 applications will report an unsupported project version rather than discard those details. Keep your original project copy if you need to continue using 0.6.1. The example below shows version 2; version-1 files are still readable.
 
 The [developer guide](DEVELOPER-GUIDE.md) covers the shared Python service, scriptable CLI, REST/OpenAPI and MCP over stdio or Streamable HTTP. Submit returns a durable job handle; inspect status, cancel/resume, page/time-filter descriptions, read coverage, edit with a revision, ask/explore and export. One process owns each workspace and runs one job at a time. GUI users can choose **File → Start developer API / MCP** to share their engine at `127.0.0.1:8796`; the private token path is logged. Other clients connect to that owner. Do not expose this local service directly on the Internet.
 
@@ -406,7 +430,7 @@ Windows-only optional update-feed shape (example only; no custom service is supp
 ```json
 {
   "application": "DescriberWorkbench",
-  "version": "0.7.0",
+  "version": "0.8.1",
   "url": "https://example.org/DescriberWorkbench.zip",
   "sha256": "REPLACE_WITH_THE_ACTUAL_64_HEXADECIMAL_CHARACTER_DIGEST"
 }
@@ -429,7 +453,7 @@ The Windows 0.7.0 suite passed 182 tests and 3 subtests; its signed-package and 
 
 Historical 0.4.2 evidence: its suite passed 28 tests. Actual GUI Bunny seconds 62–122 with Gemma 26B and Qwen Q6 completed four requests per model with a clean initial glossary. The eight requests carried the requested off/32K/64K settings, runner contexts were 64K and no thinking output or truncation occurred. Projects matched responses; cue counts (29/25) are not quality scores. The release verification asset pins the executable and source identity. Raw local receipts are excluded from Git/public downloads because they include images and paths.
 
-Current Unix native package evidence is recorded in [the add-on receipt](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.7.0/release-verification.json): secure credential storage, measured speech, MP4/MP3, packaged startup/close, CLI/HTTP/MCP and repository launchers. Native CI is not VoiceOver/Orca or human-listening acceptance.
+Current 0.8.1 Mac/Linux package evidence is recorded in [the release receipt](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.8.1/release-verification.json): 311 tests passed on each GitHub test machine (0 failed, 1 skipped), plus secure credential storage, measured speech, MP4/MP3, packaged startup/close, CLI/HTTP/MCP and repository launchers. Native CI is not VoiceOver/Orca or human-listening acceptance.
 
 Still unverified: separate keyed Gemini/OpenAI/Anthropic and LM Studio/llama.cpp live operation, full-film analysis/AD quality, NVDA/JAWS user acceptance, native-speaker translations, third-party legacy voices, live public YouTube extraction ; production update evidence is recorded in the release verification asset. Fixtures validate adapter/format behavior without proving live provider acceptance. Documentation-only publication does not rebuild or change an accepted executable.
 
@@ -443,7 +467,7 @@ This is newly written reconstruction source, not recovered original source or an
 
 ## Redesigned desktop interface
 
-All 0.7.0 native platform packages and the source tree include the Industry PySide6 interface described here. New scene answers are marked for review. **Mark as checked** appears only on Needs review descriptions. Use it only after verifying visual facts; editing invalidates measured narration and the engine replans it at media export. Saved projects and engine protocols remain compatible.
+Since 0.7.0, all native platform packages and the source tree include the Industry PySide6 interface described here. New scene answers are marked for review. **Mark as checked** appears only on Needs review descriptions. Use it only after verifying visual facts; editing invalidates measured narration and the engine replans it at media export. Saved projects and engine protocols remain compatible.
 
 ### Timeline navigation and desktop visual controls
 
@@ -456,7 +480,7 @@ At export, choose a narration engine and a voice in the dropdowns. Native voices
 
 ## Setup and recovery changes (0.5.2)
 
-These recovery controls were introduced in 0.5.2 and retained in 0.7.0. [Current release acceptance](V070-ACCEPTANCE.md) records checks and verification limits.
+These recovery controls were introduced in 0.5.2 and retained in 0.8.1. [The 0.7.0 acceptance record](V070-ACCEPTANCE.md) records checks and verification limits.
 
 - Draft provider/model edits are committed by Start; Cancel preserves saved settings. Ollama Refresh and Test operate on the exact displayed ID. Gemini does not expose an Ollama-backed test. Slow preflight runs in the background; Cancel prevents continuation. Install/start Ollama separately and install your chosen vision model, then use Draft > Refresh models. No automatic model selection or download occurs.
 - Setup distinguishes missing, configured, verified and error. A configured Gemini key is not an account-access test. Detector verification is cached and invalidated by file changes. Voice readiness concerns the selected export engine, not playback voices.
@@ -465,4 +489,4 @@ These recovery controls were introduced in 0.5.2 and retained in 0.7.0. [Current
 - **File > Repair narration** regenerates missing narration and placement through the shared engine without repeating vision. Missing referenced audio is also reported on load/playback. Consent precedes cloud speech. Save the repaired project to retain its new audio references.
 - **File > Recover interrupted jobs** lists readable failed/cancelled/interrupted jobs with original source and operation. Resume uses original saved settings plus current keys, and opens the result as an unsaved recovered project. Checkpoints are reused only when source, model, settings and implementation identity match. An older release's checkpoints may be incompatible with this version; rejection preserves them. Damaged job records are reported and left unchanged; restore them from a backup rather than deleting the engine workspace.
 - The developer API announces readiness only after startup. A busy port is reported; no conflicting process is terminated. Stop/retry once the conflict is resolved.
-- URL failures offer connection/account/extractor guidance and a local-file fallback. The app does not import browser cookies or bypass bot challenges. On Windows 0.7.0, Check for updates with a blank feed queries the official latest stable GitHub release; the older0.5.2 behavior only offered the releases page. Mac/Linux open the separate add-on downloads for manual replacement.
+- URL failures offer connection/account/extractor guidance and a local-file fallback. The app does not import browser cookies or bypass bot challenges. On Windows, Check for updates with a blank feed queries the official latest stable GitHub release; the older0.5.2 behavior only offered the releases page. Mac/Linux open the separate add-on downloads for manual replacement.

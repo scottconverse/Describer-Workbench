@@ -1,6 +1,6 @@
 # Windows release signing
 
-Documentation updated November 5, 2026. [Platform installation](UNIX-INSTALL.md) · [Architecture and trust boundaries](ARCHITECTURE.md).
+Documentation updated November 9, 2026. [Platform installation](UNIX-INSTALL.md) · [Architecture and trust boundaries](ARCHITECTURE.md).
 
 Scott’s instruction to “push, merge, tag and publish” includes signing release executables/installers in his name using the established Azure Trusted Signing process. Unsigned Windows builds are not publication-ready. Scott explicitly authorized the macOS/Linux add-ons without publisher certificates; that exception does not weaken the Windows gate.
 
