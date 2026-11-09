@@ -80,3 +80,25 @@ def test_the_cli_exits_non_zero_when_a_chunk_failed(tmp_path, capsys):
     assert code != 0
     out = json.loads(capsys.readouterr().out)
     assert out['state'] == 'done_with_gaps' and out['failed_chunks'] == [{'start': 15, 'end': 30, 'error': out['failed_chunks'][0]['error']}]
+
+
+# Seen in the Option 1 re-run (M1, 288-300 s): with "describe only events",
+# gemma4:12b answers a quiet chunk with blank placeholder rows, not an empty list.
+BLANK = {'start': 2.0, 'end': 2.0, 'text': '', 'short_text': '', 'kind': 'other', 'evidence': '', 'uncertainty': ''}
+
+
+def test_blank_placeholder_rows_mean_nothing_happened():
+    rows = [dict(BLANK, start=t, end=t) for t in (2.0, 4.0, 6.0)]
+    assert normalize_chunk({'timestamp_reference': 'clip', 'descriptions': rows}, 288, 12) == []
+
+
+def test_blank_rows_are_skipped_and_the_real_row_is_kept():
+    rows = [{'start': 0.0, 'end': 2.0, 'text': 'A man in a grey shirt sits at a large table.', 'kind': 'other'},
+            dict(BLANK, start=2.0, end=4.0), dict(BLANK, start=4.0, end=6.0)]
+    cues = normalize_chunk({'timestamp_reference': 'clip', 'descriptions': rows}, 0, 16)
+    assert [c.text for c in cues] == ['A man in a grey shirt sits at a large table.']
+
+
+def test_a_row_with_no_text_string_is_still_malformed():
+    with pytest.raises(ValueError, match='Malformed'):
+        normalize_chunk({'timestamp_reference': 'clip', 'descriptions': [{'start': 1, 'end': 3, 'text': None}]}, 0, 15)

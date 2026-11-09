@@ -261,6 +261,13 @@ def normalize_chunk(data, start, length, log=lambda _:None):
         raise ValueError('Malformed chunk output; retry the chunk. The reply had no descriptions list.')
     rows = data.get('descriptions', data.get('audio_descriptions', data.get('cues', []))) if isinstance(data, dict) else data
     if not isinstance(rows, list):raise ValueError('Expected a description list.')
+    # A row whose text is a blank string is a placeholder for "nothing happened"
+    # (gemma4 sends these for quiet stretches). Skip it; a row with no text
+    # string at all is still malformed below.
+    def blank(row):
+        text = row.get('text', row.get('description_text')) if isinstance(row, dict) else None
+        return isinstance(text, str) and not text.strip()
+    rows = [row for row in rows if not blank(row)]
     if not rows:return []
     values = []
     for row in rows:
