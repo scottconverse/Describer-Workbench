@@ -302,6 +302,46 @@ def vote_pass(project,settings,w0,wl,lines,labels,count,cancel,log,clip,checkpoi
     return out
 
 
+def check_pass(project,settings,rows,cancel,log,checkpoint=None,dropped=None):
+    """Option 1c: show the model one second at the middle of each event and ask if the cue is true.
+
+    A cue the model calls false is dropped and flagged. A failed or unclear check keeps the cue.
+    """
+    import hashlib, tempfile
+    from . import meeting
+    from .project import response_json
+    out=[];false=0
+    with tempfile.TemporaryDirectory(prefix='describer-check-') as tmp:
+        clip=Path(tmp)/'check.mp4'
+        for n,row in enumerate(rows):
+            if cancel.is_set():raise InterruptedError('Cancelled.')
+            mid=(row.get('event_start',row['start'])+row.get('event_end',row['end']))/2
+            at=max(0.0,mid-0.5)
+            try:
+                segment(project.video,clip,at,1.0,settings['fps'],cancel,settings.get('silent_upload',False),max_side=meeting.frame_side(settings))
+                ask=lambda:response_json(video_request(clip,meeting.check_instruction(row['text']),dict(settings,ollama_frame_interval=1),cancel,log))
+                data=checkpoint(f'check-{n:05}-{at:.3f}-{hashlib.sha1(row["text"].encode()).hexdigest()[:8]}',ask) if checkpoint else ask()
+                verdict=meeting.check_verdict(data)
+            except InterruptedError:
+                raise
+            except Exception as exc:
+                log(f'Check at {mid:.0f} s failed; the cue is kept. {exc}')
+                verdict=None
+            if verdict is False and not row.get('manually_edited'):
+                false+=1
+                if dropped is not None:
+                    dropped.append({'start':row.get('event_start',row['start']),'end':row.get('event_end',row['end']),
+                        'reason':'Not true: on a second look, the model said the description did not match the frame.'})
+                continue
+            out.append(row)
+    if rows and not out:
+        log('The check pass called every description not true; all are kept for review.')
+        if dropped is not None:del dropped[len(dropped)-false:]
+        return rows
+    if false:log(f'Public meeting mode: the check pass dropped {false} descriptions that were not true.')
+    return out
+
+
 def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, checkpoint=None):
     cues=[];glossary=project.glossary;failed=[];unchanged=[]
     from .project import glossary_labels, speakable
@@ -418,6 +458,7 @@ def observe(project, settings, prompt, cancel, log, start_at=0, duration=None, c
     if meeting_mode:
         rows=meeting.merge_repeats(sorted(rows,key=lambda r:r['start']),log,labels,dropped=unchanged)
         rows=meeting.drop_trivial(rows,log,dropped=unchanged)
+        rows=check_pass(project,settings,rows,cancel,log,checkpoint,dropped=unchanged)
         log(f'Public meeting mode: {gate.sent} frames described, {gate.skipped} unchanged frames skipped.')
     cues=normalize_generated(rows,project.duration,log)
     if not cues: raise ValueError('No descriptions were returned.'+(f' {len(failed)} chunks failed: {failed[-1]["error"]}' if failed else ''))

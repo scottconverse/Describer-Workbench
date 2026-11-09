@@ -72,7 +72,7 @@ def test_meeting_mode_asks_for_typed_events_with_templates(tmp_path):
 def test_meeting_mode_never_guesses_gender_from_a_wide_shot(tmp_path):
     rule = 'never a gender, unless the person is in close-up'
     _, calls = run(tmp_path, MEETING, lambda i, s: reply('A slide appears.'))
-    assert all(rule in c['instruction'] for c in calls)
+    assert all(rule in c['instruction'] for c in calls if 'Is this description true' not in c['instruction'])
     (tmp_path / 'default').mkdir()
     _, calls = run(tmp_path / 'default', DEFAULT, lambda i, s: reply('A man sits.'))
     assert not any(rule in c['instruction'] for c in calls)
