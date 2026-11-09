@@ -315,6 +315,10 @@ def check_pass(project,settings,rows,cancel,log,checkpoint=None,dropped=None):
         clip=Path(tmp)/'check.mp4'
         for n,row in enumerate(rows):
             if cancel.is_set():raise InterruptedError('Cancelled.')
+            # A vote is a motion (hands go up, then down). One second of video can miss it,
+            # and the vote check already looked at the clip. So a vote cue is not checked again.
+            if row.get('kind')=='vote':
+                out.append(row);continue
             mid=(row.get('event_start',row['start'])+row.get('event_end',row['end']))/2
             at=max(0.0,mid-0.5)
             try:
