@@ -265,3 +265,16 @@ def test_default_mode_keeps_small_moves(tmp_path):
     result, _ = draft(tmp_path, DEFAULT, [reply('A man looks forward.'), reply('A woman walks to the podium.'),
                                           reply('People remain seated.')])
     assert len(result.cues) == 3
+
+def test_meeting_mode_tells_the_model_to_skip_small_body_moves(tmp_path):
+    """Option 1a: 296 of 460 dropped cues were small moves ("looks forward", "leans", "smiles")."""
+    _, prompts = draft(tmp_path, MEETING, [reply('A slide appears.'), reply('A woman speaks.'), reply('A man sits.')])
+    rule = prompts[0].lower()
+    assert 'small body moves' in rule
+    for word in ('looking', 'leaning', 'smiling', 'sitting'):
+        assert word in rule
+    for keep in ('slide', 'on-screen text', 'vote', 'new speaker', 'arrives or leaves'):
+        assert keep in rule
+    (tmp_path / 'default').mkdir()
+    _, prompts = draft(tmp_path / 'default', DEFAULT, [reply('A slide appears.'), reply('A woman speaks.'), reply('A man sits.')])
+    assert not any('small body moves' in p.lower() for p in prompts)
