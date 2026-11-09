@@ -172,3 +172,21 @@ def test_word_timings_overrule_a_detector_that_hears_speech_everywhere(tmp_path)
     assert not covers(gaps, 13.3, 13.6), 'a vocal sound the detector found stays protected'
     assert not covers(gaps, 10.0, 11.0), 'spoken words stay protected'
     assert not covers(measure(DEFAULT), 11.5, 12.9), 'default mode keeps the detector'
+
+
+def test_a_person_cue_never_stops_the_video(tmp_path):
+    """Option 1e: 69 of 129 pause cues were kind other (49 small moves). Only events may pause."""
+    rows = [{'start': 5, 'end': 7, 'text': 'A man in a blue shirt walks to the front', 'kind': 'other'},
+            {'start': 20, 'end': 22, 'text': six_words('slide'), 'kind': 'slide'},
+            {'start': 35, 'end': 37, 'text': 'A woman walks to the door', 'kind': 'other'}]
+    result = draft(tmp_path, dict(MEETING, max_pause_seconds_per_minute=100), rows, [[36, 45]])
+    state = [(c.kind, c.disposition) for c in result.cues]
+    assert state == [('other', 'dropped_no_gap'), ('slide', 'pause'), ('other', 'in-gap')], state
+    row = next(r for r in result.coverage if r.get('disposition') == 'dropped_no_gap')
+    assert 'only meeting events' in row['reason'].lower()
+
+
+def test_person_cues_still_pause_outside_meeting_mode(tmp_path):
+    rows = [{'start': 5, 'end': 7, 'text': 'A man in a blue shirt walks to the front', 'kind': 'other'}]
+    result = draft(tmp_path, DEFAULT, rows, [])
+    assert result.cues[0].disposition == 'pause'

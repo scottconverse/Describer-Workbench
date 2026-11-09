@@ -220,6 +220,25 @@ def pause_budget(settings):
     return float(value)
 
 
+def pause_only_events(cues, coverage, log=lambda _: None):
+    """Option 1e: only meeting events (PRIORITY kinds) may stop the video.
+
+    A cue about a person that found no gap, even after the short tries, is
+    dropped ("dropped_no_gap") and listed in coverage; it is never spoken.
+    """
+    rows = {row.get('cue_id'): row for row in coverage if row.get('cue_id')}
+    dropped = 0
+    for cue in cues:
+        if cue.disposition == 'pause' and cue.kind not in PRIORITY and not cue.manually_edited:
+            cue.disposition = 'dropped_no_gap'
+            dropped += 1
+            if cue.cue_id in rows:
+                rows[cue.cue_id].update(disposition='dropped_no_gap',
+                    reason='No speech-free gap. Only meeting events (vote, speaker, slide, text, scene) may pause the video.')
+    if dropped:
+        log(f'Public meeting mode: {dropped} person descriptions had no gap; they are listed in coverage, not spoken.')
+
+
 def apply_pause_budget(cues, coverage, budget, log=lambda _: None):
     """Drop pause cues over the budget in each minute, least important first.
 
