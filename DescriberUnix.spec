@@ -2,6 +2,8 @@
 import sys
 from pathlib import Path
 from PyInstaller.utils.hooks import collect_all,copy_metadata
+sys.path.insert(0,str(Path(SPECPATH)/'tools'))
+from unix_version import VERSION
 assert sys.platform in ('darwin','linux')
 reader_data,reader_binaries,reader_imports=collect_all('accessible_output2')
 transport_data,transport_binaries,transport_imports=collect_all('mcp',filter_submodules=lambda name:not name.startswith('mcp.cli'))
@@ -17,4 +19,4 @@ gui=EXE(pyz,[s for s in a.scripts if s[0]!='run_cli'],[],exclude_binaries=True,n
 cli=EXE(pyz,[s for s in a.scripts if s[0]!='run'],[],exclude_binaries=True,name='DescriberCLI',console=True,strip=False,upx=False)
 coll=COLLECT(gui,cli,a.binaries,a.datas,strip=False,upx=False,name='DescriberWorkbench')
 if sys.platform=='darwin':
-    app=BUNDLE(coll,name='Describer Workbench.app',bundle_identifier='org.describer.workbench',info_plist={'CFBundleExecutable':'DescriberWorkbench','CFBundleShortVersionString':'0.7.0','CFBundleVersion':'1','NSHighResolutionCapable':True,'LSMinimumSystemVersion':'15.0'})
+    app=BUNDLE(coll,name='Describer Workbench.app',bundle_identifier='org.describer.workbench',info_plist={'CFBundleExecutable':'DescriberWorkbench','CFBundleShortVersionString':VERSION,'CFBundleVersion':'1','NSHighResolutionCapable':True,'LSMinimumSystemVersion':'15.0'})

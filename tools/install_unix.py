@@ -7,6 +7,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from unix_version import VERSION
+
 
 def main():
     if sys.platform not in ('darwin','linux'):raise SystemExit('This installer is only for macOS and Linux. The Windows release is unchanged.')
@@ -21,7 +23,7 @@ def main():
     if sys.platform=='darwin':
         app=Path.home()/'Applications/Describer Workbench.app';contents=app/'Contents';(contents/'MacOS').mkdir(parents=True,exist_ok=True)
         launcher=contents/'MacOS/DescriberWorkbench';launcher.write_text('#!/bin/sh\nexec '+shlex.quote(str(command))+' "$@"\n');launcher.chmod(0o755)
-        with (contents/'Info.plist').open('wb') as stream:plistlib.dump({'CFBundleExecutable':'DescriberWorkbench','CFBundleIdentifier':'org.describer.workbench.source','CFBundleName':'Describer Workbench','CFBundlePackageType':'APPL','CFBundleShortVersionString':'0.7.0'},stream)
+        with (contents/'Info.plist').open('wb') as stream:plistlib.dump({'CFBundleExecutable':'DescriberWorkbench','CFBundleIdentifier':'org.describer.workbench.source','CFBundleName':'Describer Workbench','CFBundlePackageType':'APPL','CFBundleShortVersionString':VERSION},stream)
         print('Installed:',app)
     else:
         applications=Path(os.environ.get('XDG_DATA_HOME',str(Path.home()/'.local/share')))/'applications';applications.mkdir(parents=True,exist_ok=True)
