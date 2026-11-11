@@ -90,7 +90,7 @@ def dpapi(data, decrypt=False):
 
 
 DEFAULTS = {'ui_theme':'light','recent_projects':[], 'model': 'gemini-2.5-flash', 'language': 'English', 'chunk': 300, 'fps': 2,
-            'sound_model':'', 'max_speech_speed':1.15, 'allow_cloud':False, 'captions':'',
+            'sound_model':'', 'max_speech_speed':1.15, 'allow_cloud':False, 'captions':'','captions_video':'',
             'analysis_provider':'Gemini','ollama_url':'http://127.0.0.1:11434','ollama_model':'',
             'provider_models':{},'connections':{},'connection_id':'','gateway_url':'http://127.0.0.1:8317/v1','gateway_key_file':'',
             'cli_paths':{},'analysis_timeout':600,'analysis_effort':'','anthropic_key':'',

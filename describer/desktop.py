@@ -631,6 +631,16 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
         selected_summary=QLabel();selected_summary.setWordWrap(True);selected_summary.setAccessibleName('Selected draft model');outer.addWidget(selected_summary)
         outer.addWidget(QLabel('Section to draft'))
         scope=QComboBox();scope.setAccessibleName('Analysis range');scope.addItems([f'Whole video · {clock(self.project.duration)}',f'Next 20 s from {clock(self.player.position()/1000)}',f'Next 60 s from {clock(self.player.position()/1000)}']);scope.setCurrentIndex(self.model_picker.scope.currentIndex());outer.addWidget(scope)
+        meeting=QCheckBox('Public meeting mode (city and council meetings): votes, speakers, slides and on-screen text first');meeting.setAccessibleName('Public meeting mode')
+        meeting.setChecked(self.settings.data.get('drafting_mode','')=='Public meeting');outer.addWidget(meeting)
+        outer.addWidget(QLabel('Captions file for this video (optional, SRT or VTT): finds pauses in speech and, in meeting mode, votes'))
+        captions_row=QHBoxLayout();outer.addLayout(captions_row)
+        captions=QLineEdit(self.settings.data.get('captions',''));captions.setReadOnly(True);captions.setAccessibleName('Captions file');captions.setPlaceholderText('No captions file');captions_row.addWidget(captions,1)
+        def choose_captions():
+            p,_=QFileDialog.getOpenFileName(d,'Captions file','','Captions (*.srt *.vtt);;All files (*)')
+            if p:captions.setText(p)
+        button(captions_row,'Choose…',choose_captions,role='ghost').setAccessibleName('Choose captions file')
+        button(captions_row,'Clear',captions.clear,role='ghost').setAccessibleName('Clear captions file')
         advanced=QCheckBox('Advanced — models, connection tests and editorial controls');advanced.setAccessibleName('Show advanced draft controls');outer.addWidget(advanced)
         advanced_scroll=QScrollArea();advanced_scroll.setWidgetResizable(True);advanced_scroll.setMinimumHeight(180)
         advanced_body=QWidget();v=QVBoxLayout(advanced_body);advanced_scroll.setWidget(advanced_body);outer.addWidget(advanced_scroll,1);advanced_scroll.hide()
@@ -694,6 +704,7 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
         update_note();self.model_picker.provider.currentTextChanged.connect(update_note)
         def start_draft():
             if not exact_model.text().strip():self.error('Choose a model in Advanced before drafting.');return
+            if captions.text() and not Path(captions.text()).is_file():self.error('The captions file was not found. Choose it again or select Clear.');return
             if self.model_picker.store_model(exact_model.text().strip()):d.accept()
         actions=QDialogButtonBox(QDialogButtonBox.Cancel);actions.addButton('Start draft',QDialogButtonBox.AcceptRole).setProperty('role','primary');actions.accepted.connect(start_draft);actions.rejected.connect(d.reject);outer.addWidget(actions)
         accepted=d.exec();timer.stop();self.model_picker.provider.currentTextChanged.disconnect(update_note);self.model_picker.provider.currentTextChanged.disconnect(sync_models);self.model_picker.reloaded.disconnect(sync_models)
@@ -703,7 +714,7 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
         if not accepted:self.preset.setCurrentText(original_preset);self.prompt.setPlainText(original_prompt)
         if accepted:
             self.model_picker.scope.setCurrentIndex(scope.currentIndex())
-            self.settings.data.update(verbosity=verbosity.currentText(),auto_glossary=glossary.isChecked());self.settings.save()
+            self.settings.data.update(verbosity=verbosity.currentText(),auto_glossary=glossary.isChecked(),drafting_mode='Public meeting' if meeting.isChecked() else '',captions=captions.text(),captions_video=self.project.video if captions.text() else '');self.settings.save()
             self.job_label.setText('Drafting descriptions');self.analyze()
         d.deleteLater()
     def export(self,*,initial_voice=None,initial_format=None,initial_path=None):

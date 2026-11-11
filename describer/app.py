@@ -226,8 +226,17 @@ class Window(DesktopInterface, QMainWindow):
         from .services import probe
         self.pause_active=False;self.pause_player.stop();self.narration.stop();self.played_pauses.clear()
         duration=probe(path);self.playback_speech.stop();self.player.stop();self.project=Project(str(Path(path).resolve()),duration);self.project_path=None;self.dirty=False
+        self.forget_other_captions(self.project.video)
         self.undo_stack.clear();self._selected_cue=None
         self.reset_scene();self.player.setSource(QUrl.fromLocalFile(self.project.video));self.file_label.setText(self.project.video);self.refresh();self.last_spoken=None
+    def forget_other_captions(self,video):
+        # A captions file chosen in Draft with AI belongs to one video. A path typed by hand in settings.json has no video and is kept.
+        owner=self.settings.data.get('captions_video','')
+        if self.settings.data.get('captions') and owner and owner!=video:
+            self.settings.data.update(captions='',captions_video='')
+            try:self.settings.save()
+            except Exception as exc:self.log(f'Could not save settings: {exc}')
+            self.log('Captions file cleared: it was chosen for another video.')
     def open_video(self):
         if self.busy() or not self.guard_changes():return
         p,_=QFileDialog.getOpenFileName(self,'Open video','','Video files (*.mp4 *.mkv *.mov *.avi *.webm);;All files (*)')
@@ -482,6 +491,7 @@ class Window(DesktopInterface, QMainWindow):
                 from .services import probe
                 actual=probe(project.video)
                 for c in project.cues:c.validate(actual)
+                self.forget_other_captions(str(Path(project.video).resolve()))
                 project.duration=actual;self.undo_stack.clear();self._selected_cue=None;self.project=project;self.project_path=p;self.dirty=False;self.reset_scene()
                 self.pause_active=False;self.pause_player.stop();self.narration.stop();self.played_pauses.clear()
                 self.playback_speech.stop();self.player.stop();self.last_spoken=None;self.player.setSource(QUrl.fromLocalFile(project.video));self.file_label.setText(project.video);self.refresh();self.remember_project()
