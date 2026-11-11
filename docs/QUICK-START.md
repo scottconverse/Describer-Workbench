@@ -1,4 +1,4 @@
-# Start here — Describer Workbench 0.8.1
+# Start here — Describer Workbench 0.8.2
 
 For Windows, macOS and Linux · documentation updated November 9, 2026.
 
@@ -8,11 +8,11 @@ Make one short description first. You do not need an AI account, programming, or
 
 | Computer | Download | Install and start | Publisher signing |
 | --- | --- | --- | --- |
-| Windows x64 (Windows 11 tested) | [Portable ZIP](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.8.1/DescriberWorkbench-0.8.1-windows-x64.zip) | Extract everything; open `DescriberWorkbench/DescriberWorkbench.exe`. Keep `_internal` beside it. | Scott Converse, Azure Trusted Signing with Microsoft timestamps |
-| Mac, Apple Silicon, macOS 15+ | [arm64 DMG](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.8.1/DescriberWorkbench-0.8.1-macos-arm64.dmg) | Open DMG; drag the app to Applications. | No Apple publisher certificate or notarization; ad-hoc integrity only |
+| Windows x64 (Windows 11 tested) | [Portable ZIP](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.8.2/DescriberWorkbench-0.8.2-windows-x64.zip) | Extract everything; open `DescriberWorkbench/DescriberWorkbench.exe`. Keep `_internal` beside it. | Scott Converse, Azure Trusted Signing with Microsoft timestamps |
+| Mac, Apple Silicon, macOS 15+ | [arm64 DMG](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.8.2/DescriberWorkbench-0.8.2-macos-arm64.dmg) | Open DMG; drag the app to Applications. | No Apple publisher certificate or notarization; ad-hoc integrity only |
 | Mac, Intel, macOS 15+ | No Intel DMG (dropped in 0.7.0) | Install from the repository; see the [platform guide](UNIX-INSTALL.md). Not tested on Intel. | None (source install) |
-| Ubuntu 24.04 / compatible Debian desktop, x86-64 | [DEB installer](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.8.1/DescriberWorkbench-0.8.1-linux-x64.deb) | `sudo apt install ./DescriberWorkbench-0.8.1-linux-x64.deb`; open Describer Workbench from the applications menu. | Unsigned |
-| Other Linux x86-64 desktops | [Portable tar](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.8.1/DescriberWorkbench-0.8.1-linux-x64.tar.gz) | Extract; run `DescriberWorkbench/DescriberWorkbench` after installing native dependencies. | Unsigned; other distributions not acceptance-tested |
+| Ubuntu 24.04 / compatible Debian desktop, x86-64 | [DEB installer](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.8.2/DescriberWorkbench-0.8.2-linux-x64.deb) | `sudo apt install ./DescriberWorkbench-0.8.2-linux-x64.deb`; open Describer Workbench from the applications menu. | Unsigned |
+| Other Linux x86-64 desktops | [Portable tar](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.8.2/DescriberWorkbench-0.8.2-linux-x64.tar.gz) | Extract; run `DescriberWorkbench/DescriberWorkbench` after installing native dependencies. | Unsigned; other distributions not acceptance-tested |
 
 Mac: choose **Apple Silicon** for an M-series Mac (Apple menu → About This Mac). There is no Intel Mac download. Use the normal Privacy & Security approval if macOS blocks opening the downloaded app; no Apple publisher certificate or notarization is available. Do not disable Gatekeeper. Linux: the DEB installs required media and speech dependencies; the tar requires you to install them yourself. See [platform installation](UNIX-INSTALL.md).
 
@@ -38,7 +38,7 @@ Use **Export → Subtitles · .srt** for a simple text output. For narrated MP3/
 
 Use **Save project as** to keep a separate comparison copy. Choose **Draft with AI**, select your connection and exact model ID, then try **Next 20 seconds**. Local Ollama needs a separately installed vision model. Claude, Codex and Antigravity use their installed CLI sign-in or the existing subscription gateway. API credits are separate. [Connection setup](AI-CONNECTIONS.md) explains each route and its limits.
 
-**City and council meetings (0.8.0 and later):** Public meeting mode describes only what changed, reads slides and finds votes. It has no switch in the window yet. See [Public meeting mode](USER-MANUAL.md#public-meeting-mode) in the manual.
+**City and council meetings (0.8.0 and later):** Public meeting mode describes only what changed, reads slides and finds votes. To use it, tick **Public meeting mode** in **Draft with AI** (0.8.2 and later). See [Public meeting mode](USER-MANUAL.md#public-meeting-mode) in the manual.
 
 Review facts, names, omitted actions, printed text and timing. Completion and a green placement status do not prove accuracy. Sampled-frame routes cannot hear dialogue. The engine protects sound independently, but that detector can also make mistakes.
 
