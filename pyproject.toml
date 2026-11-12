@@ -29,7 +29,7 @@ describer-mcp = "describer.adapters.mcp:main"
 describer-workbench = "describer.app:main"
 
 [project.urls]
-Homepage = "https://describer-workbench.sconverse.chatgpt.site"
+Homepage = "https://scottconverse.github.io/Describer-Workbench"
 Source = "https://github.com/scottconverse/Describer-Workbench"
 Documentation = "https://github.com/scottconverse/Describer-Workbench/blob/main/docs/USER-MANUAL.md"
 Issues = "https://github.com/scottconverse/Describer-Workbench/issues"

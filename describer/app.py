@@ -1032,7 +1032,7 @@ class Window(DesktopInterface, QMainWindow):
             'Draft checks the selected detector and offers verified setup before inference. File also offers detector installation, Repair narration and Recover interrupted jobs. Edits preserve review evidence; Mark as checked clears review deliberately. Unresolved facts block complete media exports. '+
             native_text('File can also start the authenticated developer API/MCP server. Windows speech works offline. ')+
             'Cloud operations use your own keys and require confirmation. Cancel stops local jobs; an in-flight cloud request may take up to its timeout. '
-            'This is an independent reconstruction. Read the maintained user manual at https://describer-workbench.sconverse.chatgpt.site/manual for controls and verification limits.')
+            'This is an independent reconstruction. Read the maintained user manual at https://scottconverse.github.io/Describer-Workbench/manual for controls and verification limits.')
     def install_detector(self):
         if self.busy():return
         if QMessageBox.question(self,'Install local speech detector','Download the pinned Google YAMNet speech detector from Hugging Face? Analysis stays local and the checksum is verified.')!=QMessageBox.StandardButton.Yes:return

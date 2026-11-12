@@ -9,7 +9,7 @@ from pathlib import Path
 import markdown
 
 ROOT = Path(__file__).resolve().parents[1]
-ORIGIN = 'https://describer-workbench.sconverse.chatgpt.site'
+ORIGIN = 'https://scottconverse.github.io/Describer-Workbench'
 REPO = 'https://github.com/scottconverse/Describer-Workbench'
 VERSION = tomllib.loads((ROOT/'pyproject.toml').read_text(encoding='utf-8'))['project']['version']
 DOC_STATUS = 'Version '+VERSION+' · documentation updated November 11, 2026'
