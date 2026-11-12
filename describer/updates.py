@@ -129,6 +129,10 @@ def stage_update(feed,destination,cancel,log):
 # This helper is newly written. It runs only after an explicit Install action.
 APPLY_SCRIPT = SIGNATURE_SCRIPT+r'''
 $ErrorActionPreference='Stop'
+# Leave the install folder: a working folder inside it blocks the folder swap.
+# Set-Location moves only PowerShell's location; the process folder needs its own call.
+Set-Location -LiteralPath (Split-Path -Parent $args[0])
+[System.IO.Directory]::SetCurrentDirectory((Split-Path -Parent $args[0]))
 $d=Get-Content -Raw -Encoding UTF8 -LiteralPath $args[0] | ConvertFrom-Json
 try {
  $p=Get-Process -Id $d.pid -ErrorAction SilentlyContinue

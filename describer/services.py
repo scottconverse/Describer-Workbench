@@ -540,10 +540,69 @@ def synthesize(text, output, settings, cancel=None):
         windows_speech(settings['voice_engine'],text,output,settings.get('windows_voice',''),settings.get('speech_rate',0),cancel,volume=settings.get('speech_volume',100))
 
 
+# Narration loudness. The voice plays at the same loudness as the video's own sound
+# near it, kept inside a normal speech range. A limiter keeps every peak at or below -1 dBFS.
+NARRATION_DEFAULT_LUFS = -16.0
+NARRATION_LUFS_RANGE = (-36.0, -14.0)
+# Seconds of source sound measured before and after each description. Long meetings
+# change loudness from room to room, so one value for the whole video is not enough.
+NARRATION_CONTEXT_SECONDS = 30.0
+LIMITER = 'alimiter=limit=0.891251:level=false:latency=true'
+
+
+def measure_loudness(path, cancel=None, start=None, seconds=None):
+    """Integrated loudness (LUFS) of a file's audio, or of one part of it. None when it is silent or too short."""
+    import math, re
+    part = (['-ss', f'{max(0.0, start):.3f}'] if start is not None else [])+(['-t', f'{seconds:.3f}'] if seconds is not None else [])
+    text = run([tool('ffmpeg'), '-hide_banner', '-nostats', *part, '-i', str(path), '-vn', '-af', 'ebur128=framelog=verbose',
+                '-f', 'null', '-'], cancel, return_stderr=True).decode('utf-8', 'replace')
+    found = re.findall(r'I:\s+(-?[0-9.]+|-?inf) LUFS', text)
+    if not found: return None
+    value = float(found[-1])
+    return value if math.isfinite(value) and value > -70 else None
+
+
+def narration_target(source_lufs):
+    """The voice loudness for one export: the video's loudness, kept inside the speech range."""
+    if source_lufs is None: return NARRATION_DEFAULT_LUFS
+    return max(NARRATION_LUFS_RANGE[0], min(NARRATION_LUFS_RANGE[1], source_lufs))
+
+
+def local_targets(project, audio, fallback, cancel=None):
+    """The voice target for each cue: the source loudness in a window around it. Silence uses the fallback."""
+    targets = {}
+    for c in project.cues:
+        if c.disposition not in ('in-gap', 'pause'): continue
+        start = max(0.0, c.start-NARRATION_CONTEXT_SECONDS)
+        end = min(project.duration, c.end+NARRATION_CONTEXT_SECONDS) if project.duration else c.end+NARRATION_CONTEXT_SECONDS
+        near = measure_loudness(audio, cancel, start, max(0.5, end-start))
+        targets[id(c)] = narration_target(near) if near is not None else fallback
+    return targets
+
+
+def narration_gain(cue, settings, target, cancel=None):
+    """Linear gain that brings one narration clip to the target. Speech volume is a trim: 100 = match."""
+    if cue.audio_volume is None:raise ValueError('Narration has no recorded synthesis volume; repair narration before export.')
+    volume = float(settings.get('speech_volume', 100))
+    clip = measure_loudness(cue.audio, cancel)
+    if clip is None: return volume/cue.audio_volume
+    return volume/100*10**(max(-30.0, min(20.0, target-clip))/20)
+
+
 def _mix_planned_audio(project, output, settings, cancel, log):
+    """Mix in-gap narration over the ducked source sound. Returns each cue's narration target in LUFS, by id(cue)."""
     if not project.cues: raise ValueError('Add descriptions first.')
     with tempfile.TemporaryDirectory(prefix='describer-mix-') as tmp:
         tmp=Path(tmp);sources=[];windows=[]
+        audio=tmp/'bed.wav'
+        info=json.loads(run([tool('ffprobe'),'-v','error','-show_streams','-of','json',project.video],cancel))
+        if any(s['codec_type']=='audio' for s in info['streams']):
+            run([tool('ffmpeg'),'-v','error','-y','-i',project.video,'-vn','-ar','44100','-ac','2',str(audio)],cancel)
+            log('Measuring the video loudness…')
+            voice_lufs=local_targets(project,audio,narration_target(measure_loudness(audio,cancel)),cancel)
+        else:
+            run([tool('ffmpeg'),'-v','error','-y','-f','lavfi','-i','anullsrc=r=44100:cl=stereo','-t',str(project.duration),str(audio)],cancel)
+            voice_lufs={id(c):narration_target(None) for c in project.cues}
         for i,c in enumerate(project.cues):
             if c.disposition != 'in-gap':continue
             log(f'Synthesizing description {i+1}/{len(project.cues)}…')
@@ -555,17 +614,10 @@ def _mix_planned_audio(project, output, settings, cancel, log):
             rate=c.speed;factors=[]
             if float(j['format']['duration']) / rate > c.end-c.start+.025:
                 raise ValueError('Narration no longer fits its verified slot; re-plan export.')
-            if c.audio_volume is None:raise ValueError('Narration has no recorded synthesis volume; repair narration before export.')
-            gain=float(settings.get('speech_volume',100))/c.audio_volume
+            gain=narration_gain(c,settings,voice_lufs[id(c)],cancel)
             factors.extend((f'atempo={rate:.6f}', f'volume={gain:.6f}'))
-            timed=tmp/f'timed{i}.wav';run([tool('ffmpeg'),'-v','error','-y','-i',str(wav),'-af',','.join(factors),'-t',str(c.end-c.start),str(timed)],cancel)
+            timed=tmp/f'timed{i}.wav';run([tool('ffmpeg'),'-v','error','-y','-i',str(wav),'-af',','.join(factors),'-t',str(c.end-c.start),'-c:a','pcm_f32le',str(timed)],cancel)
             sources.append(timed);windows.append((c.start,c.end))
-        audio=tmp/'bed.wav'
-        info=json.loads(run([tool('ffprobe'),'-v','error','-show_streams','-of','json',project.video],cancel))
-        if any(s['codec_type']=='audio' for s in info['streams']):
-            run([tool('ffmpeg'),'-v','error','-y','-i',project.video,'-vn','-ar','44100','-ac','2',str(audio)],cancel)
-        else:
-            run([tool('ffmpeg'),'-v','error','-y','-f','lavfi','-i','anullsrc=r=44100:cl=stereo','-t',str(project.duration),str(audio)],cancel)
         # Build a gain envelope as an audio stream, avoiding command-line limits and
         # avoiding repeated ducking of narration across batches.
         import wave, struct, math
@@ -588,10 +640,11 @@ def _mix_planned_audio(project, output, settings, cancel, log):
                         amount=max(amount,min(1,max(0,(t-start+.05)/.05),max(0,(end+.05-t)/.05)))
                     values.append(round(32767*(1-amount*(1-10**(float(settings['duck_db'])/20)))))
                 w.writeframes(struct.pack('<'+'h'*len(values),*values))
+        # Float WAVs between steps: 16-bit files would clip before the limiter runs.
         bed=tmp/'ducked.wav'
         run([tool('ffmpeg'),'-v','error','-y','-i',str(audio),'-i',str(envelope),
              '-filter_complex','[1:a]aresample=44100,pan=stereo|c0=c0|c1=c0[g];[0:a][g]amultiply[m]',
-             '-map','[m]',str(bed)],cancel)
+             '-map','[m]','-c:a','pcm_f32le',str(bed)],cancel)
         for offset in range(0,len(sources),20):
             args=[tool('ffmpeg'),'-v','error','-y','-i',str(bed)];filters=[];labels=[]
             for k,wav in enumerate(sources[offset:offset+20],1):
@@ -599,12 +652,13 @@ def _mix_planned_audio(project, output, settings, cancel, log):
                 filters.append(f'[{k}:a]adelay={round(start*1000)}:all=1[s{k}]');labels.append(f'[s{k}]')
             filters.append('[0:a]'+''.join(labels)+f'amix=inputs={len(labels)+1}:normalize=0:duration=first[m]')
             nextbed=tmp/f'mix{offset}.wav'
-            run(args+['-filter_complex',';'.join(filters),'-map','[m]','-t',str(project.duration),str(nextbed)],cancel);bed=nextbed
+            run(args+['-filter_complex',';'.join(filters),'-map','[m]','-t',str(project.duration),'-c:a','pcm_f32le',str(nextbed)],cancel);bed=nextbed
         target=Path(output);partial=target.with_name(target.stem+'.partial.mp3')
         try:
-            run([tool('ffmpeg'),'-v','error','-y','-i',str(bed),'-c:a','libmp3lame','-q:a','2',str(partial)],cancel);partial.replace(target)
+            run([tool('ffmpeg'),'-v','error','-y','-i',str(bed),'-af',LIMITER,'-c:a','libmp3lame','-q:a','2',str(partial)],cancel);partial.replace(target)
         finally:
             if partial.exists(): partial.unlink()
+    return voice_lufs
 
 
 def export_audio(project, output, settings, cancel, log):

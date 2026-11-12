@@ -1,18 +1,18 @@
 # Describer Workbench user manual
 
-For **0.8.2** · November 11, 2026 (America/Denver). See the [0.8.2 release](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.8.2) for its notes, verification receipt and checksums. The [0.7.0 acceptance record](V070-ACCEPTANCE.md) keeps the earlier stabilization checks and limits.
+For **0.8.3** · November 11, 2026 (America/Denver). See the [0.8.3 release](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.8.3) for its notes, verification receipt and checksums. The [0.7.0 acceptance record](V070-ACCEPTANCE.md) keeps the earlier stabilization checks and limits.
 
 [Quick start without programming](QUICK-START.md) · [Technical integration guide](DEVELOPER-GUIDE.md)
 
-**Windows, macOS and Linux:** use the [platform installation guide](UNIX-INSTALL.md) for the Apple Silicon DMG, Linux x64 DEB/portable archives and repository installation. The workflows below are shared; Windows executable names, DPAPI, SAPI/OneCore and signed updater instructions apply specifically to Windows. macOS uses Keychain and measured macOS voices; Linux uses Secret Service and measured eSpeak NG. Their update command opens the manual download page. Windows, macOS and Linux share the v0.8.2 release; only Windows carries publisher signing. Mac/Linux acceptance has its own release receipts; it does not inherit Windows acceptance or signing.
+**Windows, macOS and Linux:** use the [platform installation guide](UNIX-INSTALL.md) for the Apple Silicon DMG, Linux x64 DEB/portable archives and repository installation. The workflows below are shared; Windows executable names, DPAPI, SAPI/OneCore and signed updater instructions apply specifically to Windows. macOS uses Keychain and measured macOS voices; Linux uses Secret Service and measured eSpeak NG. Their update command opens the manual download page. Windows, macOS and Linux share the v0.8.3 release; only Windows carries publisher signing. Mac/Linux acceptance has its own release receipts; it does not inherit Windows acceptance or signing.
 
-This guide describes version 0.8.2 and its [AI connections](AI-CONNECTIONS.md). New in 0.8.x: [Public meeting mode](#public-meeting-mode) for city and council meeting videos. **Live text playback output** applies to live text and Scene answers. Timed in-gap and pause cues use measured export-voice audio, with the host native voice as the default (Windows on Windows, macOS on Mac, eSpeak NG on Linux). The accepted Windows narration policy remains unchanged. A screen reader controls its own live-text rate and volume; unavailable reader output falls back to Qt system speech. The Speech slider scales measured WAV playback and exported narration. Older WAVs without synthesis-volume metadata need **File > Repair narration** before timed playback; repair preserves source media, descriptions and evidence, asks for applicable cloud consent, and must be saved to retain new audio references.
+This guide describes version 0.8.3 and its [AI connections](AI-CONNECTIONS.md). New in 0.8.x: [Public meeting mode](#public-meeting-mode) for city and council meeting videos. **Live text playback output** applies to live text and Scene answers. Timed in-gap and pause cues use measured export-voice audio, with the host native voice as the default (Windows on Windows, macOS on Mac, eSpeak NG on Linux). The accepted Windows narration policy remains unchanged. A screen reader controls its own live-text rate and volume; unavailable reader output falls back to Qt system speech. The Speech slider scales measured WAV playback and exported narration. Older WAVs without synthesis-volume metadata need **File > Repair narration** before timed playback; repair preserves source media, descriptions and evidence, asks for applicable cloud consent, and must be saved to retain new audio references.
 
-[0.8.2 downloads](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.8.2) · [Project](https://github.com/scottconverse/Describer-Workbench) · [Architecture guide](ARCHITECTURE.md)
+[0.8.3 downloads](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.8.3) · [Project](https://github.com/scottconverse/Describer-Workbench) · [Architecture guide](ARCHITECTURE.md)
 
 ## Features retained from 0.6.0
 
-These controls are still included in 0.8.2.
+These controls are still included in 0.8.3.
 
 - **AI connections:** gateway subscriptions, native Codex/Claude/Antigravity tools, named OpenAI-compatible profiles and the separate Anthropic API route. Follow [connection setup](AI-CONNECTIONS.md); catalog entries do not establish image support or account entitlement. No route automatically falls back to another model.
 - **Editing and Scene:** changing Start preserves cue duration; authored timing remains separate from the original visual event. Scene answers have individual Speak, Copy and Add actions. Explore supports2/5/10/20-second ranges and optional focus, with glossary context passed to the request.
@@ -40,11 +40,11 @@ Choose your platform below. [The quick start](QUICK-START.md) gives a short firs
 
 | Computer | Download | Install and start | Publisher signing |
 | --- | --- | --- | --- |
-| Windows x64 (Windows 11 tested) | [Portable ZIP](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.8.2/DescriberWorkbench-0.8.2-windows-x64.zip) | Extract everything; open `DescriberWorkbench/DescriberWorkbench.exe`. Keep `_internal` beside it. | Scott Converse, Azure Trusted Signing with Microsoft timestamps |
-| Mac, Apple Silicon, macOS 15+ | [arm64 DMG](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.8.2/DescriberWorkbench-0.8.2-macos-arm64.dmg) | Open DMG; drag the app to Applications. | No Apple publisher certificate or notarization; ad-hoc integrity only |
+| Windows x64 (Windows 11 tested) | [Portable ZIP](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.8.3/DescriberWorkbench-0.8.3-windows-x64.zip) | Extract everything; open `DescriberWorkbench/DescriberWorkbench.exe`. Keep `_internal` beside it. | Scott Converse, Azure Trusted Signing with Microsoft timestamps |
+| Mac, Apple Silicon, macOS 15+ | [arm64 DMG](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.8.3/DescriberWorkbench-0.8.3-macos-arm64.dmg) | Open DMG; drag the app to Applications. | No Apple publisher certificate or notarization; ad-hoc integrity only |
 | Mac, Intel, macOS 15+ | No Intel DMG (dropped in 0.7.0) | Install from the repository; see the [platform guide](UNIX-INSTALL.md). Not tested on Intel. | None (source install) |
-| Ubuntu 24.04 / compatible Debian desktop, x86-64 | [DEB installer](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.8.2/DescriberWorkbench-0.8.2-linux-x64.deb) | `sudo apt install ./DescriberWorkbench-0.8.2-linux-x64.deb`; open Describer Workbench from the applications menu. | Unsigned |
-| Other Linux x86-64 desktops | [Portable tar](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.8.2/DescriberWorkbench-0.8.2-linux-x64.tar.gz) | Extract; run `DescriberWorkbench/DescriberWorkbench` after installing native dependencies. | Unsigned; other distributions not acceptance-tested |
+| Ubuntu 24.04 / compatible Debian desktop, x86-64 | [DEB installer](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.8.3/DescriberWorkbench-0.8.3-linux-x64.deb) | `sudo apt install ./DescriberWorkbench-0.8.3-linux-x64.deb`; open Describer Workbench from the applications menu. | Unsigned |
+| Other Linux x86-64 desktops | [Portable tar](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.8.3/DescriberWorkbench-0.8.3-linux-x64.tar.gz) | Extract; run `DescriberWorkbench/DescriberWorkbench` after installing native dependencies. | Unsigned; other distributions not acceptance-tested |
 
 Compare the download with its release checksums. Mac/Linux prerequisites, approval, updates and removal are in [the platform guide](UNIX-INSTALL.md). Mac has no Apple publisher certificate/notarization; Linux is unsigned.
 
@@ -303,7 +303,7 @@ Open video first, then **Import SRT / VTT** (Ctrl+I). Import replaces current cu
 | Recognize characters | Requests and carries a visual glossary. |
 | Remove audio | Strips audio from prepared video. Gemini then loses dialogue evidence; Ollama already receives no audio. |
 | Background ducking | −40 to 0 dB, default −15 dB. More negative reduces the original bed more. |
-| Speech rate / volume | Native export voice rate −10 to 10. Speech volume 0–100 scales live Qt speech, measured WAV playback and exported narration, including OpenAI narration. Newly planned Windows WAVs are synthesized at 100% and scaled using their recorded level. A screen reader controls its own volume/rate; older WAVs without a recorded level require repair. |
+| Speech rate / volume | Native export voice rate −10 to 10. Speech volume 0–100 scales live Qt speech, measured WAV playback and exported narration, including OpenAI narration. Newly planned Windows WAVs are synthesized at 100% and scaled using their recorded level. Since 0.8.3, exports first set each narration clip to the loudness of the video's own sound in the 30 seconds before and after it (from −36 to −14 LUFS; −16 LUFS for a video with no sound). A quiet room in a long meeting gets a quiet voice, and a loud part gets a louder one. Speech volume 100 keeps that match; lower values make narration quieter. A limiter keeps the finished export at about −1 dBFS or lower, so it does not clip. Playback in the window still uses the recorded synthesis level. A screen reader controls its own volume/rate; older WAVs without a recorded level require repair. |
 | Playback voice / output | Qt system voice or active screen reader; separate from export engine/voice. |
 | Interruption | Allow new cue speech to interrupt, or queue it. |
 | Interface language | English, Arabic, Spanish, French, Italian, Portuguese, Russian, Turkish, Ukrainian or Vietnamese. Arabic uses RTL. Unmatched strings/help/logs fall back to English; no native-speaker acceptance is claimed. |
@@ -339,7 +339,7 @@ No analytics or application telemetry is configured. The engine disables ONNX te
 
 **Cancel operation** stops owned FFmpeg work and prevents subsequent chunks. It is cooperative around network streaming; an idle read may delay completion. It cannot retract already transmitted media or cancel a provider charge. Closing during a job requests cancellation and keeps the app open until the job ends. Save before long operations.
 
-**Windows updates:** close Workbench and extract the new portable build separately; retain the old folder and projects until the new version works. Settings remain under LocalAppData. With a blank feed the app checks the official latest stable GitHub release. Staging verifies the archive digest and timestamped Valid Scott Converse signatures on GUI and CLI, then installation rechecks every staged payload hash. It swaps sibling directories after the exact running process exits and retains the previous folder; receipts go under LocalAppData's `updates` directory. To roll back, close the app and restore the retained folder. Startup checking is opt-in. A custom feed is trusted input; a matching hash alone is insufficient.
+**Windows updates:** close Workbench and extract the new portable build separately; retain the old folder and projects until the new version works. Settings remain under LocalAppData. With a blank feed the app checks the official latest stable GitHub release. Staging verifies the archive digest and timestamped Valid Scott Converse signatures on GUI and CLI, then installation rechecks every staged payload hash. It swaps sibling directories after the exact running process exits and retains the previous folder; receipts go under LocalAppData's `updates` directory. To roll back, close the app and restore the retained folder. Since 0.8.3 the download starts right after you pick the staging folder, and the update helper leaves the install folder before the swap. An update from 0.8.2 still runs the 0.8.2 updater. If nothing starts after you pick the folder, choose **Check for updates** again and click **Cancel** in the second folder picker; the first download then starts. Do not start the app from a command prompt inside its own folder before you update. You can also download the new ZIP by hand. Startup checking is opt-in. A custom feed is trusted input; a matching hash alone is insufficient.
 
 **Mac/Linux updates:** Check for updates opens the shared release download page. Quit the app, download the matching CPU/OS package and replace/install it manually. Retain the old app or package for rollback. Settings/projects and the durable workspace remain separate. Mac/Linux never use Windows signed ZIP staging. Removal instructions are in [the platform guide](UNIX-INSTALL.md#updates-recovery-and-removal).
 
@@ -430,7 +430,7 @@ Windows-only optional update-feed shape (example only; no custom service is supp
 ```json
 {
   "application": "DescriberWorkbench",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "url": "https://example.org/DescriberWorkbench.zip",
   "sha256": "REPLACE_WITH_THE_ACTUAL_64_HEXADECIMAL_CHARACTER_DIGEST"
 }
@@ -453,7 +453,7 @@ The Windows 0.7.0 suite passed 182 tests and 3 subtests; its signed-package and 
 
 Historical 0.4.2 evidence: its suite passed 28 tests. Actual GUI Bunny seconds 62–122 with Gemma 26B and Qwen Q6 completed four requests per model with a clean initial glossary. The eight requests carried the requested off/32K/64K settings, runner contexts were 64K and no thinking output or truncation occurred. Projects matched responses; cue counts (29/25) are not quality scores. The release verification asset pins the executable and source identity. Raw local receipts are excluded from Git/public downloads because they include images and paths.
 
-Current 0.8.2 Mac/Linux package evidence is recorded in [the release receipt](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.8.2/release-verification.json): the test-suite results on each GitHub test machine, plus secure credential storage, measured speech, MP4/MP3, packaged startup/close, CLI/HTTP/MCP and repository launchers. Native CI is not VoiceOver/Orca or human-listening acceptance.
+Current 0.8.3 Mac/Linux package evidence is recorded in [the release receipt](https://github.com/scottconverse/Describer-Workbench/releases/download/v0.8.3/release-verification.json): the test-suite results on each GitHub test machine, plus secure credential storage, measured speech, MP4/MP3, packaged startup/close, CLI/HTTP/MCP and repository launchers. Native CI is not VoiceOver/Orca or human-listening acceptance.
 
 Still unverified: separate keyed Gemini/OpenAI/Anthropic and LM Studio/llama.cpp live operation, full-film analysis/AD quality, NVDA/JAWS user acceptance, native-speaker translations, third-party legacy voices, live public YouTube extraction ; production update evidence is recorded in the release verification asset. Fixtures validate adapter/format behavior without proving live provider acceptance. Documentation-only publication does not rebuild or change an accepted executable.
 
@@ -480,7 +480,7 @@ At export, choose a narration engine and a voice in the dropdowns. Native voices
 
 ## Setup and recovery changes (0.5.2)
 
-These recovery controls were introduced in 0.5.2 and retained in 0.8.2. [The 0.7.0 acceptance record](V070-ACCEPTANCE.md) records checks and verification limits.
+These recovery controls were introduced in 0.5.2 and retained in 0.8.3. [The 0.7.0 acceptance record](V070-ACCEPTANCE.md) records checks and verification limits.
 
 - Draft provider/model edits are committed by Start; Cancel preserves saved settings. Ollama Refresh and Test operate on the exact displayed ID. Gemini does not expose an Ollama-backed test. Slow preflight runs in the background; Cancel prevents continuation. Install/start Ollama separately and install your chosen vision model, then use Draft > Refresh models. No automatic model selection or download occurs.
 - Setup distinguishes missing, configured, verified and error. A configured Gemini key is not an account-access test. Detector verification is cached and invalidated by file changes. Voice readiness concerns the selected export engine, not playback voices.

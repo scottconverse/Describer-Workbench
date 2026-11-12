@@ -11,7 +11,7 @@ def included_pauses(project,mode):
 
 
 def export(project, output, settings, cancel, log, mode='complete'):
-    from ..services import _mix_planned_audio, run, tool
+    from ..services import LIMITER, _mix_planned_audio, narration_gain, run, tool
     target = Path(output).resolve()
     if target.suffix.lower() not in ('.mp3', '.wav', '.mp4', '.srt', '.txt', '.json', '.vtt'):
         raise ValueError('Unsupported export format')
@@ -46,7 +46,7 @@ def export(project, output, settings, cancel, log, mode='complete'):
     with tempfile.TemporaryDirectory(prefix='describer-export-') as temporary:
         tmp = Path(temporary)
         bed = tmp / 'bed.mp3'
-        _mix_planned_audio(project, bed, settings, cancel, log)
+        voice_lufs = _mix_planned_audio(project, bed, settings, cancel, log)
         parts, cursor = [], 0.0
         video = target.suffix == '.mp4'
 
@@ -72,9 +72,7 @@ def export(project, output, settings, cancel, log, mode='complete'):
             at = min(project.duration, max(cursor, cue.narration_window()[0]))
             part(at)
             dest = tmp / f'part-{len(parts):05}'
-            if cue.audio_volume is None:
-                raise ValueError('Narration has no recorded synthesis volume; repair narration before export.')
-            gain = str(float(settings.get('speech_volume',100))/cue.audio_volume)
+            gain = f'{narration_gain(cue, settings, voice_lufs[id(cue)], cancel):.6f}'
             if video:
                 frame = tmp / 'freeze.png'
                 run([tool('ffmpeg'), '-v', 'error', '-y', '-ss', str(min(at, max(0, project.duration-.05))),
@@ -82,10 +80,10 @@ def export(project, output, settings, cancel, log, mode='complete'):
                 dest = dest.with_suffix('.mp4')
                 args = ['-loop', '1', '-i', str(frame), '-i', cue.audio, '-t', str(cue.speech_seconds),
                         '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2,fps=30', '-c:v', 'libx264', '-preset', 'veryfast',
-                        '-pix_fmt', 'yuv420p', '-af', 'volume='+gain, '-c:a', 'aac', '-ar', '44100', '-ac', '2']
+                        '-pix_fmt', 'yuv420p', '-af', 'volume='+gain+','+LIMITER, '-c:a', 'aac', '-ar', '44100', '-ac', '2']
             else:
                 dest = dest.with_suffix('.wav')
-                args = ['-i', cue.audio, '-af', 'volume='+gain, '-ar', '44100', '-ac', '2', '-c:a', 'pcm_s16le']
+                args = ['-i', cue.audio, '-af', 'volume='+gain+','+LIMITER, '-ar', '44100', '-ac', '2', '-c:a', 'pcm_s16le']
             run([tool('ffmpeg'), '-v', 'error', '-y', *args, str(dest)], cancel)
             parts.append(dest)
         part(project.duration)

@@ -203,8 +203,12 @@ class Window(DesktopInterface, QMainWindow):
             else:
                 from .subscriptions import test_connection
             QTimer.singleShot(0,lambda:self.job(lambda c,l:test_connection(settings,c,l),self.log))
-        if getattr(self,'pending_update',None):
-            data,folder=self.pending_update;self.pending_update=None;self.stage_update_job(data,folder)
+        self.start_pending_update()
+    def start_pending_update(self):
+        # The folder picker is modal, so the check job can finish while it is open. Start the
+        # download here or from job_finished, whichever runs last; never wait for an unrelated job.
+        if self.thread is not None or not getattr(self,'pending_update',None):return
+        data,folder=self.pending_update;self.pending_update=None;self.stage_update_job(data,folder)
     def guard_changes(self):
         if not self.dirty:return True
         choice=QMessageBox.question(self,'Unsaved project','Save changes before continuing?',QMessageBox.StandardButton.Save|QMessageBox.StandardButton.Discard|QMessageBox.StandardButton.Cancel)
@@ -993,7 +997,7 @@ class Window(DesktopInterface, QMainWindow):
             if QMessageBox.question(self,'Workbench update','Version '+data['version']+' is available. Download and verify a separate portable copy?')!=QMessageBox.StandardButton.Yes:return
             folder=QFileDialog.getExistingDirectory(self,'Stage verified update in')
             # Schedule after the check worker has completed its thread teardown.
-            if folder:self.pending_update=(data,folder)
+            if folder:self.pending_update=(data,folder);QTimer.singleShot(0,self.start_pending_update)
         self.job(lambda c,l:read_feed(feed),done)
     def stage_update_job(self,data,folder):
         from .updates import stage_update
@@ -1008,7 +1012,8 @@ class Window(DesktopInterface, QMainWindow):
         from .services import CREATE_NO_WINDOW
         try:
             script,payload,receipt=prepare_apply(path,Path(sys.executable).parent,sys.executable,os.getpid(),self.settings.path.parent/'updates')
-            subprocess.Popen(['powershell.exe','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',str(script),str(payload)],creationflags=CREATE_NO_WINDOW)
+            # The helper must not start inside the install folder: its working folder would lock it.
+            subprocess.Popen(['powershell.exe','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',str(script),str(payload)],cwd=str(script.parent),creationflags=CREATE_NO_WINDOW)
             self.log('Update helper started; receipt: '+str(receipt))
             # The worker is completing; wait for teardown before allowing close.
             QTimer.singleShot(200,self.close_for_update)
