@@ -102,3 +102,23 @@ def test_mix_steps_use_float_files_so_nothing_clips_before_the_limiter(tmp_path)
     assert {Path(c[-1]).name.rstrip('0123456789.wav') for c in steps} == {'timed', 'ducked', 'mix'}
     for c in steps:
         assert c[c.index('-c:a')+1] == 'pcm_f32le', c[-1]
+
+
+def test_voice_matches_the_sound_near_it_in_a_long_meeting(tmp_path):
+    # A loud first hour and a quiet later room, as in the long council test video (L4b).
+    source = tmp_path/'meeting.mkv'
+    run([tool('ffmpeg'), '-v', 'error', '-y', '-f', 'lavfi', '-i', 'color=c=gray:s=160x120:r=10:d=130',
+         '-f', 'lavfi', '-i', 'sine=frequency=1000:duration=130', '-af', "volume='if(lt(t,60),4,0.4)':eval=frame",
+         '-c:v', 'libx264', '-c:a', 'pcm_s16le', '-shortest', str(source)])
+    voice = tmp_path/'voice.wav';tone(voice, 880, .95, 2)
+    project = Project(str(source), 130, [Cue(100, 102, 'Quiet room.', event_id='one', event_start=100, event_end=102,
+                                             disposition='in-gap', audio=str(voice), speech_seconds=2, audio_volume=100)])
+    project.cues[0].validate(130)
+    target = tmp_path/'meeting.wav'
+    export(project, target, {'duck_db': -15}, threading.Event(), lambda _:None)
+    room = measure_loudness(piece(target, 104, 20, tmp_path/'room.wav'))
+    spoken = measure_loudness(piece(target, 100.2, 1.6, tmp_path/'spoken.wav'))
+    whole = measure_loudness(source)
+    assert room is not None and room < whole-10 and room > services.NARRATION_LUFS_RANGE[0]+5
+    # The voice follows the quiet room, not the loud start of the video.
+    assert spoken == pytest.approx(room, abs=2.5)

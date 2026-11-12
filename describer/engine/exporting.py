@@ -72,7 +72,7 @@ def export(project, output, settings, cancel, log, mode='complete'):
             at = min(project.duration, max(cursor, cue.narration_window()[0]))
             part(at)
             dest = tmp / f'part-{len(parts):05}'
-            gain = f'{narration_gain(cue, settings, voice_lufs, cancel):.6f}'
+            gain = f'{narration_gain(cue, settings, voice_lufs[id(cue)], cancel):.6f}'
             if video:
                 frame = tmp / 'freeze.png'
                 run([tool('ffmpeg'), '-v', 'error', '-y', '-ss', str(min(at, max(0, project.duration-.05))),
