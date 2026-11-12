@@ -543,7 +543,7 @@ def synthesize(text, output, settings, cancel=None):
 # Narration loudness. The voice plays at the same loudness as the video's own sound,
 # kept inside a normal speech range. A limiter keeps every peak at or below -1 dBFS.
 NARRATION_DEFAULT_LUFS = -16.0
-NARRATION_LUFS_RANGE = (-30.0, -14.0)
+NARRATION_LUFS_RANGE = (-36.0, -14.0)
 LIMITER = 'alimiter=limit=0.891251:level=false:latency=true'
 
 

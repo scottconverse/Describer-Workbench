@@ -16,7 +16,8 @@ from describer.services import measure_loudness, narration_gain, narration_targe
 def test_target_follows_the_video_inside_the_speech_range():
     assert narration_target(None) == services.NARRATION_DEFAULT_LUFS
     assert narration_target(-22.6) == -22.6
-    assert narration_target(-45.0) == -30.0
+    assert narration_target(-45.0) == -36.0
+    assert narration_target(-35.5) == -35.5  # a quiet council room (L4b) is matched, not raised
     assert narration_target(-8.0) == -14.0
 
 
