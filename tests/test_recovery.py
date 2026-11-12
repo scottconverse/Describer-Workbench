@@ -460,3 +460,18 @@ def test_download_failure_guidance_is_sanitized(tmp_path,message,expected):
     with patch('yt_dlp.YoutubeDL',return_value=downloader):
         with pytest.raises(RuntimeError) as error:download('https://example.invalid/video',tmp_path,threading.Event(),lambda text:None)
     assert expected in str(error.value) and 'Open video' in str(error.value) and 'secret' not in str(error.value)
+
+
+def test_update_helper_starts_outside_the_install_folder(tmp_path):
+    from PySide6.QtWidgets import QMessageBox
+    app,w=make_window(tmp_path);script=tmp_path/'updates'/'apply.ps1';started=[]
+    try:
+        w.guard_changes=lambda:True
+        with patch('describer.app.sys.frozen',True,create=True),\
+             patch('describer.app.QMessageBox.question',return_value=QMessageBox.StandardButton.Yes),\
+             patch('describer.updates.prepare_apply',return_value=(script,tmp_path/'payload.json',tmp_path/'receipt.json')),\
+             patch('subprocess.Popen',side_effect=lambda args,**kw:started.append(kw)),\
+             patch('describer.app.QTimer.singleShot'):
+            w.update_staged(str(tmp_path/'staged'))
+        assert started and started[0]['cwd']==str(script.parent)
+    finally:w.dirty=False;w.close();app.processEvents()

@@ -21,6 +21,26 @@ class WorkerGuiTests(unittest.TestCase):
    self.assertEqual(calls,[(42,True)]);self.assertEqual(errors,[]);self.assertIsNone(w.thread)
    self.assertEqual(stages,[({'version':'fixture'},'fixture-folder',True)])
    w.dirty=False;w.close();self.app.processEvents()
+ def test_pending_download_starts_after_a_modal_folder_picker(self):
+  # 0.8.2 bug: the picker is modal, so the check job ended while it was open and the download never began.
+  from unittest.mock import patch
+  from PySide6.QtWidgets import QMessageBox
+  with tempfile.TemporaryDirectory() as tmp:
+   w=Window(Path(tmp)/'settings.json');w.settings.data['sounds']=False;errors=[];w.error=errors.append;stages=[]
+   w.stage_update_job=lambda data,folder:stages.append((data['version'],folder,w.thread is None))
+   def picker(*_):
+    deadline=time.monotonic()+5
+    while w.thread is not None and time.monotonic()<deadline:self.app.processEvents();QTest.qWait(10)
+    self.assertIsNone(w.thread);return tmp
+   with patch('describer.updates.read_feed',return_value={'newer':True,'version':'9.9.9'}),\
+        patch('describer.app.QMessageBox.question',return_value=QMessageBox.StandardButton.Yes),\
+        patch('describer.app.QFileDialog.getExistingDirectory',side_effect=picker),\
+        patch('describer.app.sys.platform','win32'):
+    w.check_updates()
+    deadline=time.monotonic()+5
+    while not stages and time.monotonic()<deadline:self.app.processEvents();QTest.qWait(10)
+   self.assertEqual(stages,[('9.9.9',tmp,True)]);self.assertEqual(errors,[])
+   w.dirty=False;w.close();self.app.processEvents()
  def test_offline_controls_and_answer_insertion(self):
   from describer.services import Settings
   from describer.i18n import translate,LANGUAGES

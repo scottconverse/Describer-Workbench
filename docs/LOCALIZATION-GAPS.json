@@ -2,7 +2,7 @@
   "coverage": "Literal control text, form-field labels and static item lists in the maintained desktop modules. Excludes dynamic/interpolated messages, user/model content and unrendered runtime-only text. Not a full-localization claim.",
   "source_hash_format": "UTF-8 text with LF newlines, without BOM; independent of Git checkout line-ending conversion.",
   "source_sha256": {
-    "describer\\app.py": "ae12c2b7da97e334a6567b7085eed30b5f6759da7d94d81d8741f64fabfb1632",
+    "describer\\app.py": "8559308e31248b3b9d5ad71bfb8de34927d87a10468128a64ad57d5d580b8453",
     "describer\\desktop.py": "8a565dd081fd941dc2cc5524bf321437b940b3efa42deeef58df6befb4886439",
     "describer\\model_picker.py": "1f30ebd914ea0151ae3e979570c954772a6b73cebbd1575d1843f5af30a248ea"
   },
@@ -245,7 +245,7 @@
     {
       "text": "Allow new descriptions to interrupt speech",
       "sources": [
-        "describer/app.py:845"
+        "describer/app.py:849"
       ],
       "english_fallback_languages": []
     },
@@ -338,7 +338,7 @@
     {
       "text": "Anthropic API key",
       "sources": [
-        "describer/app.py:829"
+        "describer/app.py:833"
       ],
       "english_fallback_languages": [
         "Español",
@@ -414,7 +414,7 @@
     {
       "text": "Audio export speech engine",
       "sources": [
-        "describer/app.py:835"
+        "describer/app.py:839"
       ],
       "english_fallback_languages": [
         "Español",
@@ -431,7 +431,7 @@
     {
       "text": "Background ducking (dB)",
       "sources": [
-        "describer/app.py:833"
+        "describer/app.py:837"
       ],
       "english_fallback_languages": []
     },
@@ -554,7 +554,7 @@
     {
       "text": "Check configured update feed at startup",
       "sources": [
-        "describer/app.py:842"
+        "describer/app.py:846"
       ],
       "english_fallback_languages": [
         "Español",
@@ -639,7 +639,7 @@
     {
       "text": "Claude CLI executable (blank: discover)",
       "sources": [
-        "describer/app.py:829"
+        "describer/app.py:833"
       ],
       "english_fallback_languages": [
         "Español",
@@ -697,7 +697,7 @@
     {
       "text": "Codex CLI executable (blank: discover)",
       "sources": [
-        "describer/app.py:829"
+        "describer/app.py:833"
       ],
       "english_fallback_languages": [
         "Español",
@@ -925,7 +925,7 @@
     {
       "text": "Description language",
       "sources": [
-        "describer/app.py:829"
+        "describer/app.py:833"
       ],
       "english_fallback_languages": [
         "Español",
@@ -976,7 +976,7 @@
     {
       "text": "Description verbosity",
       "sources": [
-        "describer/app.py:838"
+        "describer/app.py:842"
       ],
       "english_fallback_languages": []
     },
@@ -1033,7 +1033,7 @@
     {
       "text": "Diagnostic logging level",
       "sources": [
-        "describer/app.py:838"
+        "describer/app.py:842"
       ],
       "english_fallback_languages": [
         "Español",
@@ -1188,7 +1188,7 @@
     {
       "text": "Enable video chunking",
       "sources": [
-        "describer/app.py:842"
+        "describer/app.py:846"
       ],
       "english_fallback_languages": []
     },
@@ -1253,7 +1253,7 @@
     {
       "text": "Existing gateway client-key file",
       "sources": [
-        "describer/app.py:829"
+        "describer/app.py:833"
       ],
       "english_fallback_languages": [
         "Español",
@@ -1379,7 +1379,7 @@
     {
       "text": "Frames per second (Gemini)",
       "sources": [
-        "describer/app.py:833"
+        "describer/app.py:837"
       ],
       "english_fallback_languages": [
         "Español",
@@ -1396,21 +1396,21 @@
     {
       "text": "Gemini API key",
       "sources": [
-        "describer/app.py:829"
+        "describer/app.py:833"
       ],
       "english_fallback_languages": []
     },
     {
       "text": "Gemini model",
       "sources": [
-        "describer/app.py:829"
+        "describer/app.py:833"
       ],
       "english_fallback_languages": []
     },
     {
       "text": "Gemini temperature",
       "sources": [
-        "describer/app.py:844"
+        "describer/app.py:848"
       ],
       "english_fallback_languages": []
     },
@@ -1458,7 +1458,7 @@
     {
       "text": "INCOMPLETE provider response — review only",
       "sources": [
-        "describer/app.py:686"
+        "describer/app.py:690"
       ],
       "english_fallback_languages": [
         "Español",
@@ -1516,7 +1516,7 @@
     {
       "text": "Interface language",
       "sources": [
-        "describer/app.py:836"
+        "describer/app.py:840"
       ],
       "english_fallback_languages": []
     },
@@ -1540,7 +1540,7 @@
     {
       "text": "Live text playback output",
       "sources": [
-        "describer/app.py:838"
+        "describer/app.py:842"
       ],
       "english_fallback_languages": [
         "Español",
@@ -1775,7 +1775,7 @@
     {
       "text": "No answer yet.",
       "sources": [
-        "describer/app.py:219",
+        "describer/app.py:223",
         "describer/desktop.py:527"
       ],
       "english_fallback_languages": [
@@ -1827,7 +1827,7 @@
     {
       "text": "Notification sounds",
       "sources": [
-        "describer/app.py:842"
+        "describer/app.py:846"
       ],
       "english_fallback_languages": [
         "Español",
@@ -1861,7 +1861,7 @@
     {
       "text": "Ollama request timeout (seconds)",
       "sources": [
-        "describer/app.py:833"
+        "describer/app.py:837"
       ],
       "english_fallback_languages": [
         "Español",
@@ -1878,7 +1878,7 @@
     {
       "text": "Ollama seconds between frames (max 8 per request)",
       "sources": [
-        "describer/app.py:833"
+        "describer/app.py:837"
       ],
       "english_fallback_languages": [
         "Español",
@@ -1895,7 +1895,7 @@
     {
       "text": "Ollama server API key (optional)",
       "sources": [
-        "describer/app.py:829"
+        "describer/app.py:833"
       ],
       "english_fallback_languages": [
         "Español",
@@ -1912,7 +1912,7 @@
     {
       "text": "Ollama server address",
       "sources": [
-        "describer/app.py:829"
+        "describer/app.py:833"
       ],
       "english_fallback_languages": [
         "Español",
@@ -1953,14 +1953,14 @@
     {
       "text": "OpenAI API key",
       "sources": [
-        "describer/app.py:829"
+        "describer/app.py:833"
       ],
       "english_fallback_languages": []
     },
     {
       "text": "OpenAI base voice",
       "sources": [
-        "describer/app.py:829"
+        "describer/app.py:833"
       ],
       "english_fallback_languages": [
         "Español",
@@ -1994,7 +1994,7 @@
     {
       "text": "OpenAI speech model",
       "sources": [
-        "describer/app.py:829"
+        "describer/app.py:833"
       ],
       "english_fallback_languages": [
         "Español",
@@ -2011,7 +2011,7 @@
     {
       "text": "OpenAI voice preset",
       "sources": [
-        "describer/app.py:840"
+        "describer/app.py:844"
       ],
       "english_fallback_languages": [
         "Español",
@@ -2247,7 +2247,7 @@
     {
       "text": "Recognize characters during analysis",
       "sources": [
-        "describer/app.py:842"
+        "describer/app.py:846"
       ],
       "english_fallback_languages": []
     },
@@ -2289,7 +2289,7 @@
     {
       "text": "Remove audio before uploading video",
       "sources": [
-        "describer/app.py:842"
+        "describer/app.py:846"
       ],
       "english_fallback_languages": []
     },
@@ -2313,7 +2313,7 @@
     {
       "text": "Request BLOCK_NONE for adjustable Gemini filters (provider core rules still apply)",
       "sources": [
-        "describer/app.py:842"
+        "describer/app.py:846"
       ],
       "english_fallback_languages": [
         "Español",
@@ -2558,7 +2558,7 @@
     {
       "text": "Seconds per analysis chunk",
       "sources": [
-        "describer/app.py:833"
+        "describer/app.py:837"
       ],
       "english_fallback_languages": []
     },
@@ -2616,7 +2616,7 @@
     {
       "text": "Settings",
       "sources": [
-        "describer/app.py:828",
+        "describer/app.py:832",
         "describer/desktop.py:263"
       ],
       "english_fallback_languages": []
@@ -2716,7 +2716,7 @@
     {
       "text": "Speech volume",
       "sources": [
-        "describer/app.py:833",
+        "describer/app.py:837",
         "describer/desktop.py:278"
       ],
       "english_fallback_languages": [
@@ -2810,7 +2810,7 @@
     {
       "text": "Subscription gateway server address",
       "sources": [
-        "describer/app.py:829"
+        "describer/app.py:833"
       ],
       "english_fallback_languages": [
         "Español",
@@ -2844,7 +2844,7 @@
     {
       "text": "Subscription/API reasoning effort (blank: provider default)",
       "sources": [
-        "describer/app.py:829"
+        "describer/app.py:833"
       ],
       "english_fallback_languages": [
         "Español",
@@ -2861,7 +2861,7 @@
     {
       "text": "Subscription/API timeout (seconds)",
       "sources": [
-        "describer/app.py:833"
+        "describer/app.py:837"
       ],
       "english_fallback_languages": [
         "Español",
@@ -2930,7 +2930,7 @@
     {
       "text": "This response was cut off. It has not been added to the project. Retry with shorter chunks.",
       "sources": [
-        "describer/app.py:687"
+        "describer/app.py:691"
       ],
       "english_fallback_languages": [
         "Español",
@@ -2981,7 +2981,7 @@
     {
       "text": "Update feed (HTTPS URL or local JSON)",
       "sources": [
-        "describer/app.py:829"
+        "describer/app.py:833"
       ],
       "english_fallback_languages": [
         "Español",
@@ -3151,7 +3151,7 @@
     {
       "text": "Voice preset",
       "sources": [
-        "describer/app.py:930"
+        "describer/app.py:934"
       ],
       "english_fallback_languages": []
     },
@@ -3226,7 +3226,7 @@
     {
       "text": "Windows voice rate",
       "sources": [
-        "describer/app.py:833"
+        "describer/app.py:837"
       ],
       "english_fallback_languages": [
         "Español",
@@ -3260,14 +3260,14 @@
     {
       "text": "YouTube download quality",
       "sources": [
-        "describer/app.py:838"
+        "describer/app.py:842"
       ],
       "english_fallback_languages": []
     },
     {
       "text": "agy CLI executable (blank: discover)",
       "sources": [
-        "describer/app.py:829"
+        "describer/app.py:833"
       ],
       "english_fallback_languages": [
         "Español",

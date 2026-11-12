@@ -57,3 +57,12 @@ def test_invalid_signature_never_stages_and_runtime_tampering_never_prepares_app
         (Path(staged)/'_internal/runtime.dll').write_bytes(b'tampered')
         with pytest.raises(ValueError,match='changed'):updates.prepare_apply(staged,installed,exe,12345,tmp_path/'bad-jobs',False)
         assert not (tmp_path/'bad-jobs').exists()
+
+
+def test_apply_helper_leaves_the_install_folder_before_the_swap():
+    # 0.8.2 bug: a helper started inside the install folder locked it, so the folder move failed.
+    script=updates.APPLY_SCRIPT
+    assert "Set-Location -LiteralPath (Split-Path -Parent $args[0])" in script
+    # Set-Location alone leaves the Windows process folder inside the install folder.
+    assert "[System.IO.Directory]::SetCurrentDirectory((Split-Path -Parent $args[0]))" in script
+    assert script.index('SetCurrentDirectory')<script.index('Move-Item')
