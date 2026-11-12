@@ -14,7 +14,7 @@ Windows x64 ZIP, an Apple Silicon Mac DMG, and Linux x64 DEB/portable archives a
 
 Open a video, draft descriptions through the selected analysis connection, edit every cue, listen alongside the video, and export subtitles or a narrated audio mix. Version 0.8.3 supports Gemini, Ollama, the existing subscription gateway, native Codex/Claude/Antigravity tools and explicit API profiles. Manual editing, subtitle import and native speech work without an AI API key. These are reviewed drafts: correct visual facts, missing events, readable text and timing before final export.
 
-[Downloads 0.8.3](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.8.3) · [Website](https://describer-workbench.sconverse.chatgpt.site) · [User manual](docs/USER-MANUAL.md) · [Architecture](docs/ARCHITECTURE.md) · [Developer guide](docs/DEVELOPER-GUIDE.md) · [Issues](https://github.com/scottconverse/Describer-Workbench/issues)
+[Downloads 0.8.3](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.8.3) · [Website](https://scottconverse.github.io/Describer-Workbench) · [User manual](docs/USER-MANUAL.md) · [Architecture](docs/ARCHITECTURE.md) · [Developer guide](docs/DEVELOPER-GUIDE.md) · [Issues](https://github.com/scottconverse/Describer-Workbench/issues)
 
 > AI output is a draft. Review visual facts, character identities, timing and overlap with dialogue. Ollama receives sampled images **without audio**, so it cannot determine dialogue gaps or audible names. The shared engine measures speech/vocal protection independently with a pinned local YAMNet classifier. This reduces timing conflicts; it does not establish visual accuracy or legal compliance.
 
@@ -177,7 +177,7 @@ The [v0.8.3 release](https://github.com/scottconverse/Describer-Workbench/releas
 
 For an issue include the app/operating-system version and CPU architecture, exact provider/model, reproduction steps, expected result and redacted logs. Never post keys, private video, complete settings or unsanitized projects. Describe the scope actually tested.
 
-The landing page is in `website/`. The [GitHub Pages site](https://scottconverse.github.io/Describer-Workbench/) mirrors the landing page, manuals and diagrams through `.github/workflows/pages.yml` on documentation changes to `main`. The existing [website](https://describer-workbench.sconverse.chatgpt.site) remains available and is the canonical address in generated metadata. Both use the same renderer and relative HTML navigation; no analytics are added.
+The landing page is in `website/`. The [GitHub Pages site](https://scottconverse.github.io/Describer-Workbench/) mirrors the landing page, manuals and diagrams through `.github/workflows/pages.yml` on documentation changes to `main`. It is the only website and the canonical address in generated metadata. Pages use relative HTML navigation; no analytics are added.
 
 Render the manual/site with a documentation-only dependency:
 

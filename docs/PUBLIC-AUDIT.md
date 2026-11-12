@@ -37,7 +37,7 @@ Each row distinguishes code inspection from execution. No live paid/cloud infere
 
 ## Artifact and evidence boundaries
 
-The immutable release is [v0.4.2](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.4.2), source commit `5bf93b952369c1342e54faa9f2c857a695430075`. Downloaded executable SHA256: `f5a7fcd34998b96fa85089c77b07346df20abe1f43cee9c37e4a0f3e11ed2b13`. Its original packaged documentation is historical; current corrections are in main and the [published manual](https://describer-workbench.sconverse.chatgpt.site/manual).
+The immutable release is [v0.4.2](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.4.2), source commit `5bf93b952369c1342e54faa9f2c857a695430075`. Downloaded executable SHA256: `f5a7fcd34998b96fa85089c77b07346df20abe1f43cee9c37e4a0f3e11ed2b13`. Its original packaged documentation is historical; current corrections are in main and the [published manual](https://scottconverse.github.io/Describer-Workbench/manual).
 
 The earlier 28-test release suite, frozen-module checks and Bunny segment receipts are historical acceptance, not newly executed tests. This audit executes two documentation regression tests and an isolated source GUI smoke test. Raw HTTP, download-integrity and GUI receipts are retained locally under `evidence/public-audit/`; they are excluded from Git because machine paths and third-party response data need not be published. No independent reviewer is claimed.
 
