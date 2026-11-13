@@ -2,20 +2,20 @@
   "coverage": "Literal control text, form-field labels and static item lists in the maintained desktop modules. Excludes dynamic/interpolated messages, user/model content and unrendered runtime-only text. Not a full-localization claim.",
   "source_hash_format": "UTF-8 text with LF newlines, without BOM; independent of Git checkout line-ending conversion.",
   "source_sha256": {
-    "describer\\app.py": "8559308e31248b3b9d5ad71bfb8de34927d87a10468128a64ad57d5d580b8453",
-    "describer\\desktop.py": "8a565dd081fd941dc2cc5524bf321437b940b3efa42deeef58df6befb4886439",
+    "describer\\app.py": "28820d01ff866a902c1d79033df3e9fc1b868644c942e7116bf6da584493088f",
+    "describer\\desktop.py": "2c7bbba6a97003cf9421e48e4c26a49a3916d3e618d1ebce7d31e759930a1c88",
     "describer\\model_picker.py": "1f30ebd914ea0151ae3e979570c954772a6b73cebbd1575d1843f5af30a248ea"
   },
   "language_fallback_counts": {
-    "Español": 188,
-    "Français": 188,
-    "Italiano": 188,
-    "Português": 188,
-    "Русский": 188,
-    "Türkçe": 187,
-    "Українська": 188,
-    "Tiếng Việt": 188,
-    "العربية": 188
+    "Español": 189,
+    "Français": 189,
+    "Italiano": 189,
+    "Português": 189,
+    "Русский": 189,
+    "Türkçe": 188,
+    "Українська": 189,
+    "Tiếng Việt": 189,
+    "العربية": 189
   },
   "entries": [
     {
@@ -2345,6 +2345,40 @@
       ]
     },
     {
+      "text": "Require review before media export (Needs review blocks MP4, MP3 and WAV)",
+      "sources": [
+        "describer/app.py:846"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
+      "text": "Require review is on in Settings: descriptions marked Needs review block media exports.",
+      "sources": [
+        "describer/desktop.py:728"
+      ],
+      "english_fallback_languages": [
+        "Español",
+        "Français",
+        "Italiano",
+        "Português",
+        "Русский",
+        "Türkçe",
+        "Українська",
+        "Tiếng Việt",
+        "العربية"
+      ]
+    },
+    {
       "text": "Retry voice discovery",
       "sources": [
         "describer/desktop.py:918"
@@ -2948,23 +2982,6 @@
       "text": "Timeline: Ctrl+wheel zoom, wheel scroll",
       "sources": [
         "describer/desktop.py:131"
-      ],
-      "english_fallback_languages": [
-        "Español",
-        "Français",
-        "Italiano",
-        "Português",
-        "Русский",
-        "Türkçe",
-        "Українська",
-        "Tiếng Việt",
-        "العربية"
-      ]
-    },
-    {
-      "text": "Unresolved visual facts block media exports.",
-      "sources": [
-        "describer/desktop.py:728"
       ],
       "english_fallback_languages": [
         "Español",

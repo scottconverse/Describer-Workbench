@@ -1,4 +1,4 @@
-# Technical user and developer guide — 0.8.3
+# Technical user and developer guide — 0.8.4
 
 **Editor boundaries:** `editor_history.py` contains existing project
 undo/redo commands and keyboard routing; `editor_selection.py` holds cue identity
@@ -48,7 +48,7 @@ New image adapters share a source-time FFmpeg sampler with at most eight640px im
 
 The Windows updater uses the official latest stable GitHub release when the configured feed is blank. It checks the archive digest, requires timestamped Valid Scott Converse signatures on both Windows executables, and rechecks all staged payload hashes before applying. Manual signed-package acceptance: `python -m tests.update_acceptance SIGNED_ARCHIVE NEW_OUTPUT_DIRECTORY`. Real portable relaunch acceptance: `python -m tests.portable_update_acceptance prepare NEW_OUTPUT_DIRECTORY OLD_INSTALL VERIFIED_STAGED_DIRECTORY`, then close only its disposable window and run the same module with `verify NEW_OUTPUT_DIRECTORY`. These scripts write new receipts beside their disposable installation and preserve historical evidence. A requested launch alone does not verify the running application.
 
-See the [0.8.3 release](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.8.3) for its verification receipt and checksums, and the [0.7.0 acceptance record](V070-ACCEPTANCE.md) for the earlier stabilization checks and limits. The distributed Windows GUI and CLI are signed as Scott Converse using Azure Trusted Signing with Microsoft timestamps. Windows source builds require the [release signing procedure](CODE-SIGNING.md) before publication; the explicitly authorized Mac/Linux distributions use the separate integrity policy below.
+See the [0.8.4 release](https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.8.4) for its verification receipt and checksums, and the [0.7.0 acceptance record](V070-ACCEPTANCE.md) for the earlier stabilization checks and limits. The distributed Windows GUI and CLI are signed as Scott Converse using Azure Trusted Signing with Microsoft timestamps. Windows source builds require the [release signing procedure](CODE-SIGNING.md) before publication; the explicitly authorized Mac/Linux distributions use the separate integrity policy below.
 
 Describer Workbench has one headless engine. The Qt desktop, Python API, CLI,
 REST API and MCP tools call the same `DescriptionService`. No WSL, Docker,

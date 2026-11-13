@@ -2,8 +2,10 @@ from describer.platforms import native_engine
 """Desktop redesign regressions: edit persistence, undo, range controls and export gate."""
 import tempfile
 from pathlib import Path
+
+import pytest
 from PySide6.QtCore import QTimer
-from PySide6.QtWidgets import QApplication, QDialog, QPushButton, QLineEdit, QListWidget
+from PySide6.QtWidgets import QApplication, QDialog, QLabel, QPushButton, QLineEdit, QListWidget
 from describer.app import Window
 from describer.project import Cue
 
@@ -46,18 +48,22 @@ def test_add_review_filter_and_timeline_keyboard_targets():
         finally:w.dirty=False;w.close();app.processEvents()
 
 
-def test_export_blocks_unresolved_media_but_allows_text():
+@pytest.mark.parametrize('required',[True,False])
+def test_export_blocks_unresolved_media_only_when_review_is_required(required):
     with tempfile.TemporaryDirectory() as tmp:
-        app,w=make_window(tmp);observed=[]
+        app,w=make_window(tmp);observed=[];w.settings.data['require_review']=required
         def inspect():
             d=QApplication.activeModalWidget();assert isinstance(d,QDialog)
             formats=d.findChildren(QListWidget)[0]
             path=next(x for x in d.findChildren(QLineEdit) if x.accessibleName()=='Export save path')
             go=next(x for x in d.findChildren(QPushButton) if x.text()=='Export')
-            path.setText(str(Path(tmp)/'output.mp4'));observed.append(not go.isEnabled())
+            path.setText(str(Path(tmp)/'output.mp4'))
+            warning=next(x for x in d.findChildren(QLabel) if x.text().startswith('Require review is on'))
+            observed.append(warning.isVisible())
+            if required:assert not go.isEnabled()
             formats.setCurrentRow(5);path.setText(str(Path(tmp)/'output.txt'));observed.append(go.isEnabled());d.reject()
         try:
-            QTimer.singleShot(0,inspect);w.export();assert observed==[True,True]
+            QTimer.singleShot(0,inspect);w.export();assert observed==[required,True]
         finally:w.dirty=False;w.close();app.processEvents()
 
 

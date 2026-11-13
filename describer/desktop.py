@@ -75,7 +75,7 @@ class CueDelegate(QStyledItemDelegate):
             painter.drawText(r.adjusted(0,23,0,-24),Qt.TextWordWrap, cue.text)
             tag=cue_status(cue);width=painter.fontMetrics().horizontalAdvance(tag)+16;tag_rect=QRectF(r.x(),r.bottom()-19,width,20)
             pen=QPen(QColor('#5980a6') if cue.speed>1 or cue.disposition=='pause' else option.palette.text().color(),1)
-            if cue.disposition=='unresolved':pen.setStyle(Qt.DashLine)
+            if cue.needs_review():pen.setStyle(Qt.DashLine)
             if cue.disposition=='pause':painter.fillRect(tag_rect,QColor('#416180'))
             painter.setPen(pen);painter.drawRect(tag_rect);painter.setPen(QColor('#ffffff') if cue.disposition=='pause' else option.palette.text().color());painter.drawText(tag_rect,Qt.AlignCenter,tag)
         if option.state & QStyle.State_HasFocus:
@@ -85,7 +85,7 @@ class CueDelegate(QStyledItemDelegate):
 
 
 def cue_status(cue):
-    if cue.disposition=='unresolved':return 'Needs review'
+    if cue.needs_review():return 'Needs review'
     if cue.disposition=='dropped_no_gap':return 'Dropped: no gap'
     if cue.disposition=='pause':return f'Pause {cue.speech_seconds:.1f}s' if cue.speech_seconds else 'Pauses picture'
     if cue.speed>1:return f'Sped up · {cue.speed:.2f}×'
@@ -162,7 +162,7 @@ class Timeline(QWidget):
             b.setToolTip(cue.text)
             b.clicked.connect(lambda checked=False, index=i: self.window.choose(index))
             b.setProperty('role','primary' if cue.disposition=='pause' else 'secondary')
-            if cue.disposition=='unresolved':b.setStyleSheet('border:1px dashed palette(text);')
+            if cue.needs_review():b.setStyleSheet('border:1px dashed palette(text);')
             elif cue.speed>1:b.setStyleSheet('background:rgba(89,128,166,76);border:1px solid #5980a6;')
             elif cue.disposition=='in-gap':b.setStyleSheet('background:rgba(89,128,166,76);border:1px solid #5980a6;')
             self.blocks.append(b); b.show()
@@ -402,7 +402,7 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
         self.model_chip.setText(provider+' · '+(model or 'Choose model'))
         self.project_title.setText((Path(self.project_path or self.project.video).stem if self.project.video else 'New project')+'  · '+('Unsaved changes (Ctrl+S)' if self.dirty else 'Saved'))
         running=self.thread is not None;self.inline.setEnabled(not running);self.glossary_list.parentWidget().setEnabled(not running);self.draft_button.setEnabled(not running and bool(self.project.video));self.export_button.setEnabled(not running and bool(self.project.cues));self.job_card.setVisible(running)
-        counts={k:sum(c.disposition==k for c in self.project.cues) for k in ('in-gap','pause','unresolved')}
+        counts={k:sum(c.disposition==k for c in self.project.cues) for k in ('in-gap','pause')}|{'unresolved':sum(c.needs_review() for c in self.project.cues)}
         sped_up=sum(c.disposition=='in-gap' and c.speed>1 for c in self.project.cues)
         from .engine.assets import detector_state
         detector=detector_state(self.settings.data)
@@ -423,9 +423,9 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
     def render_cues(self):
         if not hasattr(self,'cue_list'):return
         self.cue_list.blockSignals(True);self.cue_list.clear();self.visible_indices=[]
-        self.cue_filter.setItemText(1,f"Needs review · {sum(c.disposition=='unresolved' for c in self.project.cues)}");self.cue_filter.setItemText(2,f"Pauses · {sum(c.disposition=='pause' for c in self.project.cues)}")
+        self.cue_filter.setItemText(1,f"Needs review · {sum(c.needs_review() for c in self.project.cues)}");self.cue_filter.setItemText(2,f"Pauses · {sum(c.disposition=='pause' for c in self.project.cues)}")
         for i,c in enumerate(self.project.cues):
-            if self.cue_filter.currentIndex()==1 and c.disposition!='unresolved':continue
+            if self.cue_filter.currentIndex()==1 and not c.needs_review():continue
             if self.cue_filter.currentIndex()==2 and c.disposition!='pause':continue
             item=QListWidgetItem(c.text);item.setData(Qt.UserRole,c);item.setData(Qt.UserRole+1,i+1);item.setData(Qt.AccessibleTextRole,cue_accessible(c,i));item.setToolTip(cue_status(c)+': '+c.text);item.setSizeHint(QSize(250,108));self.cue_list.addItem(item);self.visible_indices.append(i)
         selected=self.selected_index()
@@ -452,7 +452,7 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
         """Update live text without replacing the list, editor or timeline buttons."""
         cue=self.project.cues[index]
         mode=self.cue_filter.currentIndex()
-        visible=mode==0 or (mode==1 and cue.disposition=='unresolved') or (mode==2 and cue.disposition=='pause')
+        visible=mode==0 or (mode==1 and cue.needs_review()) or (mode==2 and cue.disposition=='pause')
         self.cue_list.blockSignals(True)
         try:
             row=self.visible_indices.index(index) if index in self.visible_indices else None
@@ -467,18 +467,18 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
         block=self.timeline.blocks[index];block.setToolTip(cue.text);block.striped=cue.speed>1
         block.setAccessibleName(cue_accessible(cue,index))
         block.setProperty('role','primary' if cue.disposition=='pause' else 'secondary')
-        block.setStyleSheet('border:1px dashed palette(text);' if cue.disposition=='unresolved' else '')
+        block.setStyleSheet('border:1px dashed palette(text);' if cue.needs_review() else '')
         block.update()
         self._selected_cue=cue;self.update_fit()
         if old.disposition!=cue.disposition:
-            self.cue_filter.setItemText(1,f"Needs review · {sum(c.disposition=='unresolved' for c in self.project.cues)}")
+            self.cue_filter.setItemText(1,f"Needs review · {sum(c.needs_review() for c in self.project.cues)}")
             self.cue_filter.setItemText(2,f"Pauses · {sum(c.disposition=='pause' for c in self.project.cues)}")
         self.update_status()
     def update_fit(self):
         try:
             slot=seconds(self.end.text())-seconds(self.start.text());speech=len(self.text.toPlainText().split())/2.6
             cue=self._selected_cue
-            self.checked_button.setVisible(bool(cue and cue.disposition=='unresolved'))
+            self.checked_button.setVisible(bool(cue and cue.needs_review()))
             if cue and cue.text==self.text.toPlainText() and cue.speech_seconds:speech=cue.speech_seconds
             ratio=speech/max(.1,slot);verdict='Fits at normal speed' if ratio<=1 else f'Speeds up to {ratio:.2f}×' if ratio<=1.15 else 'Too long: picture will pause'
             self.fit_label.setText(f'≈{speech:.1f} s of speech in a {slot:.1f} s slot\n{verdict}');self.fit_bar.setValue(min(200,round(ratio*100)));self.review_note.setText(cue.uncertainty if cue else '')
@@ -724,9 +724,9 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
         for title,description,extension in [('Described video','Picture with narration and soundtrack','MP4'),('Narrated audio','Compressed audio with narration','MP3'),('Narrated audio','Uncompressed audio with narration','WAV'),('Subtitles','Timed description captions','SRT'),('Web subtitles','Web-ready description captions','VTT'),('Script','Readable description script','TXT'),('Project data','Structured project and cue data','JSON')]:
             item=QListWidgetItem(f'{title} · .{extension.lower()}\n{description}');item.setSizeHint(QSize(330,72));formats.addItem(item)
         formats.setFixedHeight(520);formats.setMinimumWidth(340);row.addWidget(formats,0,Qt.AlignTop)
-        right=QVBoxLayout();row.addLayout(right);counts={k:sum(c.disposition==k for c in self.project.cues) for k in ('in-gap','pause','unresolved')};right.addWidget(section('COVERAGE'));right.addWidget(QLabel(f"In gap: {sum(c.disposition=='in-gap' and c.speed<=1 for c in self.project.cues)}\nSped up: {sum(c.speed>1 for c in self.project.cues)}\nPauses picture: {counts['pause']}\nNeeds review: {counts['unresolved']}"))
-        warning=QLabel('Unresolved visual facts block media exports.');warning.setWordWrap(True);right.addWidget(warning)
-        review=button(right,'Review now',lambda:(d.reject(),self.tabs.setCurrentIndex(0),self.cue_filter.setCurrentIndex(0),self.choose(next(i for i,c in enumerate(self.project.cues) if c.disposition=='unresolved' or c.uncertainty or c.review_status=='needs-review'))))
+        right=QVBoxLayout();row.addLayout(right);counts={k:sum(c.disposition==k for c in self.project.cues) for k in ('in-gap','pause')}|{'unresolved':sum(c.needs_review() for c in self.project.cues)};right.addWidget(section('COVERAGE'));right.addWidget(QLabel(f"In gap: {sum(c.disposition=='in-gap' and c.speed<=1 for c in self.project.cues)}\nSped up: {sum(c.speed>1 for c in self.project.cues)}\nPauses picture: {counts['pause']}\nNeeds review: {counts['unresolved']}"))
+        warning=QLabel('Require review is on in Settings: descriptions marked Needs review block media exports.');warning.setWordWrap(True);right.addWidget(warning)
+        review=button(right,'Review now',lambda:(d.reject(),self.tabs.setCurrentIndex(0),self.cue_filter.setCurrentIndex(0),self.choose(next(i for i,c in enumerate(self.project.cues) if c.needs_review()))))
         voice_picker=ExportVoices(self,d,initial_voice);right.addWidget(voice_picker)
         preview=QLabel();preview.setWordWrap(True);preview.setAccessibleName('Export outcome preview');right.addWidget(preview)
         requested_preview=[]

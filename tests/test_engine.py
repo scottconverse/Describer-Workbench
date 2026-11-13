@@ -65,7 +65,9 @@ def test_checkpoint_does_not_repeat_passed_stage_and_refuses_changed_source(tmp_
     with pytest.raises(ValueError):Checkpoints(tmp_path,{'source':'changed'})
 
 
-def test_synthesized_duration_drives_core_placement_and_uncertainty(tmp_path):
+@pytest.mark.parametrize('required,last',[(False,'pause'),(True,'unresolved')])
+def test_synthesized_duration_drives_core_placement_and_uncertainty(tmp_path,required,last):
+    # Review is optional by default: an unsure cue is voiced. With require_review it waits for a person.
     def synth(text,path,settings,cancel):
         with wave.open(str(path),'wb') as out:
             out.setparams((1,2,16000,0,'NONE','not compressed'));out.writeframes(b'\0\0'*32000)
@@ -74,8 +76,10 @@ def test_synthesized_duration_drives_core_placement_and_uncertainty(tmp_path):
     cp=Checkpoints(tmp_path,{'fixture':'measured WAV'})
     safety={'protected':[(0,1),(5,10)],'safe_gaps':[(1,5)],'classification':[]}
     with patch('describer.engine.core.protected_audio',return_value=safety),patch('describer.services.synthesize',side_effect=synth):
-        prepare(project,{},tmp_path,threading.Event(),lambda _:None,cp)
-    assert [c.disposition for c in project.cues]==['in-gap','pause','unresolved']
+        prepare(project,{'require_review':required},tmp_path,threading.Event(),lambda _:None,cp)
+    assert [c.disposition for c in project.cues]==['in-gap','pause',last]
+    assert [row['unsure'] for row in project.coverage]==[False,False,True]
+    assert project.cues[2].needs_review() and project.cues[2].uncertainty=='Unreadable'
     assert project.cues[0].speech_seconds==pytest.approx(2)
     assert project.cues[0].start==1
     assert len(project.coverage)==3

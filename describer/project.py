@@ -55,6 +55,10 @@ class Cue:
         """Authored scheduling intent is separate from observed provenance."""
         return (self.timing_start, self.timing_end) if self.timing_start is not None else (self.event_start, self.event_end)
 
+    def needs_review(self):
+        """The AI was unsure and no person has checked it. It may still be voiced (review is optional)."""
+        return self.disposition == 'unresolved' or bool(self.uncertainty) or self.review_status == 'needs-review'
+
     def reviewed(self):
         from dataclasses import replace
         return replace(self, uncertainty='', disposition='unplanned', review_status='reviewed',

@@ -24,7 +24,9 @@ def test_measured_plan_invalidation_and_format_semantics(tmp_path):
     for suffix in ('srt','vtt','txt','json'):assert not outcome(project,settings,suffix)['measured']
     assert not outcome(project,dict(settings,speech_rate=1),'wav')['measured']
     edited=copy.deepcopy(project);edited.cues[0].text='Changed';assert not outcome(edited,settings,'wav')['measured']
-    project.cues[0].review_status='needs-review';assert outcome(project,settings,'wav')['blocked']
+    project.cues[0].review_status='needs-review';assert not outcome(project,settings,'wav')['blocked']
+    assert not outcome(project,dict(settings,require_review=True),'wav')['measured']
+    assert outcome(project,dict(settings,require_review=True),'wav')['blocked']
     project.cues[0].review_status='unreviewed'
     audio.unlink();assert not outcome(project,settings,'wav')['measured']
 

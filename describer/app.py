@@ -843,7 +843,7 @@ class Window(DesktopInterface, QMainWindow):
             combo=QComboBox();combo.addItems(items);combo.setCurrentText(self.settings.data[key]);form.addRow(label,combo);choices[key]=combo
         voice_preset=QComboBox();voice_preset.addItems(['']+list(self.settings.data['voice_presets']));voice_preset.setCurrentText(self.settings.data['voice_preset']);form.addRow('OpenAI voice preset',voice_preset)
         flags={}
-        for key,label in [('chunking','Enable video chunking'),('auto_glossary','Recognize characters during analysis'),('silent_upload','Remove audio before uploading video'),('sounds','Notification sounds'),('auto_update_check','Check configured update feed at startup'),('safety_block_none','Request BLOCK_NONE for adjustable Gemini filters (provider core rules still apply)')]:
+        for key,label in [('chunking','Enable video chunking'),('auto_glossary','Recognize characters during analysis'),('silent_upload','Remove audio before uploading video'),('sounds','Notification sounds'),('auto_update_check','Check configured update feed at startup'),('require_review','Require review before media export (Needs review blocks MP4, MP3 and WAV)'),('safety_block_none','Request BLOCK_NONE for adjustable Gemini filters (provider core rules still apply)')]:
             flag=QCheckBox(label);flag.setChecked(bool(self.settings.data[key]));form.addRow(flag);flags[key]=flag
         temperature=QDoubleSpinBox();temperature.setRange(0,2);temperature.setSingleStep(.1);temperature.setValue(float(self.settings.data['temperature']));form.addRow('Gemini temperature',temperature)
         interrupt=QCheckBox('Allow new descriptions to interrupt speech');interrupt.setChecked(self.settings.data['interrupt']);form.addRow(interrupt)
