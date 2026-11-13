@@ -1,6 +1,6 @@
 # macOS and Linux installation — Describer Workbench 0.8.4
 
-Documentation updated November 9, 2026. [Quick start](QUICK-START.md) · [User manual](USER-MANUAL.md) · [Technical guide](DEVELOPER-GUIDE.md).
+Documentation updated November 13, 2026. [Quick start](QUICK-START.md) · [User manual](USER-MANUAL.md) · [Technical guide](DEVELOPER-GUIDE.md).
 
 Windows, macOS and Linux share the `v0.8.4` release, built from the same commit. Windows alone has publisher signing. Mac/Linux retain native installers and repository installation. Since 0.7.0, the app reads older format-1 projects and saves format 2; 0.6.1 readers reject the new format rather than dropping review/identity data. Keep original project files when comparing versions.
 

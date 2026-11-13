@@ -1,6 +1,6 @@
 # Start here — Describer Workbench 0.8.4
 
-For Windows, macOS and Linux · documentation updated November 9, 2026.
+For Windows, macOS and Linux · documentation updated November 13, 2026.
 
 Make one short description first. You do not need an AI account, programming, or a local AI model for this walkthrough.
 
