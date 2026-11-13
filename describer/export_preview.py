@@ -20,7 +20,7 @@ def plan_stamp(project,settings):
     def stat(path):
         info=Path(path).stat();return [info.st_size,info.st_mtime_ns]
     try:
-        return {'narration':narration_settings(settings),'speed_limit':settings.get('max_speech_speed',1.15),
+        return {'narration':narration_settings(settings),'speed_limit':settings.get('max_speech_speed',1.15),'require_review':bool(settings.get('require_review')),
                 'source':[project.video,project.duration,stat(project.video)],
                 'captions':sha(settings['captions']) if settings.get('captions') else None,
                 'cues':hashlib.sha256(json.dumps([asdict(copy.deepcopy(c).validate(project.duration)) for c in project.cues],sort_keys=True).encode()).hexdigest(),
@@ -35,7 +35,7 @@ def outcome(project,settings,suffix):
     if suffix=='txt':return {'measured':False,'blocked':False,'text':'Readable script only; no narration audio, timed playback or picture pauses.'}
     if suffix=='json':return {'measured':False,'blocked':False,'text':'Editable project data and review/provenance; narration files are referenced, not embedded. This is not a finished narrated track.'}
     unresolved=any(c.disposition=='unresolved' or c.uncertainty or c.review_status=='needs-review' for c in project.cues)
-    if unresolved:return {'measured':False,'blocked':True,'text':'Review unresolved descriptions before measuring or exporting complete media.'}
+    if unresolved and settings.get('require_review'):return {'measured':False,'blocked':True,'text':'Review unresolved descriptions before measuring or exporting complete media.'}
     stamp=plan_stamp(project,settings)
     if project.analysis.get('requires_replan') or stamp is None or stamp!=project.analysis.get('export_plan_stamp'):
         return {'measured':False,'blocked':False,'text':'Finished duration has not been measured for these descriptions and this voice. Measure narration to preview actual pause time; export will also measure before writing.'}

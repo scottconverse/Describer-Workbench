@@ -39,5 +39,8 @@ def test_complete_export_extends_audio_and_video_without_touching_original(tmp_p
     receipt=export(project,incomplete,{'duck_db':-15},threading.Event(),lambda _:None,'in-gap-only')
     assert not receipt['complete'] and receipt['pause_descriptions']==0
     project.cues[1].disposition='unresolved'
-    with pytest.raises(ValueError):export(project,tmp_path/'refused.mp4',{},threading.Event(),lambda _:None)
+    with pytest.raises(ValueError):export(project,tmp_path/'refused.mp4',{'require_review':True},threading.Event(),lambda _:None)
     assert not (tmp_path/'refused.mp4').exists()
+    # Review is optional by default: an unchecked cue does not stop the export.
+    allowed=export(project,tmp_path/'allowed.wav',{'duck_db':-15},threading.Event(),lambda _:None)
+    assert Path(allowed['path']).is_file()

@@ -19,7 +19,7 @@ def export(project, output, settings, cancel, log, mode='complete'):
         raise ValueError('Export mode must be complete or in-gap-only')
     if target == Path(project.video).resolve():
         raise ValueError('Export must not overwrite the original media')
-    if target.suffix.lower() in ('.mp4', '.mp3', '.wav') and any(c.disposition == 'unresolved' for c in project.cues) and mode == 'complete':
+    if target.suffix.lower() in ('.mp4', '.mp3', '.wav') and any(c.disposition == 'unresolved' for c in project.cues) and mode == 'complete' and settings.get('require_review'):
         raise ValueError('Unresolved observations remain; inspect coverage before requesting a complete export.')
     target.parent.mkdir(parents=True, exist_ok=True)
     suffix = target.suffix.lower()

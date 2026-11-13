@@ -1,8 +1,8 @@
-# AI connections — 0.8.3
+# AI connections — 0.8.4
 
 Documentation updated November 9, 2026. [Quick start](QUICK-START.md) · [User manual](USER-MANUAL.md) · [Platform installation](UNIX-INSTALL.md).
 
-Version 0.8.3 has these finite routes. The routes have not changed since 0.7.0. The Windows executables are signed as Scott Converse. See the [0.7.0 acceptance record](V070-ACCEPTANCE.md) for the connection checks and delivery limits.
+Version 0.8.4 has these finite routes. The routes have not changed since 0.7.0. The Windows executables are signed as Scott Converse. See the [0.7.0 acceptance record](V070-ACCEPTANCE.md) for the connection checks and delivery limits.
 
 The [macOS/Linux add-ons](UNIX-INSTALL.md) expose these same routes where the external CLI/server is installed. Re-select executable paths on the new machine. Windows sign-in opens the native tool window; Mac sign-in opens Terminal and Linux uses an available desktop terminal. Each CLI retains its credentials. Gateway authentication remains external and is not migrated. Saved API keys use macOS Keychain or Linux Secret Service instead of Windows DPAPI. Mac/Linux packages do not inherit the Windows certificate or the historical live-provider acceptance performed on Windows; run Test connection for the selected model/account on the destination computer.
 
@@ -41,7 +41,7 @@ Native Codex disables shell, hooks and agent delegation. Native Claude disables 
 
 These routes send up to eight sampled video frames with timestamps and prompts, without audio. They cannot hear dialogue or establish unseen motion. External processing requires confirmation; local compatible profiles retain their local destination. Available usage records distinguish requested and reported model identity; unavailable counts or identity remain unknown. Gateway Gemini's tested requested alias and reported model differed, so the requested effort variant is not independently established.
 
-Review all descriptions. The retained three120-second samples were compared against source frames. Current Codex output corrected earlier airborne-craft and living-creature errors but still misidentified a person in a dark bedroom, omitted a short fruit-inspection sequence and left some printed text uncertain. Scott accepted a reviewed-draft workflow with these limits on November4: correct facts, missing events, readable text and timing before final export. Successful inference, cue counts and coverage receipts do not establish factual truth or complete event recall.
+Review is optional since 0.8.4 (see the [user manual](USER-MANUAL.md#6-edit-and-review-descriptions)). The retained three120-second samples were compared against source frames. Current Codex output corrected earlier airborne-craft and living-creature errors but still misidentified a person in a dark bedroom, omitted a short fruit-inspection sequence and left some printed text uncertain. Scott accepted a reviewed-draft workflow with these limits on November4; in 0.8.4 he made review optional. Successful inference, cue counts and coverage receipts do not establish factual truth or complete event recall.
 
 The working Codex and Gemini gateway aliases also completed one16s description plus Scene workflow each. Gateway Codex reported `gpt-6.1-sol`; gateway Gemini again reported `gemini-3.8-flash-n` for the requested high alias. Gateway Claude initially failed with unavailable authentication after a refresh-token failure. After the existing gateway's normal account recovery, its selected `claude-oauth-sonnet-5-5` alias passed a fresh synthetic-image test and both16s common-engine workflows, reporting `claude-sonnet-5-5` for description and Scene. Completed jobs establish this bounded workflow, not complete-film factual accuracy or every catalog model's entitlement. Scene answers and uncertain descriptions still require review.
 

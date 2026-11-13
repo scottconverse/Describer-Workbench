@@ -149,7 +149,10 @@ def prepare(project, settings, root, cancel, log, checkpoint):
                'event_start': cue.event_start, 'event_end': cue.event_end,
                'timing_start': cue.timing_start, 'timing_end': cue.timing_end,
                'evidence': cue.evidence, 'uncertainty': cue.uncertainty}
-        if cue.uncertainty or cue.disposition == 'unresolved' or cue.review_status == 'needs-review':
+        unsure = bool(cue.uncertainty or cue.disposition == 'unresolved' or cue.review_status == 'needs-review')
+        row['unsure'] = unsure
+        # Review is optional unless the user turns on require_review: unsure cues are then voiced too.
+        if unsure and settings.get('require_review'):
             cue.disposition = 'unresolved'
             row.update(disposition='unresolved', reason=cue.uncertainty)
             coverage.append(row)
