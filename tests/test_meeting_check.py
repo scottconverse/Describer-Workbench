@@ -1,5 +1,4 @@
 """Option 1c: a check pass. The model looks at the frame again and says if each cue is true."""
-from pathlib import Path
 from unittest.mock import patch
 
 from describer.engine.service import DescriptionService

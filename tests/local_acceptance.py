@@ -1,15 +1,12 @@
 """Real local media/GUI/speech checks; no cloud calls or credentials needed."""
 import json
-import os
 import sys
 import tempfile
 import threading
-import time
 from pathlib import Path
 from PySide6.QtWidgets import QApplication
 from PySide6.QtTest import QTest
 from describer.app import Window
-from describer.project import Cue
 from describer.services import segment, probe, Settings, synthesize, export_audio, run, tool
 
 
