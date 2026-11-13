@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ORIGIN = 'https://scottconverse.github.io/Describer-Workbench'
 REPO = 'https://github.com/scottconverse/Describer-Workbench'
 VERSION = tomllib.loads((ROOT/'pyproject.toml').read_text(encoding='utf-8'))['project']['version']
-DOC_STATUS = 'Version '+VERSION+' · documentation updated November 11, 2026'
+DOC_STATUS = 'Version '+VERSION+' · documentation updated November 13, 2026'
 
 def downloadable_markdown(source):
     """Keep navigation usable after a guide is saved outside the source tree."""
@@ -39,9 +39,21 @@ def downloadable_markdown(source):
     return re.sub(r'(!?\[[^\]]*\]\()([^\)]+)(\))', replace, source)
 
 def render(source, title, filename):
-    source = re.sub(r'```mermaid\n(.*?)```', lambda m: '<details class="diagram-source"><summary>Mermaid diagram source (text)</summary>\n\n```text\n'+m[1]+'```\n\n</details>', source, flags=re.S)
+    # Mermaid blocks render as pictures with the self-hosted mermaid.min.js.
+    # The same text stays in a <details> block for screen readers and print.
+    diagrams=[]
+    def diagram(match):
+        diagrams.append(match[1]); return f'\n\nMERMAIDDIAGRAM{len(diagrams)-1}END\n\n'
+    source = re.sub(r'```mermaid\r?\n(.*?)```', diagram, source, flags=re.S)
     md = markdown.Markdown(extensions=['tables','fenced_code','toc','md_in_html'], extension_configs={'toc':{'permalink':False}})
     body = md.convert(source)
+    for index,text in enumerate(diagrams):
+        code=html.escape(text)
+        body=body.replace(f'<p>MERMAIDDIAGRAM{index}END</p>',
+            f'<figure class="mermaid-figure"><pre class="mermaid" aria-hidden="true">{code}</pre>'
+            f'<details class="diagram-source"><summary>Diagram as text</summary><pre><code>{code}</code></pre></details></figure>')
+    mermaid_script=('<script src="mermaid.min.js"></script><script>mermaid.initialize({startOnLoad:true,securityLevel:"strict",theme:"base",'
+        'themeVariables:{primaryColor:"#e8eddf",primaryBorderColor:"#143f37",primaryTextColor:"#172f2a",lineColor:"#47715b",fontFamily:"Segoe UI, Arial, sans-serif"}});</script>') if diagrams else ''
     body=body.replace('href="AI-CONNECTIONS.md','href="connections.html')
     body=body.replace('href="UNIX-INSTALL.md','href="unix.html')
     body=body.replace('href="V070-ACCEPTANCE.md','href="'+REPO+'/blob/main/docs/V070-ACCEPTANCE.md')
@@ -50,7 +62,7 @@ def render(source, title, filename):
     for old,new in [('QUICK-START.md','quick-start.html'),('USER-MANUAL.md','manual.html'),('ARCHITECTURE.md','architecture.html'),('DEVELOPER-GUIDE.md','developer.html'),('CODE-SIGNING.md','signing.html'),('V052-ACCEPTANCE.md',REPO+'/blob/main/docs/V052-ACCEPTANCE.md'),('V051-ACCEPTANCE.md',REPO+'/blob/main/docs/V051-ACCEPTANCE.md'),('V050-ACCEPTANCE.md',REPO+'/blob/main/docs/V050-ACCEPTANCE.md'),('../THIRD-PARTY-NOTICES.md',REPO+'/blob/main/THIRD-PARTY-NOTICES.md')]:
         body=body.replace('href="'+old,'href="'+new)
     canonical = filename.removesuffix('.html')
-    return f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{html.escape(title)} — Describer Workbench</title><meta name="description" content="{html.escape(title)} for Describer Workbench {DOC_STATUS}, including everyday workflows, technical setup and verification limits."><link rel="stylesheet" href="docs.css"><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="canonical" href="{ORIGIN}/{canonical}"></head><body><a class="skip" href="#content">Skip to content</a><header class="doc-header"><div class="wrap"><a class="brand" href="./"><img src="favicon.svg" width="36" height="36" alt=""><span>Describer <strong>Workbench</strong></span></a><nav aria-label="Documentation"><a href="quick-start.html">Start here</a><a href="manual.html">Manual</a><a href="unix.html">Mac / Linux</a><a href="connections.html">AI connections</a><a href="architecture.html">Architecture</a><a href="developer.html">Developers</a><a href="{REPO}">GitHub ↗</a></nav></div></header><div class="doc-layout"><aside class="doc-sidebar" aria-label="Table of contents"><strong>IN THIS GUIDE</strong>{md.toc}</aside><main class="doc-content" id="content"><div class="doc-tools">{DOC_STATUS} · <a href="{filename.replace('.html','.md')}" download>Download Markdown</a> · Use your browser's Print command to save as PDF</div>{body}<div class="doc-bottom"><a href="./">← Back to Describer Workbench</a> · <a href="{REPO}/issues">Report an issue</a></div></main></div></body></html>'''
+    return f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{html.escape(title)} — Describer Workbench</title><meta name="description" content="{html.escape(title)} for Describer Workbench {DOC_STATUS}, including everyday workflows, technical setup and verification limits."><link rel="stylesheet" href="docs.css"><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="canonical" href="{ORIGIN}/{canonical}"></head><body><a class="skip" href="#content">Skip to content</a><header class="doc-header"><div class="wrap"><a class="brand" href="./"><img src="favicon.svg" width="36" height="36" alt=""><span>Describer <strong>Workbench</strong></span></a><nav aria-label="Documentation"><a href="quick-start.html">Start here</a><a href="manual.html">Manual</a><a href="unix.html">Mac / Linux</a><a href="connections.html">AI connections</a><a href="architecture.html">Architecture</a><a href="developer.html">Developers</a><a href="{REPO}">GitHub ↗</a></nav></div></header><div class="doc-layout"><aside class="doc-sidebar{' toc-deep' if filename=='manual.html' else ''}" aria-label="Table of contents"><strong>IN THIS GUIDE</strong>{md.toc}</aside><main class="doc-content" id="content"><div class="doc-tools">{DOC_STATUS} · <a href="{filename.replace('.html','.md')}" download>Download Markdown</a> · Use your browser's Print command to save as PDF</div>{body}<div class="doc-bottom"><a href="./">← Back to Describer Workbench</a> · <a href="{REPO}/issues">Report an issue</a></div></main></div>{mermaid_script}</body></html>'''
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)

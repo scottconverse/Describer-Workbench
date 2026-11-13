@@ -1,6 +1,6 @@
 # Architecture and implementation guide
 
-Describer Workbench **0.8.4** · documentation updated November 12, 2026. Shared engine and native desktop workbench for Windows, macOS and Linux. The earlier signed0.5.2 package has its own [historical acceptance record](V052-ACCEPTANCE.md).
+Describer Workbench **0.8.4** · documentation updated November 13, 2026. Shared engine and native desktop workbench for Windows, macOS and Linux. The earlier signed 0.5.2 package has its own [historical acceptance record](V052-ACCEPTANCE.md).
 
 The [macOS/Linux distributions](UNIX-INSTALL.md) share the 0.8.4 release with Windows. `platforms.py` chooses host data folders, narration choices and explicit macOS Keychain/Linux Secret Service storage; settings retain only opaque keyring references, with no plaintext fallback. `unix_speech.py` synthesizes through macOS `say` or eSpeak NG into measured WAVs. `DescriberUnix.spec` and Unix install/package helpers are separate from the unchanged Windows build spec. Unix updates are manual; they do not enter Windows Authenticode staging. Existing providers, consent and native CLI authentication ownership remain shared.
 

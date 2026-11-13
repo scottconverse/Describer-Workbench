@@ -14,7 +14,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="landing-header"><nav class="nav" aria-label="Main navigation">
 <a href="#top" class="nav-brand"><span class="brand-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Describer Workbench</a>
-<div class="nav-links"><a href="#how">How it works</a><a href="#meetings">Meetings</a><a href="#privacy">Privacy</a><a href="#developers">Developers</a><a href="#limits">Limits</a><a href="manual.html">Manual</a></div>
+<div class="nav-links"><a href="#how">How it works</a><a href="#meetings">Meetings</a><a href="#privacy">Privacy</a><a href="#developers">Developers</a><a href="#limits">Limits</a><a href="#contribute">Contribute</a><a href="manual.html">Manual</a></div>
 <a class="btn btn-primary" href="#downloads">Download 0.8.4</a>
 </nav></header>
 <main id="main" class="landing-wrap">
@@ -155,6 +155,18 @@
 <article><h3>Signing and updates</h3><p>Only the Windows build has publisher signing. The Mac app is not notarized, and Linux packages are not signed. Updates in the app work on Windows only.</p></article>
 <article><h3>Not tested yet</h3><p>No person has done a full listening review of the exports, and no one has tested the app with VoiceOver or Orca. Mac and Linux tests ran on GitHub test machines. <a href="https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.8.4">0.8.4 release notes and test results ↗</a></p></article>
 </div></div>
+</section>
+
+<section id="contribute" class="landing-section" aria-labelledby="contribute-title">
+<div class="section-kicker">06 · Contribute</div>
+<div class="editorial-grid"><div><h2 id="contribute-title">Run it from source.</h2><p class="section-lead">Python 3.11 or later, tested with 3.13. The code is Apache-2.0.</p></div>
+<div class="contrib-body"><pre class="contrib-code" role="region" tabindex="0" aria-label="Windows commands to run from source"><code>git clone https://github.com/scottconverse/Describer-Workbench.git
+cd Describer-Workbench
+py -3.13 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e ".[desktop,http,mcp,dev]"
+.\.venv\Scripts\python.exe run.py
+.\.venv\Scripts\python.exe -m pytest -q</code></pre>
+<ul class="contrib-facts"><li><strong>324 automated tests</strong> run on Windows for every code change.</li><li><strong>Mac and Linux</strong> use <code>python3 tools/install_unix.py</code>. See the <a href="unix.html">platform guide</a>.</li><li><strong>Add a provider</strong> behind the shared engine. The <a href="developer.html">developer guide</a> and <a href="architecture.html">architecture guide</a> show the contracts.</li><li><strong>Report a bug</strong> in the <a href="https://github.com/scottconverse/Describer-Workbench/issues">issue tracker</a>. Never post keys or private video.</li></ul></div></div>
 </section>
 
 <section class="landing-section"><div class="blueprint closing"><i class="corner tl" aria-hidden="true"></i><i class="corner tr" aria-hidden="true"></i><i class="corner bl" aria-hidden="true"></i><i class="corner br" aria-hidden="true"></i><div class="closing-copy"><p class="kicker">Start with one scene</p><h2>A clearer story, one cue at a time.</h2><a class="btn btn-primary" href="#downloads">Choose your download</a><p class="fine">Version 0.8.4 for Windows, macOS and Linux.</p></div><div class="resource-links"><a href="quick-start.html"><span><small>No programming needed</small><strong>Quick start</strong></span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h10v10M7 17 17 7"/></svg></a>
