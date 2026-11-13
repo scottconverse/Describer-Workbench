@@ -624,7 +624,7 @@ QLabel#caption {{background:#1d2d3d;color:#f2f2f3;padding:10px;}} QLabel#drop {{
     def draft_dialog(self):
         if self.busy() or not self.project.video:return
         self.model_picker.begin_draft();original_prompt=self.prompt.toPlainText();original_preset=self.preset.currentText()
-        d=BlueprintDialog(self);d.setWindowTitle('DRAFT WITH AI');d.resize(760,600);outer=QVBoxLayout(d);outer.setContentsMargins(20,20,20,20);dialog_header(outer,'DRAFT WITH AI','Choose your connection and the section to draft. Review the result before export.')
+        d=BlueprintDialog(self);d.setWindowTitle('DRAFT WITH AI');d.resize(760,600);outer=QVBoxLayout(d);outer.setContentsMargins(20,20,20,20);dialog_header(outer,'DRAFT WITH AI','Choose your connection and the section to draft. AI drafts can be wrong. Read them before you publish.')
         from .providers import PROVIDERS,model_id
         connection=QComboBox();connection.setAccessibleName('Draft connection');connection.addItems(PROVIDERS);connection.setCurrentText(self.model_picker.provider.currentText())
         outer.addWidget(QLabel('Use this connection'));outer.addWidget(connection)
