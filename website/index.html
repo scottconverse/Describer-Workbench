@@ -3,8 +3,9 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Describer Workbench — Give the visual a voice</title>
-<meta name="description" content="A Windows, macOS and Linux workspace and shared engine for audio description. Local models, subscription tools or API drafts, editable cues, narrated exports, Python, CLI, REST and MCP.">
-<meta property="og:title" content="Describer Workbench — Give the visual a voice"><meta property="og:type" content="website"><meta property="og:description" content="Draft timed descriptions, refine every cue, and hear them against the soundtrack."><meta property="og:url" content="https://scottconverse.github.io/Describer-Workbench/">
+<meta name="description" content="A desktop app for audio description on Windows, macOS and Linux. An AI model drafts timed descriptions; you edit them, hear them over the soundtrack and export a described video, narrated audio or subtitles.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="Describer Workbench — Give the visual a voice"><meta property="og:type" content="website"><meta property="og:description" content="Draft timed audio descriptions with AI, edit every cue, and export a described video."><meta property="og:url" content="https://scottconverse.github.io/Describer-Workbench/"><meta property="og:image" content="https://scottconverse.github.io/Describer-Workbench/screenshot-workbench.jpg">
 <link rel="canonical" href="https://scottconverse.github.io/Describer-Workbench/">
 <link rel="stylesheet" href="industry.css"><link rel="stylesheet" href="styles.css"><link rel="icon" type="image/svg+xml" href="blueprint-icon.svg">
 <script src="landing.js" defer></script>
@@ -13,50 +14,127 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="landing-header"><nav class="nav" aria-label="Main navigation">
 <a href="#top" class="nav-brand"><span class="brand-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Describer Workbench</a>
-<div class="nav-links"><a href="#workflow">Workflow</a><a href="#models">Models</a><a href="#engine">Engine</a><a href="#verification">Verification</a><a href="manual.html">Manual</a></div>
-<a class="btn btn-primary" href="#downloads">Downloads 0.8.4</a>
+<div class="nav-links"><a href="#how">How it works</a><a href="#meetings">Meetings</a><a href="#privacy">Privacy</a><a href="#developers">Developers</a><a href="#limits">Limits</a><a href="manual.html">Manual</a></div>
+<a class="btn btn-primary" href="#downloads">Download 0.8.4</a>
 </nav></header>
 <main id="main" class="landing-wrap">
-<aside class="blueprint" aria-label="Release highlights"><p><strong>New in 0.8.4 (Windows, Mac and Linux):</strong> review is optional. Descriptions marked Needs review are spoken in media exports and keep their tag, so you can still check them. Turn on Require review in Settings to block exports until they are checked. <strong>Added in 0.8.3:</strong> exported narration plays at the loudness of the video's own sound near it, and a limiter stops clipping. On Windows, Check for updates starts the download after you pick a folder. <strong>Added in 0.8.2:</strong> <strong>Draft with AI</strong> has a Public meeting mode box and a captions file picker, so no settings.json editing. <strong>Added in 0.8.1:</strong> Public meeting mode writes fewer, better cues for city and council meeting videos: 68 % correct on 13 test videos (was 30 %), 4 % wrong (was 15 %). It skips small body moves, checks each cue against the picture and pauses only for meeting events. <strong>Added in 0.8.0:</strong> Public meeting mode describes only what changed, reads slide titles, finds votes and speaks in the pauses. <strong>Since 0.7.0:</strong> range drafting keeps existing work, editing has grouped undo, unsaved work can be recovered and export duration is previewed. Descriptions are AI drafts that you can edit. <a href="https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.8.4">0.8.4 release notes and limits</a>.</p></aside>
+
 <section class="hero" aria-labelledby="hero-title">
-<div class="hero-copy"><div class="hero-tags"><span class="tag tag-outline">V0.8.4</span><span class="tag tag-neutral">Windows · macOS · Linux</span></div>
+<div class="hero-copy">
+<div class="hero-tags"><span class="tag tag-outline">V0.8.4</span><span class="tag tag-neutral">Windows · macOS · Linux</span><span class="tag tag-neutral">Apache-2.0</span></div>
 <h1 id="hero-title"><span>Give the visual</span><span>a voice.</span></h1>
-<p class="hero-lead">A desktop workspace for audio description on Windows, macOS and Linux. Draft timed descriptions with local models, your subscription tools or explicit API connections, edit every cue, and hear them against the soundtrack before you export.</p>
-<div id="downloads" class="hero-actions platform-downloads" aria-label="Download Describer Workbench for your computer">
-<a class="btn btn-primary" data-platform="windows" href="https://github.com/scottconverse/Describer-Workbench/releases/download/v0.8.4/DescriberWorkbench-0.8.4-windows-x64.zip">Windows · x64 ZIP</a>
-<a class="btn btn-primary" data-platform="macos-arm64" href="https://github.com/scottconverse/Describer-Workbench/releases/download/v0.8.4/DescriberWorkbench-0.8.4-macos-arm64.dmg">Mac · Apple Silicon DMG</a>
-<a class="btn btn-primary" data-platform="linux" href="https://github.com/scottconverse/Describer-Workbench/releases/download/v0.8.4/DescriberWorkbench-0.8.4-linux-x64.deb">Linux · x64 DEB</a>
+<p class="hero-lead">Describer Workbench writes audio description for video. An AI model drafts short, timed descriptions. You change the words and the timing, hear them over the soundtrack, and export a described video, narrated audio or subtitles.</p>
+<ul class="hero-points">
+<li>Descriptions go into the pauses in speech. If one does not fit, the picture pauses while it is spoken.</li>
+<li>Use a model on your own computer, a tool you already pay for, or an API key. The app shows the exact model.</li>
+<li>No AI is needed to write cues by hand, use system voices and export.</li>
+</ul>
+<p class="hero-guide-links"><a href="quick-start.html">Start here — no programming</a> · <a href="manual.html">User manual</a> · <a href="developer.html">Technical guide</a></p>
 </div>
-<p class="fine platform-notes">Windows: signed by Scott Converse. Mac: macOS 15+ Apple Silicon, no Apple publisher certificate or notarization; no Intel DMG. Linux: Ubuntu 24.04 x64 tested, unsigned. <a href="unix.html">Portable Linux tar, repository setup and installation</a>. Compare downloads with their release checksums. Ollama, subscription tools and model weights are separate.</p>
-<p class="hero-guide-links"><a href="quick-start.html">Start here — no programming</a> · <a href="manual.html">Full user manual</a> · <a href="developer.html">Technical guide</a></p></div>
-<figure class="blueprint workbench-demo" aria-labelledby="demo-caption">
-<i class="corner tl" aria-hidden="true"></i><i class="corner tr" aria-hidden="true"></i><i class="corner bl" aria-hidden="true"></i><i class="corner br" aria-hidden="true"></i><div class="demo-titlebar"><span>trail-sequence.adproject</span><span class="tag tag-accent">Ollama · gemma4:26b</span><button type="button" id="demo-toggle" aria-label="Pause illustration">Pause</button></div>
-<div class="demo-video"><div class="demo-clock">Video · <time id="demo-clock">01:02</time> / 09:56</div><div class="demo-caption" id="demo-text">A lone walker follows the winding trail.</div></div>
-<div class="demo-timeline"><span>Dialogue</span><div class="timeline-lane" aria-hidden="true"><i class="speech-block" style="left:22.4%;width:9.6%"></i><i class="speech-block" style="left:44.8%;width:12.8%"></i><i class="speech-block" style="left:68%;width:15.2%"></i><i class="playhead" id="playhead" style="left:10%"></i></div><span>Descriptions</span><div class="timeline-lane" aria-hidden="true"><i class="cue-block is-active" data-block="0" style="left:8%;width:13.6%"></i><i class="cue-block" data-block="1" style="left:32.4%;width:11.6%"></i><i class="cue-block" data-block="2" style="left:58.4%;width:15.2%"></i><i class="cue-block" data-block="3" style="left:84%;width:12.8%"></i></div><span></span><div class="timeline-ticks"><span>01:00</span><span>01:10</span><span>01:20</span></div></div>
-<div class="demo-cues" aria-label="Illustrative cues; select a cue to seek the drawing"><button type="button" class="cue-row is-active" data-cue="0" data-start="62" data-end="65.4" aria-pressed="true"><time>01:02</time><span>A lone walker follows the winding trail.</span><span class="cue-fit">In gap</span></button>
-<button type="button" class="cue-row" data-cue="1" data-start="68.1" data-end="71" aria-pressed="false"><time>01:08</time><span>Soft light settles over the distant hills.</span><span class="cue-fit">1.08×</span></button>
-<button type="button" class="cue-row" data-cue="2" data-start="74.6" data-end="78.4" aria-pressed="false"><time>01:14</time><span>She kneels and lifts a small brass key from the mud.</span><span class="cue-fit">Pause 2.1s</span></button>
-<button type="button" class="cue-row" data-cue="3" data-start="81" data-end="84.2" aria-pressed="false"><time>01:21</time><span>The key turns in a lock set into a tree trunk.</span><span class="cue-fit">In gap</span></button></div>
-<figcaption id="demo-caption">Illustrative drawing, not an application screenshot. Descriptions are placed around measured dialogue; a cue that cannot fit pauses the picture.</figcaption>
-</figure></section>
-<section aria-label="Capabilities" class="blueprint capability-sheet"><i class="corner tl" aria-hidden="true"></i><i class="corner tr" aria-hidden="true"></i><i class="corner bl" aria-hidden="true"></i><i class="corner br" aria-hidden="true"></i><div class="sheet-title"><span>Describer Workbench — capability sheet</span><span>DW-081</span><span>Sheet 01</span></div><div class="spec-grid"><article class="spec"><div class="spec-label"><span>01</span><span>Open</span></div><h3>MP4 · MKV · MOV · AVI · WebM</h3><p>Local files, or direct video and YouTube URLs through yt-dlp.</p></article>
-<article class="spec"><div class="spec-label"><span>02</span><span>Draft</span></div><h3>Local · subscriptions · APIs</h3><p>Whole video, next 20 or next 60 seconds, with glossary continuity across chunks.</p></article>
-<article class="spec"><div class="spec-label"><span>03</span><span>Edit</span></div><h3>Cues + glossary</h3><p>Start, end and text per cue. Saved as an .adproject; SRT/VTT import.</p></article>
-<article class="spec"><div class="spec-label"><span>04</span><span>Hear</span></div><h3>Native speech</h3><p>Windows SAPI/OneCore, macOS voices or Linux eSpeak NG; optional OpenAI speech, with soundtrack ducking.</p></article>
-<article class="spec"><div class="spec-label"><span>05</span><span>Time</span></div><h3>≤ 1.15× speed</h3><p>Speech is measured locally; cues that cannot fit become pause narration.</p></article>
-<article class="spec"><div class="spec-label"><span>06</span><span>Export</span></div><h3>MP4 · MP3 · WAV · SRT · VTT</h3><p>Plus TXT and project JSON, with coverage sidecars for every event.</p></article></div></section>
-<section id="workflow" class="landing-section"><div class="section-kicker">02 · From picture to spoken word</div><div class="section-heading"><h2>A complete workflow. An editor at the center.</h2><p>Work in short passages, refine what matters, and hear each description in context. The model drafts; every cue stays yours to change.</p></div><div class="step-grid"><article class="blueprint step"><i class="corner tl" aria-hidden="true"></i><i class="corner tr" aria-hidden="true"></i><i class="corner bl" aria-hidden="true"></i><i class="corner br" aria-hidden="true"></i><div class="step-top"><span>01</span><span>Open</span></div><h3>Bring your story</h3><p>Open a local video or import SRT/VTT cues alongside it. Start manually, or choose a short range for an AI first draft.</p><div class="step-tags"><span class="tag tag-neutral">Video</span><span class="tag tag-neutral">SRT / VTT</span><span class="tag tag-neutral">yt-dlp</span></div></article>
-<article class="blueprint step"><i class="corner tl" aria-hidden="true"></i><i class="corner tr" aria-hidden="true"></i><i class="corner bl" aria-hidden="true"></i><i class="corner br" aria-hidden="true"></i><div class="step-top"><span>02</span><span>Refine</span></div><h3>Make every cue count</h3><p>Edit words and timing inline, correct character cards in Glossary, and use the Scene tab to ask about a scene. You decide what belongs in the description.</p><div class="step-tags"><span class="tag tag-neutral">Glossary</span><span class="tag tag-neutral">Ask about scene</span><span class="tag tag-neutral">Explore</span></div></article>
-<article class="blueprint step"><i class="corner tl" aria-hidden="true"></i><i class="corner tr" aria-hidden="true"></i><i class="corner bl" aria-hidden="true"></i><i class="corner br" aria-hidden="true"></i><div class="step-top"><span>03</span><span>Listen</span></div><h3>Hear the whole picture</h3><p>Review with your native system voice and the original soundtrack. Export scripts, narrated audio or a complete MP4 with pause narration.</p><div class="step-tags"><span class="tag tag-neutral">Ducking</span><span class="tag tag-neutral">Pause narration</span><span class="tag tag-neutral">MP4</span></div></article></div></section>
-<section id="models" class="landing-section"><div class="section-kicker">03 · Your model, your data path</div><div class="model-grid"><div><h2>Choose your connection.</h2><p class="section-lead">Use Ollama, native Codex/Claude/Antigravity, your existing subscription gateway, named OpenAI-compatible servers or explicit Gemini/Anthropic APIs. The picker always shows the exact model, and there is no silent fallback.</p>
-<div class="providers"><article class="blueprint provider"><i class="corner tl" aria-hidden="true"></i><i class="corner tr" aria-hidden="true"></i><i class="corner bl" aria-hidden="true"></i><i class="corner br" aria-hidden="true"></i><span class="tag tag-accent">Local / cloud</span><h3>Ollama</h3><p>Up to eight 640px frames per request. No audio.</p></article><article class="blueprint provider"><i class="corner tl" aria-hidden="true"></i><i class="corner tr" aria-hidden="true"></i><i class="corner bl" aria-hidden="true"></i><i class="corner br" aria-hidden="true"></i><span class="tag tag-outline">Cloud</span><h3>Google Gemini</h3><p>Video analysis with your API key.</p></article></div>
-<p class="fine model-note">Tested exact-tag profiles: gemma4:12b, gemma4:26b and qwen3.8:27b-q6_K-vision — thinking off, 32K output, 64K context. Aliases do not inherit the profile.</p></div>
-<div class="key-panel"><table class="table key-table"><caption>Does it need an API key?</caption><thead><tr><th scope="col">Workflow</th><th scope="col">Key</th><th scope="col">Data sent</th></tr></thead><tbody><tr><th scope="row">Manual cues, subtitles, native speech, MP3</th><td>None</td><td>Local processing</td></tr>
+<div id="downloads" class="blueprint download-panel" aria-labelledby="download-title">
+<i class="corner tl" aria-hidden="true"></i><i class="corner tr" aria-hidden="true"></i><i class="corner bl" aria-hidden="true"></i><i class="corner br" aria-hidden="true"></i>
+<div class="panel-head"><h2 id="download-title">Download 0.8.4</h2><p class="platform-guess" id="platform-guess" hidden></p></div>
+<div class="platform-downloads" aria-label="Download Describer Workbench for your computer">
+<a class="btn dl" data-platform="windows" href="https://github.com/scottconverse/Describer-Workbench/releases/download/v0.8.4/DescriberWorkbench-0.8.4-windows-x64.zip"><strong>Windows</strong><span>x64 · ZIP · signed</span></a>
+<a class="btn dl" data-platform="macos-arm64" href="https://github.com/scottconverse/Describer-Workbench/releases/download/v0.8.4/DescriberWorkbench-0.8.4-macos-arm64.dmg"><strong>Mac</strong><span>Apple Silicon · DMG</span></a>
+<a class="btn dl" data-platform="linux" href="https://github.com/scottconverse/Describer-Workbench/releases/download/v0.8.4/DescriberWorkbench-0.8.4-linux-x64.deb"><strong>Linux</strong><span>x64 · DEB</span></a>
+</div>
+<ul class="platform-notes">
+<li><strong>Windows:</strong> signed by Scott Converse. Check for updates works in the app.</li>
+<li><strong>Mac:</strong> macOS 15 or later on Apple Silicon. Not notarized by Apple. No Intel build.</li>
+<li><strong>Linux:</strong> tested on Ubuntu 24.04 x64. Not signed. <a href="unix.html">Portable tar and install steps</a>.</li>
+</ul>
+<p class="fine">Mac and Linux updates are manual. Compare each file with <a href="https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.8.4">SHA256SUMS.txt in the release</a>. Ollama, subscription tools and model files are separate downloads.</p>
+</div>
+</section>
+
+<section class="landing-section shot-section" aria-labelledby="shot-title">
+<h2 id="shot-title" class="visually-hidden">The app</h2>
+<figure class="blueprint shot shot-main">
+<i class="corner tl" aria-hidden="true"></i><i class="corner tr" aria-hidden="true"></i><i class="corner bl" aria-hidden="true"></i><i class="corner br" aria-hidden="true"></i>
+<div class="shot-frame">
+<img src="screenshot-workbench.jpg" width="1440" height="900" alt="The Describer Workbench window. A meeting video plays at the top left with the description 'A man stands in front of the screen.' shown under it. On the right is the list of 10 descriptions with start and end times and fit labels such as 'Pause 2.8s' and 'Sped up 1.15×'. Below the video is a timeline with picture, dialogue and description lanes.">
+<span class="pin" style="left:82.5%;top:2.6%" aria-hidden="true">1</span>
+<span class="pin" style="left:66%;top:26%" aria-hidden="true">2</span>
+<span class="pin" style="left:78.6%;top:46.9%" aria-hidden="true">3</span>
+<span class="pin" style="left:6.9%;top:84.7%" aria-hidden="true">4</span>
+</div>
+<figcaption>
+<ol class="shot-legend">
+<li><strong>Draft with AI.</strong> Pick a connection and the part of the video to draft.</li>
+<li><strong>Descriptions.</strong> Every cue has a start, an end and text you can change.</li>
+<li><strong>Fit labels.</strong> Each cue says if it fits the gap, is sped up (never above 1.15×), or pauses the picture.</li>
+<li><strong>Timeline.</strong> Dialogue is marked, so descriptions go between the spoken words.</li>
+</ol>
+<p class="shot-note">Screenshot of version 0.8.4 on Windows with a public Longmont Housing Authority board meeting video. The descriptions are unedited AI drafts from a test run. The video picture is the real frame at 0:18. It was added after capture, because Windows screen capture does not copy the video layer.</p>
+</figcaption>
+</figure>
+<div class="news" role="list" aria-label="Recent changes">
+<div role="listitem"><span class="tag tag-outline">0.8.4</span><p><strong>Review is optional.</strong> Cues marked Needs review are spoken in exports and keep their tag. Turn on Require review in Settings to block exports until you check them.</p></div>
+<div role="listitem"><span class="tag tag-outline">0.8.3</span><p><strong>Matched loudness.</strong> Narration plays at the level of the video's own sound near it. A limiter stops clipping.</p></div>
+<div role="listitem"><span class="tag tag-outline">0.8.2</span><p><strong>Meeting mode in the Draft window.</strong> A Public meeting mode box and a captions file picker. No settings file to edit.</p></div>
+</div>
+<p class="news-link"><a href="https://github.com/scottconverse/Describer-Workbench/releases">All releases and notes ↗</a></p>
+</section>
+
+<section id="how" class="landing-section" aria-labelledby="how-title">
+<div class="section-kicker">01 · How it works</div>
+<div class="section-heading"><h2 id="how-title">Open. Draft. Edit. Export.</h2><p>The model writes a first draft. You decide what is said and when. Every step works on one project file that you can save and open again.</p></div>
+<div class="feature-row">
+<div class="feature-copy">
+<div class="step-top"><span>01</span><span>Open and draft</span></div>
+<h3>Draft the whole video or one part</h3>
+<p>Open a local video, or a video or YouTube link through yt-dlp. Draft the whole video, or only the next 20 or 60 seconds. The glossary carries over from one part to the next.</p>
+<p>Before any video or frames leave your computer, the app asks you to confirm. If cues already exist, they stay unless you approve the replacements after the draft.</p>
+<div class="step-tags"><span class="tag tag-neutral">MP4 · MKV · MOV · AVI · WebM</span><span class="tag tag-neutral">SRT / VTT import</span><span class="tag tag-neutral">Glossary</span></div>
+</div>
+<figure class="blueprint shot"><i class="corner tl" aria-hidden="true"></i><i class="corner tr" aria-hidden="true"></i><i class="corner bl" aria-hidden="true"></i><i class="corner br" aria-hidden="true"></i><img src="screenshot-draft.png" width="760" height="600" loading="lazy" alt="The Draft with AI window. It has a connection picker set to Gemini, the selected model name, a 'Section to draft' picker set to Whole video, a checked Public meeting mode box, and a captions file field."><figcaption>The Draft with AI window, 0.8.4.</figcaption></figure>
+</div>
+<div class="feature-row feature-row-flip">
+<div class="feature-copy">
+<div class="step-top"><span>02</span><span>Edit and hear</span></div>
+<h3>Change any cue and hear it in place</h3>
+<p>Edit the words, the start and the end. Use Preview in context to hear a cue with the soundtrack. The voice comes from your system: Windows voices, macOS voices or eSpeak NG on Linux. OpenAI speech is optional.</p>
+<p>The Scene tab answers questions about a scene. The Glossary tab holds character cards that you can correct. Ctrl+Z undoes edits.</p>
+<div class="step-tags"><span class="tag tag-neutral">Preview in context</span><span class="tag tag-neutral">Ask about scene</span><span class="tag tag-neutral">Undo</span></div>
+</div>
+<div class="feature-copy">
+<div class="step-top"><span>03</span><span>Export</span></div>
+<h3>Seven export formats</h3>
+<p>A described MP4, narrated MP3 or WAV, SRT or VTT subtitles, a text script, or the project as JSON. The Export window shows how many cues fit a gap, are sped up, or pause the picture.</p>
+<p>Media exports include a coverage file. It lists what happened to each cue.</p>
+<div class="step-tags"><span class="tag tag-neutral">MP4</span><span class="tag tag-neutral">MP3 · WAV</span><span class="tag tag-neutral">SRT · VTT</span><span class="tag tag-neutral">TXT · JSON</span></div>
+</div>
+</div>
+<figure class="blueprint shot shot-wide"><i class="corner tl" aria-hidden="true"></i><i class="corner tr" aria-hidden="true"></i><i class="corner bl" aria-hidden="true"></i><i class="corner br" aria-hidden="true"></i><img src="screenshot-export.png" width="920" height="780" loading="lazy" alt="The Export window. On the left is a list of seven output formats, from Described video .mp4 to Project data .json. On the right are coverage counts (In gap 0, Sped up 2, Pauses picture 4, Needs review 0), the narration engine and voice pickers, and a Save to field. The footer says narration speed stays at or below 1.15 times."><figcaption>The Export window, 0.8.4.</figcaption></figure>
+</section>
+
+<section id="meetings" class="landing-section" aria-labelledby="meetings-title">
+<div class="section-kicker">02 · Public meeting mode</div>
+<div class="section-heading"><h2 id="meetings-title">Made for council and board meetings.</h2><p>Meeting videos are long and mostly still. Public meeting mode describes only frames that changed. It reads slide titles, finds votes from a captions file, and pauses only for votes, new speakers, slides and on-screen text. Turn it on with the box in Draft with AI. <a href="manual.html#public-meeting-mode">How it works</a>.</p></div>
+<div class="proof-grid">
+<div class="stat"><strong>67.6&nbsp;%</strong><h3>Correct cues</h3><p>Up from 29.5 % in 0.8.0. 105 cues on 13 test videos, graded by hand.</p></div>
+<div class="stat"><strong>3.8&nbsp;%</strong><h3>Wrong or made up</h3><p>Down from 15.4 %. Trivial cues fell from 36.5 % to 10.5 %.</p></div>
+<div class="stat"><strong>100&nbsp;%</strong><h3>In a gap or a pause</h3><p>Every cue was spoken between speech or paused the video for a meeting event. Up from 45 % in a gap.</p></div>
+</div>
+<p class="proof-note">These numbers come from a small test set with the model <code>gemma4:12b</code>. They are not a promise for your video. Results change from run to run. The model can still report a vote when no hand is up, and some videos get very few cues.</p>
+</section>
+
+<section id="privacy" class="landing-section" aria-labelledby="privacy-title">
+<div class="section-kicker">03 · Your model, your data path</div>
+<div class="model-grid"><div><h2 id="privacy-title">You choose where the video goes.</h2><p class="section-lead">Use Ollama on this computer, the Codex, Claude or Antigravity tools you already sign in to, a subscription gateway, a named OpenAI-compatible server, or a Gemini or Anthropic API key. The picker shows the exact model. The app never switches to another model by itself.</p>
+<div class="providers"><article class="blueprint provider"><i class="corner tl" aria-hidden="true"></i><i class="corner tr" aria-hidden="true"></i><i class="corner bl" aria-hidden="true"></i><i class="corner br" aria-hidden="true"></i><span class="tag tag-accent">Local / cloud</span><h3>Ollama</h3><p>Up to eight 640-pixel frames per request. No audio.</p></article><article class="blueprint provider"><i class="corner tl" aria-hidden="true"></i><i class="corner tr" aria-hidden="true"></i><i class="corner bl" aria-hidden="true"></i><i class="corner br" aria-hidden="true"></i><span class="tag tag-outline">Cloud</span><h3>Google Gemini</h3><p>Video analysis with your API key.</p></article></div>
+<p class="fine model-note">Tested model profiles: gemma4:12b, gemma4:26b and qwen3.8:27b-q6_K-vision, with thinking off, 32K output and 64K context. Other names for the same model do not get the profile. <a href="connections.html">AI connections guide</a>.</p></div>
+<div class="key-panel"><table class="table key-table"><caption>Does it need an API key?</caption><thead><tr><th scope="col">Workflow</th><th scope="col">Key</th><th scope="col">Data sent</th></tr></thead><tbody><tr><th scope="row">Manual cues, subtitles, native speech, MP3</th><td>None</td><td>Stays on this computer</td></tr>
 <tr><th scope="row">Ollama on this computer</th><td>None</td><td>Frames and prompts to local Ollama</td></tr>
-<tr><th scope="row">Ollama cloud or remote</th><td>Set in Ollama</td><td>Sampled frames leave the computer after confirmation</td></tr>
-<tr><th scope="row">Gemini analysis, Ask, Explore</th><td>Gemini key</td><td>Video with audio unless silent upload is chosen</td></tr>
-<tr><th scope="row">Codex / Claude / Antigravity native tools</th><td>Existing subscription login</td><td>Sampled frames and prompts after confirmation</td></tr><tr><th scope="row">Existing subscription gateway</th><td>Existing client-key file</td><td>Sampled frames through selected gateway account</td></tr><tr><th scope="row">Compatible server / Anthropic API</th><td>Profile or API key</td><td>Sampled frames to the selected endpoint</td></tr><tr><th scope="row">OpenAI speech</th><td>OpenAI key</td><td>Description text after confirmation</td></tr></tbody></table><p class="fine">Cloud use requires provider access and may incur charges. Native tools use their normal subscription sign-in; the gateway retains its existing OAuth accounts. API credits are separate. A catalog listing does not establish account entitlement or vision.</p></div></div></section>
-<section id="engine" class="landing-section"><div class="section-kicker">04 · For developers</div><div class="section-heading"><h2>One engine. Every interface.</h2><p>Desktop, Python, CLI, authenticated REST/OpenAPI and MCP share one durable job queue: batch submission, cancel and resume, paged reads, edits, coverage, scene tools and exports.</p></div>
+<tr><th scope="row">Ollama cloud or remote</th><td>Set in Ollama</td><td>Sampled frames leave the computer after you confirm</td></tr>
+<tr><th scope="row">Gemini analysis, Ask, Explore</th><td>Gemini key</td><td>Video with audio, unless you choose a silent upload</td></tr>
+<tr><th scope="row">Codex / Claude / Antigravity tools</th><td>Your existing sign-in</td><td>Sampled frames and prompts after you confirm</td></tr><tr><th scope="row">Subscription gateway</th><td>Existing client-key file</td><td>Sampled frames through the selected gateway account</td></tr><tr><th scope="row">Compatible server / Anthropic API</th><td>Profile or API key</td><td>Sampled frames to the selected endpoint</td></tr><tr><th scope="row">OpenAI speech</th><td>OpenAI key</td><td>Description text after you confirm</td></tr></tbody></table><p class="fine">Cloud use needs provider access and can cost money. API credits are separate from subscriptions. A model in a catalog list is not proof that your account can use it, or that it can see images.</p></div></div>
+</section>
+
+<section id="developers" class="landing-section" aria-labelledby="dev-title">
+<div class="section-kicker">04 · For developers</div>
+<div class="section-heading"><h2 id="dev-title">One engine. Every interface.</h2><p>The desktop app, Python, the CLI, an authenticated REST/OpenAPI server and MCP use one job queue. Submit batches, cancel and resume, read pages of results, edit cues, check coverage, use scene tools and export.</p></div>
 <div class="blueprint engine-diagram" role="group" aria-label="Shared engine architecture"><i class="corner tl" aria-hidden="true"></i><i class="corner tr" aria-hidden="true"></i><i class="corner bl" aria-hidden="true"></i><i class="corner br" aria-hidden="true"></i><div class="interface-grid"><div class="interface"><h3>Workbench</h3><p>Windows / Mac / Linux editor</p></div>
 <div class="interface"><h3>Python</h3><p>Import the service</p></div>
 <div class="interface"><h3>CLI</h3><p>Native CLI on every host</p></div>
@@ -66,16 +144,22 @@
 <div class="stage"><span>C</span><h3>Plan events</h3><p>Event-bounded slots</p></div>
 <div class="stage"><span>D</span><h3>Synthesize</h3><p>Measured speech, ≤ 1.15×</p></div>
 <div class="stage"><span>E</span><h3>Place + export</h3><p>Pauses where nothing fits</p></div></div></div>
-<p class="engine-links"><a href="developer.html">Developer integration guide ↗</a> · <a href="architecture.html">Architecture and data boundaries ↗</a></p></section>
-<section class="landing-section" id="editorial"><div class="section-kicker">05 · Assistance, with editorial care</div><div class="editorial-grid"><div><h2>Export the draft, or check it first.</h2><p class="section-lead">Review is optional. You can export the AI draft as it is, or check the cues it was unsure about.</p></div><div class="editorial-notes"><article><h3>See the limits clearly</h3><p>Ollama, native subscription tools and compatible connections receive sampled frames without audio. The engine measures speech protection separately. Cues the AI was unsure about keep a Needs review tag. A setting can make review required before media export.</p></article>
-<article><h3>Work without an AI key</h3><p>Manual cue editing, subtitle import, native system speech and local MP3 export work without a provider key.</p></article>
-<article><h3>Keep the project editable</h3><p>Cues and glossary live in an .adproject file. Uncertain observations block complete media exports instead of slipping through.</p></article></div></div></section>
-<section id="verification" class="landing-section"><div class="section-kicker">06 · What was actually checked</div><div class="section-heading"><h2>Public meeting mode, measured.</h2><p>For city, council and board meeting videos. It describes only frames that changed, reads slides at up to 1280 pixels, finds votes from a captions file and pauses only for votes, speaker changes, slides and on-screen text. Turn it on with the <strong>Public meeting mode</strong> box in <strong>Draft with AI</strong> (0.8.2 and later). <a href="manual.html#public-meeting-mode">How it works</a>.</p></div><div class="proof-grid"><div class="stat"><strong>67.6&nbsp;%</strong><h3>Correct cues</h3><p>Up from 29.5 % in 0.8.0. 105 cues on 13 test videos, graded by hand.</p></div>
-<div class="stat"><strong>3.8&nbsp;%</strong><h3>Wrong or made up</h3><p>Down from 15.4 %. Trivial cues fell from 36.5 % to 10.5 %.</p></div>
-<div class="stat"><strong>100&nbsp;%</strong><h3>In a gap or a pause</h3><p>Every cue was spoken between speech or paused the video for a meeting event. Up from 45 % in a gap.</p></div></div><p class="proof-note">Meeting results come from a small test set with model <code>gemma4:12b</code>; they are not a promise for your video. The model can still report a vote when no hand is up, results change from run to run and some videos get very few cues. Earlier native acceptance (three 120-second clips) kept a wrong person, a short omitted sequence and uncertain text: correct every draft before export. Separate keyed APIs and local compatible servers keep their live-testing limits. The 0.8.4 release receipt gives the Mac and Linux test results from GitHub test machines; human listening, VoiceOver/Orca and destination subscription entitlement remain unverified. <a href="https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.8.4">Release notes, verification receipt and checksums ↗</a></p></section>
-<section class="landing-section"><div class="blueprint closing"><i class="corner tl" aria-hidden="true"></i><i class="corner tr" aria-hidden="true"></i><i class="corner bl" aria-hidden="true"></i><i class="corner br" aria-hidden="true"></i><div class="closing-copy"><p class="kicker">Start with one scene</p><h2>A clearer story, one cue at a time.</h2><a class="btn btn-primary" href="#downloads">Choose your download</a><p class="fine">Windows, macOS and Linux · Version 0.8.4. Only Windows has Scott Converse publisher signing. Mac/Linux updates are manual. Compare each download with its release’s SHA256SUMS.txt.</p></div><div class="resource-links"><a href="manual.html"><span><small>Everyday use, reference and recovery</small><strong>The complete user manual</strong></span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h10v10M7 17 17 7"/></svg></a>
-<a href="architecture.html"><span><small>Components, sequences, data boundaries</small><strong>Inside the architecture</strong></span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h10v10M7 17 17 7"/></svg></a>
+<p class="engine-links"><a href="developer.html">Developer integration guide ↗</a> · <a href="architecture.html">Architecture and data boundaries ↗</a></p>
+</section>
+
+<section id="limits" class="landing-section" aria-labelledby="limits-title">
+<div class="section-kicker">05 · Limits</div>
+<div class="editorial-grid"><div><h2 id="limits-title">What to know first.</h2><p class="section-lead">The page says what was tested and what was not.</p></div>
+<div class="editorial-notes">
+<article><h3>Drafts can be wrong</h3><p>Descriptions are AI drafts. In earlier tests, drafts named the wrong person, left out a short sequence and misread text. Read a draft before you publish it. Cues the AI was unsure about keep a Needs review tag.</p></article>
+<article><h3>Signing and updates</h3><p>Only the Windows build has publisher signing. The Mac app is not notarized, and Linux packages are not signed. Updates in the app work on Windows only.</p></article>
+<article><h3>Not tested yet</h3><p>No person has done a full listening review of the exports, and no one has tested the app with VoiceOver or Orca. Mac and Linux tests ran on GitHub test machines. <a href="https://github.com/scottconverse/Describer-Workbench/releases/tag/v0.8.4">0.8.4 release notes and test results ↗</a></p></article>
+</div></div>
+</section>
+
+<section class="landing-section"><div class="blueprint closing"><i class="corner tl" aria-hidden="true"></i><i class="corner tr" aria-hidden="true"></i><i class="corner bl" aria-hidden="true"></i><i class="corner br" aria-hidden="true"></i><div class="closing-copy"><p class="kicker">Start with one scene</p><h2>A clearer story, one cue at a time.</h2><a class="btn btn-primary" href="#downloads">Choose your download</a><p class="fine">Version 0.8.4 for Windows, macOS and Linux.</p></div><div class="resource-links"><a href="quick-start.html"><span><small>No programming needed</small><strong>Quick start</strong></span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h10v10M7 17 17 7"/></svg></a>
+<a href="manual.html"><span><small>Everyday use, reference and recovery</small><strong>The complete user manual</strong></span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h10v10M7 17 17 7"/></svg></a>
 <a href="https://github.com/scottconverse/Describer-Workbench"><span><small>Source, build, issue tracker</small><strong>Explore the repository</strong></span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h10v10M7 17 17 7"/></svg></a></div></div></section>
 </main>
-<footer class="landing-footer landing-wrap"><div><strong>Describer Workbench</strong><p>A desktop workspace for audio description. Independent reconstruction; no original-author endorsement.</p></div><nav aria-label="Footer"><a href="quick-start.html">Quick start</a><a href="unix.html">Mac / Linux install</a><a href="connections.html">AI connections</a><a href="manual.html">User manual</a><a href="architecture.html">Architecture</a><a href="developer.html">Developer API / MCP</a><a href="https://github.com/scottconverse/Describer-Workbench/issues">Issues</a><a href="https://github.com/scottconverse/Describer-Workbench/blob/main/THIRD-PARTY-NOTICES.md">Notices &amp; licensing</a></nav><p class="footer-legal">New Workbench code is Apache-2.0, provided without warranty. No application analytics or telemetry is configured. Dependencies and attributed original translations retain their own terms. This website introduces the desktop app; it does not process or upload your media. Locally hosted Barlow fonts: <a href="barlow-OFL.txt">Barlow license</a> · <a href="barlowcondensed-OFL.txt">Barlow Condensed license</a>.</p></footer>
+<footer class="landing-footer landing-wrap"><div><strong>Describer Workbench</strong><p>A desktop app for audio description. Independent reconstruction; no original-author endorsement.</p></div><nav aria-label="Footer"><a href="quick-start.html">Quick start</a><a href="unix.html">Mac / Linux install</a><a href="connections.html">AI connections</a><a href="manual.html">User manual</a><a href="architecture.html">Architecture</a><a href="developer.html">Developer API / MCP</a><a href="https://github.com/scottconverse/Describer-Workbench/issues">Issues</a><a href="https://github.com/scottconverse/Describer-Workbench/blob/main/THIRD-PARTY-NOTICES.md">Notices &amp; licensing</a></nav><p class="footer-legal">New Workbench code is Apache-2.0, provided without warranty. No application analytics or telemetry is configured. Dependencies and attributed original translations keep their own terms. This website introduces the desktop app; it does not process or upload your media. Locally hosted Barlow fonts: <a href="barlow-OFL.txt">Barlow license</a> · <a href="barlowcondensed-OFL.txt">Barlow Condensed license</a>.</p></footer>
 </body></html>

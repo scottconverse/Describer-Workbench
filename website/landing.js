@@ -1,38 +1,25 @@
-/* Local illustration only. No requests, analytics, uploads or application state. */
+/* Landing page helpers. Runs only in the browser; sends no requests and stores nothing. */
 (() => {
   "use strict";
-  const rows = [...document.querySelectorAll("[data-cue]")];
-  const blocks = [...document.querySelectorAll("[data-block]")];
-  const clock = document.getElementById("demo-clock");
-  const caption = document.getElementById("demo-text");
-  const playhead = document.getElementById("playhead");
-  const toggle = document.getElementById("demo-toggle");
-  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
-  if (!rows.length || !toggle) return;
-  let time = reduced.matches ? Number(rows[0].dataset.start) + 0.05 : 62.5;
-  let paused = reduced.matches;
-  let timer;
-  function render() {
-    const active = rows.findIndex(row => time >= Number(row.dataset.start) && time <= Number(row.dataset.end));
-    const upcoming = rows.find(row => Number(row.dataset.start) > time) || rows[0];
-    caption.textContent = (rows[active] || upcoming).querySelector("span").textContent;
-    clock.textContent = `${String(Math.floor(time / 60)).padStart(2, "0")}:${String(Math.floor(time % 60)).padStart(2, "0")}`;
-    playhead.style.left = `${(time - 60) * 4}%`;
-    rows.forEach((row, index) => { row.classList.toggle("is-active", index === active); row.setAttribute("aria-pressed", String(index === active)); });
-    blocks.forEach((block, index) => block.classList.toggle("is-active", index === active));
-    toggle.textContent = paused ? "Play" : "Pause";
-    toggle.setAttribute("aria-label", `${paused ? "Play" : "Pause"} illustration`);
+  // Put the visitor's platform first in the download panel. Every download stays visible.
+  const list = document.querySelector(".platform-downloads");
+  const guess = document.getElementById("platform-guess");
+  const ua = navigator.userAgent || "";
+  const hint = ((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "").toLowerCase();
+  const mobile = /android|iphone|ipad|ipod/i.test(ua);
+  let key = null, label = "";
+  if (!mobile) {
+    if (hint.includes("win") || /windows/i.test(ua)) { key = "windows"; label = "Windows"; }
+    else if (hint.includes("mac") || /macintosh/i.test(ua)) { key = "macos-arm64"; label = "a Mac"; }
+    else if (hint.includes("linux") || /linux|x11/i.test(ua)) { key = "linux"; label = "Linux"; }
   }
-  function schedule() {
-    clearInterval(timer);
-    if (!paused && !document.hidden) timer = setInterval(() => { time = 60 + (time - 60 + 0.1) % 25; render(); }, 100);
+  const match = key && list && list.querySelector(`[data-platform="${key}"]`);
+  if (match) {
+    match.classList.add("is-yours");
+    list.prepend(match);
+    if (guess) { guess.textContent = `You seem to use ${label}`; guess.hidden = false; }
   }
-  rows.forEach(row => row.addEventListener("click", () => { time = Number(row.dataset.start) + 0.05; render(); }));
-  toggle.addEventListener("click", () => { paused = !paused; schedule(); render(); });
-  reduced.addEventListener("change", event => { paused = event.matches; if (paused) time = Number(rows[0].dataset.start) + 0.05; schedule(); render(); });
-  document.addEventListener("visibilitychange", schedule);
-  window.addEventListener("pagehide", () => clearInterval(timer));
+  // Keep anchor jumps clear of the sticky header.
   const header = document.querySelector(".landing-header");
   if (header && "ResizeObserver" in window) new ResizeObserver(() => document.documentElement.style.setProperty("--header-offset", `${header.getBoundingClientRect().height + 16}px`)).observe(header);
-  render(); schedule();
 })();
