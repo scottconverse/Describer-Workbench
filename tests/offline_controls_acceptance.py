@@ -1,12 +1,12 @@
 """Native volume, notification readiness and local URL download acceptance."""
-import copy,hashlib,http.server,json,math,sys,tempfile,threading,time,wave
+import hashlib,http.server,json,math,sys,tempfile,threading,time
 from functools import partial
 from pathlib import Path
 from PySide6.QtWidgets import QApplication
 from PySide6.QtTest import QTest
 from PySide6.QtMultimedia import QSoundEffect
 from describer.app import Window
-from describer.services import DEFAULTS,download,segment,run,tool
+from describer.services import download,segment,run,tool
 from describer.windows_speech import windows_speech
 from describer.playback_speech import Readers
 
